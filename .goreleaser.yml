@@ -61,7 +61,7 @@ release:
   name_template: "{{.ProjectName}} v{{.Version}}"
 
 brews:
-  - name: fuego
+  - name: fuego-cli
     repository:
       owner: abdul-hamid-achik
       name: homebrew-fuego-tap
