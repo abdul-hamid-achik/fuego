@@ -139,21 +139,29 @@ func runNew(cmd *cobra.Command, args []string) {
 		fmt.Printf("  %s Initialized git repository\n", green("✓"))
 	}
 
-	// Run go mod tidy (silently in JSON mode)
+	// Fetch fuego module (using go get to get the latest version)
 	if !jsonOutput {
 		yellow := color.New(color.FgYellow).SprintFunc()
-		fmt.Printf("  %s Running go mod tidy...\n", yellow("→"))
+		fmt.Printf("  %s Fetching dependencies...\n", yellow("→"))
 	}
-	tidyCmd := exec.Command("go", "mod", "tidy")
-	tidyCmd.Dir = name
-	if err := tidyCmd.Run(); err != nil {
+	getCmd := exec.Command("go", "get", "github.com/abdul-hamid-achik/fuego/pkg/fuego@latest")
+	getCmd.Dir = name
+	if err := getCmd.Run(); err != nil {
 		if !jsonOutput {
 			yellow := color.New(color.FgYellow).SprintFunc()
-			fmt.Printf("  %s Failed to run go mod tidy: %v\n", yellow("Warning:"), err)
+			fmt.Printf("  %s Failed to fetch fuego module: %v\n", yellow("Warning:"), err)
+			fmt.Printf("  You can manually run: go get github.com/abdul-hamid-achik/fuego/pkg/fuego@latest\n")
 		}
-	} else if !jsonOutput {
-		green := color.New(color.FgGreen).SprintFunc()
-		fmt.Printf("  %s Dependencies installed\n", green("✓"))
+	} else {
+		// Run go mod tidy to clean up
+		tidyCmd := exec.Command("go", "mod", "tidy")
+		tidyCmd.Dir = name
+		_ = tidyCmd.Run() // Ignore errors, go get already did the main work
+
+		if !jsonOutput {
+			green := color.New(color.FgGreen).SprintFunc()
+			fmt.Printf("  %s Dependencies installed\n", green("✓"))
+		}
 	}
 
 	// Output result
@@ -223,8 +231,6 @@ var goModTmpl = strings.TrimSpace(`
 module {{.ModuleName}}
 
 go 1.21
-
-require github.com/abdul-hamid-achik/fuego v0.0.0
 `) + "\n"
 
 var fuegoYamlTmpl = strings.TrimSpace(`

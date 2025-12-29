@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.6] - 2024-12-29
+
+### Fixed
+
+- **`fuego new` now properly fetches dependencies** - Uses `go get @latest` instead of hardcoded version
+  - New users no longer get "unknown revision v0.0.0" errors
+  - Dependencies are fetched from the Go module proxy automatically
+
+### Changed
+
+- `go.mod` template no longer includes a require statement (handled by `go get`)
+- Replaced `go mod tidy` with `go get github.com/abdul-hamid-achik/fuego/pkg/fuego@latest`
+
 ## [0.3.0] - 2024-12-29
 
 ### Added
@@ -118,7 +131,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Built on chi router
 - 137+ test cases
 
-[Unreleased]: https://github.com/abdul-hamid-achik/fuego/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/abdul-hamid-achik/fuego/compare/v0.3.6...HEAD
+[0.3.6]: https://github.com/abdul-hamid-achik/fuego/compare/v0.3.5...v0.3.6
+[0.3.5]: https://github.com/abdul-hamid-achik/fuego/compare/v0.3.0...v0.3.5
 [0.3.0]: https://github.com/abdul-hamid-achik/fuego/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/abdul-hamid-achik/fuego/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/abdul-hamid-achik/fuego/releases/tag/v0.1.0
