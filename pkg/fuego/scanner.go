@@ -1,0 +1,423 @@
+package fuego
+
+import (
+	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"net/http"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
+)
+
+// Scanner scans the app directory for routes and middleware.
+type Scanner struct {
+	appDir  string
+	fset    *token.FileSet
+	verbose bool
+}
+
+// NewScanner creates a new Scanner for the given app directory.
+func NewScanner(appDir string) *Scanner {
+	return &Scanner{
+		appDir:  appDir,
+		fset:    token.NewFileSet(),
+		verbose: false,
+	}
+}
+
+// SetVerbose enables verbose logging during scanning.
+func (s *Scanner) SetVerbose(v bool) {
+	s.verbose = v
+}
+
+// Regular expressions for matching route segment patterns
+var (
+	// [param] - dynamic segment
+	dynamicSegmentRe = regexp.MustCompile(`^\[([^\.\]]+)\]$`)
+
+	// [...param] - catch-all segment
+	catchAllSegmentRe = regexp.MustCompile(`^\[\.\.\.([^\]]+)\]$`)
+
+	// [[...param]] - optional catch-all segment
+	optionalCatchAllRe = regexp.MustCompile(`^\[\[\.\.\.([^\]]+)\]\]$`)
+
+	// (group) - route group (doesn't affect URL)
+	routeGroupRe = regexp.MustCompile(`^\([^)]+\)$`)
+
+	// _folder - private folder (not routable)
+	privateFolderRe = regexp.MustCompile(`^_`)
+)
+
+// HTTP method to function name mapping
+var httpMethods = map[string]string{
+	"Get":     http.MethodGet,
+	"Post":    http.MethodPost,
+	"Put":     http.MethodPut,
+	"Patch":   http.MethodPatch,
+	"Delete":  http.MethodDelete,
+	"Head":    http.MethodHead,
+	"Options": http.MethodOptions,
+}
+
+// Scan walks the app directory and registers routes with the RouteTree.
+func (s *Scanner) Scan(tree *RouteTree) error {
+	// Check if app directory exists
+	if _, err := os.Stat(s.appDir); os.IsNotExist(err) {
+		// Not an error if app dir doesn't exist - just no routes
+		return nil
+	}
+
+	return filepath.Walk(s.appDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip hidden files and directories
+		if strings.HasPrefix(info.Name(), ".") {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		// Skip private folders
+		if info.IsDir() && privateFolderRe.MatchString(info.Name()) {
+			return filepath.SkipDir
+		}
+
+		// Skip non-routing files
+		if info.IsDir() {
+			return nil
+		}
+
+		// Process routing files
+		switch info.Name() {
+		case "route.go":
+			return s.registerAPIRoute(tree, path)
+		case "middleware.go":
+			return s.registerMiddleware(tree, path)
+			// Future: page.templ, layout.templ, etc.
+		}
+
+		return nil
+	})
+}
+
+// registerAPIRoute discovers and registers handlers from a route.go file.
+func (s *Scanner) registerAPIRoute(tree *RouteTree, filePath string) error {
+	// Parse the Go file
+	file, err := parser.ParseFile(s.fset, filePath, nil, parser.ParseComments)
+	if err != nil {
+		return fmt.Errorf("failed to parse %s: %w", filePath, err)
+	}
+
+	// Get the route pattern from the file path
+	pattern := s.pathToRoute(filePath)
+
+	// Find all exported functions that match HTTP method names
+	for _, decl := range file.Decls {
+		fn, ok := decl.(*ast.FuncDecl)
+		if !ok {
+			continue
+		}
+
+		// Check if it's an exported function
+		if !fn.Name.IsExported() {
+			continue
+		}
+
+		// Check if the function name matches an HTTP method
+		method, ok := httpMethods[fn.Name.Name]
+		if !ok {
+			continue
+		}
+
+		// Validate the function signature: func(c *fuego.Context) error
+		if !s.isValidHandlerSignature(fn) {
+			if s.verbose {
+				fmt.Printf("  Warning: %s.%s has invalid signature, skipping\n", filePath, fn.Name.Name)
+			}
+			continue
+		}
+
+		// Create a handler that will be replaced at runtime
+		// For now, we register a placeholder that the plugin system will replace
+		route := &Route{
+			Pattern:  pattern,
+			Method:   method,
+			FilePath: filePath,
+			Priority: CalculatePriority(pattern),
+			Handler:  s.createPlaceholderHandler(filePath, fn.Name.Name),
+		}
+
+		tree.AddRoute(route)
+
+		if s.verbose {
+			fmt.Printf("  Registered: %s %s (%s)\n", method, pattern, filePath)
+		}
+	}
+
+	return nil
+}
+
+// registerMiddleware discovers and registers middleware from a middleware.go file.
+func (s *Scanner) registerMiddleware(tree *RouteTree, filePath string) error {
+	// Parse the Go file
+	file, err := parser.ParseFile(s.fset, filePath, nil, parser.ParseComments)
+	if err != nil {
+		return fmt.Errorf("failed to parse %s: %w", filePath, err)
+	}
+
+	// Get the path prefix this middleware applies to
+	pathPrefix := s.pathToRoute(filePath)
+	if pathPrefix == "/" {
+		pathPrefix = ""
+	}
+
+	// Look for the Middleware function
+	for _, decl := range file.Decls {
+		fn, ok := decl.(*ast.FuncDecl)
+		if !ok {
+			continue
+		}
+
+		// Look for Middleware function
+		if fn.Name.Name != "Middleware" {
+			continue
+		}
+
+		// Validate signature
+		if !s.isValidMiddlewareSignature(fn) {
+			if s.verbose {
+				fmt.Printf("  Warning: %s.Middleware has invalid signature, skipping\n", filePath)
+			}
+			continue
+		}
+
+		// Register a placeholder middleware
+		tree.AddMiddleware(pathPrefix, s.createPlaceholderMiddleware(filePath))
+
+		if s.verbose {
+			fmt.Printf("  Registered middleware: %s (%s)\n", pathPrefix, filePath)
+		}
+	}
+
+	return nil
+}
+
+// pathToRoute converts a file path to a route pattern.
+// Example: app/users/[id]/route.go -> /users/{id}
+func (s *Scanner) pathToRoute(filePath string) string {
+	// Get path relative to app directory
+	rel, err := filepath.Rel(s.appDir, filepath.Dir(filePath))
+	if err != nil || rel == "." {
+		return "/"
+	}
+
+	segments := strings.Split(rel, string(filepath.Separator))
+	routeSegments := make([]string, 0, len(segments))
+
+	for _, seg := range segments {
+		// Skip route groups (folder) - they don't affect the URL
+		if routeGroupRe.MatchString(seg) {
+			continue
+		}
+
+		// Handle optional catch-all [[...param]]
+		if matches := optionalCatchAllRe.FindStringSubmatch(seg); len(matches) > 1 {
+			routeSegments = append(routeSegments, "*")
+			continue
+		}
+
+		// Handle catch-all [...param]
+		if matches := catchAllSegmentRe.FindStringSubmatch(seg); len(matches) > 1 {
+			routeSegments = append(routeSegments, "*")
+			continue
+		}
+
+		// Handle dynamic segment [param]
+		if matches := dynamicSegmentRe.FindStringSubmatch(seg); len(matches) > 1 {
+			routeSegments = append(routeSegments, "{"+matches[1]+"}")
+			continue
+		}
+
+		routeSegments = append(routeSegments, seg)
+	}
+
+	if len(routeSegments) == 0 {
+		return "/"
+	}
+
+	return "/" + strings.Join(routeSegments, "/")
+}
+
+// isValidHandlerSignature checks if a function has the signature:
+// func(c *fuego.Context) error
+func (s *Scanner) isValidHandlerSignature(fn *ast.FuncDecl) bool {
+	// Must have exactly one parameter
+	if fn.Type.Params == nil || len(fn.Type.Params.List) != 1 {
+		return false
+	}
+
+	// Parameter must be a pointer type
+	param := fn.Type.Params.List[0]
+	starExpr, ok := param.Type.(*ast.StarExpr)
+	if !ok {
+		return false
+	}
+
+	// Check if it's a selector (package.Type) or ident (Type)
+	switch x := starExpr.X.(type) {
+	case *ast.SelectorExpr:
+		// fuego.Context or similar
+		if ident, ok := x.X.(*ast.Ident); ok {
+			if ident.Name == "fuego" && x.Sel.Name == "Context" {
+				goto checkReturn
+			}
+		}
+	case *ast.Ident:
+		// Just Context (same package import)
+		if x.Name == "Context" {
+			goto checkReturn
+		}
+	}
+	return false
+
+checkReturn:
+	// Must have exactly one return value
+	if fn.Type.Results == nil || len(fn.Type.Results.List) != 1 {
+		return false
+	}
+
+	// Return must be error type
+	result := fn.Type.Results.List[0]
+	if ident, ok := result.Type.(*ast.Ident); ok {
+		return ident.Name == "error"
+	}
+
+	return false
+}
+
+// isValidMiddlewareSignature checks if a function has the signature:
+// func() fuego.MiddlewareFunc
+func (s *Scanner) isValidMiddlewareSignature(fn *ast.FuncDecl) bool {
+	// Must have no parameters
+	if fn.Type.Params != nil && len(fn.Type.Params.List) > 0 {
+		return false
+	}
+
+	// Must have one return value
+	if fn.Type.Results == nil || len(fn.Type.Results.List) != 1 {
+		return false
+	}
+
+	// Check return type is MiddlewareFunc
+	result := fn.Type.Results.List[0]
+	switch x := result.Type.(type) {
+	case *ast.SelectorExpr:
+		if ident, ok := x.X.(*ast.Ident); ok {
+			return ident.Name == "fuego" && x.Sel.Name == "MiddlewareFunc"
+		}
+	case *ast.Ident:
+		return x.Name == "MiddlewareFunc"
+	}
+
+	return false
+}
+
+// createPlaceholderHandler creates a placeholder handler that returns an error.
+// This will be replaced by the actual handler at runtime using the plugin system
+// or code generation.
+func (s *Scanner) createPlaceholderHandler(filePath, funcName string) HandlerFunc {
+	return func(c *Context) error {
+		return c.JSON(http.StatusNotImplemented, map[string]any{
+			"error":   "handler not loaded",
+			"file":    filePath,
+			"handler": funcName,
+			"message": "This is a placeholder. Use 'fuego dev' or 'fuego build' to load actual handlers.",
+		})
+	}
+}
+
+// createPlaceholderMiddleware creates a placeholder middleware that passes through.
+func (s *Scanner) createPlaceholderMiddleware(filePath string) MiddlewareFunc {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(c *Context) error {
+			// Placeholder just passes through
+			return next(c)
+		}
+	}
+}
+
+// GetRouteInfo returns information about discovered routes (for CLI display).
+type RouteInfo struct {
+	Method   string
+	Pattern  string
+	FilePath string
+	Priority int
+}
+
+// ScanRouteInfo scans and returns route info without registering handlers.
+func (s *Scanner) ScanRouteInfo() ([]RouteInfo, error) {
+	var routes []RouteInfo
+
+	if _, err := os.Stat(s.appDir); os.IsNotExist(err) {
+		return routes, nil
+	}
+
+	err := filepath.Walk(s.appDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if strings.HasPrefix(info.Name(), ".") {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		if info.IsDir() && privateFolderRe.MatchString(info.Name()) {
+			return filepath.SkipDir
+		}
+
+		if info.IsDir() || info.Name() != "route.go" {
+			return nil
+		}
+
+		file, err := parser.ParseFile(s.fset, path, nil, parser.ParseComments)
+		if err != nil {
+			return nil // Skip files that can't be parsed
+		}
+
+		pattern := s.pathToRoute(path)
+
+		for _, decl := range file.Decls {
+			fn, ok := decl.(*ast.FuncDecl)
+			if !ok || !fn.Name.IsExported() {
+				continue
+			}
+
+			method, ok := httpMethods[fn.Name.Name]
+			if !ok {
+				continue
+			}
+
+			if s.isValidHandlerSignature(fn) {
+				routes = append(routes, RouteInfo{
+					Method:   method,
+					Pattern:  pattern,
+					FilePath: path,
+					Priority: CalculatePriority(pattern),
+				})
+			}
+		}
+
+		return nil
+	})
+
+	return routes, err
+}
