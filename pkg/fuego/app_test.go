@@ -502,7 +502,7 @@ func TestApp_ServeHTTP_ProxyError(t *testing.T) {
 	app := New()
 
 	// Set proxy that returns an error
-	app.SetProxy(func(c *Context) (*ProxyResult, error) {
+	_ = app.SetProxy(func(c *Context) (*ProxyResult, error) {
 		return nil, NewHTTPError(500, "proxy error")
 	}, nil)
 

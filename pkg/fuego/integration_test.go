@@ -17,7 +17,7 @@ func getAvailablePort() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 	return listener.Addr().(*net.TCPAddr).Port, nil
 }
 
@@ -27,7 +27,7 @@ func waitForServer(url string, timeout time.Duration) error {
 	for time.Now().Before(deadline) {
 		resp, err := http.Get(url)
 		if err == nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			return nil
 		}
 		time.Sleep(10 * time.Millisecond)
@@ -77,7 +77,7 @@ func TestApp_ListenAndShutdown(t *testing.T) {
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != 200 {
 		t.Errorf("expected status 200, got %d", resp.StatusCode)
@@ -128,7 +128,7 @@ func TestApp_ListenWithProxy(t *testing.T) {
 	app := New()
 
 	// Proxy that adds a header and blocks /admin
-	app.SetProxy(func(c *Context) (*ProxyResult, error) {
+	_ = app.SetProxy(func(c *Context) (*ProxyResult, error) {
 		c.SetHeader("X-Proxy", "processed")
 
 		if c.Path() == "/admin" {
@@ -170,7 +170,7 @@ func TestApp_ListenWithProxy(t *testing.T) {
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != 200 {
 		t.Errorf("expected status 200, got %d", resp.StatusCode)
@@ -184,7 +184,7 @@ func TestApp_ListenWithProxy(t *testing.T) {
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
-	defer resp2.Body.Close()
+	defer func() { _ = resp2.Body.Close() }()
 
 	if resp2.StatusCode != 403 {
 		t.Errorf("expected status 403, got %d", resp2.StatusCode)
@@ -193,7 +193,7 @@ func TestApp_ListenWithProxy(t *testing.T) {
 	// Shutdown
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	server.Shutdown(ctx)
+	_ = server.Shutdown(ctx)
 
 	select {
 	case <-serverErr:
@@ -278,7 +278,7 @@ func TestApp_ListenWithMiddlewareChain(t *testing.T) {
 	// Shutdown
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	server.Shutdown(ctx)
+	_ = server.Shutdown(ctx)
 
 	select {
 	case <-serverErr:
@@ -350,7 +350,7 @@ func TestIntegration_ProxyRewriteThenRoute(t *testing.T) {
 	// Shutdown
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	server.Shutdown(ctx)
+	_ = server.Shutdown(ctx)
 
 	select {
 	case <-serverErr:
@@ -425,7 +425,7 @@ func TestIntegration_ProxyRedirect(t *testing.T) {
 	// Shutdown
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	server.Shutdown(ctx)
+	_ = server.Shutdown(ctx)
 
 	select {
 	case <-serverErr:
@@ -520,7 +520,7 @@ func TestIntegration_MiddlewareChainOrder(t *testing.T) {
 	// Shutdown
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	server.Shutdown(ctx)
+	_ = server.Shutdown(ctx)
 
 	select {
 	case <-serverErr:

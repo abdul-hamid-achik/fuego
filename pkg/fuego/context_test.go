@@ -530,7 +530,7 @@ func TestContext_StatusCode(t *testing.T) {
 		t.Errorf("expected default status 200, got %d", c.StatusCode())
 	}
 
-	c.JSON(201, map[string]string{"created": "true"})
+	_ = c.JSON(201, map[string]string{"created": "true"})
 
 	if c.StatusCode() != 201 {
 		t.Errorf("expected status 201 after JSON, got %d", c.StatusCode())
