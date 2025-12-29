@@ -299,6 +299,36 @@ func Get(c *fuego.Context) error {
 5. **Always return errors** - Don't silently fail
 6. **Use JSON output** - Add `--json` flag for machine-readable output
 
+## Code Quality Requirements
+
+**IMPORTANT**: Before committing any changes, always run the linter to avoid CI failures:
+
+```bash
+# Install golangci-lint if not already installed
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+# Run linter before committing
+golangci-lint run
+
+# Or use the Makefile/Taskfile if available
+task lint
+```
+
+Common linting issues to avoid:
+- **errcheck**: Always handle error return values (use `_ = fn()` if intentionally ignoring)
+- **unused**: Remove unused variables, functions, and imports
+- **staticcheck**: Follow Go best practices and idioms
+
+For deferred close operations, use this pattern:
+```go
+defer func() { _ = file.Close() }()
+```
+
+Instead of:
+```go
+defer file.Close()  // This will trigger errcheck warning
+```
+
 ## Validation
 
 Use MCP's `fuego_validate` tool or parse the project structure to check:

@@ -147,7 +147,7 @@ func (t *TailwindCLI) downloadBinary() error {
 	if err != nil {
 		return fmt.Errorf("failed to download Tailwind: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to download Tailwind: HTTP %d", resp.StatusCode)
@@ -158,11 +158,11 @@ func (t *TailwindCLI) downloadBinary() error {
 	if err != nil {
 		return fmt.Errorf("failed to create binary file: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	// Copy the content
 	if _, err := io.Copy(f, resp.Body); err != nil {
-		os.Remove(destPath)
+		_ = os.Remove(destPath)
 		return fmt.Errorf("failed to write binary: %w", err)
 	}
 
