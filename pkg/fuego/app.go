@@ -202,3 +202,106 @@ func (a *App) Head(pattern string, handler HandlerFunc) {
 func (a *App) Options(pattern string, handler HandlerFunc) {
 	a.RegisterRoute(http.MethodOptions, pattern, handler)
 }
+
+// Static serves static files from a directory.
+// The path is the URL path prefix, and dir is the file system directory.
+func (a *App) Static(path string, dir string) {
+	if path == "" {
+		path = "/"
+	}
+	if path[0] != '/' {
+		path = "/" + path
+	}
+
+	// Ensure path ends with /* for catch-all matching
+	pattern := path
+	if pattern[len(pattern)-1] != '/' {
+		pattern += "/"
+	}
+	pattern += "*"
+
+	// Create a file server
+	fs := http.StripPrefix(path, http.FileServer(http.Dir(dir)))
+
+	// Register the handler directly with chi
+	a.router.Get(pattern, func(w http.ResponseWriter, r *http.Request) {
+		fs.ServeHTTP(w, r)
+	})
+}
+
+// Group creates a route group with shared middleware.
+func (a *App) Group(pattern string, fn func(g *RouteGroup)) {
+	g := &RouteGroup{
+		app:         a,
+		prefix:      pattern,
+		middlewares: make([]MiddlewareFunc, 0),
+	}
+	fn(g)
+}
+
+// RouteGroup is a group of routes with shared prefix and middleware.
+type RouteGroup struct {
+	app         *App
+	prefix      string
+	middlewares []MiddlewareFunc
+}
+
+// Use adds middleware to the group.
+func (g *RouteGroup) Use(mw MiddlewareFunc) {
+	g.middlewares = append(g.middlewares, mw)
+}
+
+// Get registers a GET route in the group.
+func (g *RouteGroup) Get(pattern string, handler HandlerFunc) {
+	g.app.routeTree.AddRoute(&Route{
+		Method:      http.MethodGet,
+		Pattern:     g.prefix + pattern,
+		Handler:     handler,
+		Priority:    CalculatePriority(g.prefix + pattern),
+		Middlewares: g.middlewares,
+	})
+}
+
+// Post registers a POST route in the group.
+func (g *RouteGroup) Post(pattern string, handler HandlerFunc) {
+	g.app.routeTree.AddRoute(&Route{
+		Method:      http.MethodPost,
+		Pattern:     g.prefix + pattern,
+		Handler:     handler,
+		Priority:    CalculatePriority(g.prefix + pattern),
+		Middlewares: g.middlewares,
+	})
+}
+
+// Put registers a PUT route in the group.
+func (g *RouteGroup) Put(pattern string, handler HandlerFunc) {
+	g.app.routeTree.AddRoute(&Route{
+		Method:      http.MethodPut,
+		Pattern:     g.prefix + pattern,
+		Handler:     handler,
+		Priority:    CalculatePriority(g.prefix + pattern),
+		Middlewares: g.middlewares,
+	})
+}
+
+// Patch registers a PATCH route in the group.
+func (g *RouteGroup) Patch(pattern string, handler HandlerFunc) {
+	g.app.routeTree.AddRoute(&Route{
+		Method:      http.MethodPatch,
+		Pattern:     g.prefix + pattern,
+		Handler:     handler,
+		Priority:    CalculatePriority(g.prefix + pattern),
+		Middlewares: g.middlewares,
+	})
+}
+
+// Delete registers a DELETE route in the group.
+func (g *RouteGroup) Delete(pattern string, handler HandlerFunc) {
+	g.app.routeTree.AddRoute(&Route{
+		Method:      http.MethodDelete,
+		Pattern:     g.prefix + pattern,
+		Handler:     handler,
+		Priority:    CalculatePriority(g.prefix + pattern),
+		Middlewares: g.middlewares,
+	})
+}

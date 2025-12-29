@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/a-h/templ"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -350,4 +351,20 @@ func (c *Context) Written() bool {
 // StatusCode returns the response status code.
 func (c *Context) StatusCode() int {
 	return c.status
+}
+
+// ---------- Templ Rendering ----------
+
+// Render renders a templ component as the HTTP response.
+func (c *Context) Render(status int, component templ.Component) error {
+	c.SetHeader("Content-Type", "text/html; charset=utf-8")
+	c.Response.WriteHeader(status)
+	c.written = true
+	c.status = status
+	return component.Render(c.Context(), c.Response)
+}
+
+// RenderOK renders a templ component with a 200 OK status.
+func (c *Context) RenderOK(component templ.Component) error {
+	return c.Render(http.StatusOK, component)
 }
