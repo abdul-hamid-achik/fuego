@@ -61,7 +61,7 @@ release:
   name_template: "{{.ProjectName}} v{{.Version}}"
 
 homebrew_casks:
-  - name: fuego
+  - name: fuego-cli
     ids:
       - default
     binaries:
