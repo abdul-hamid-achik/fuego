@@ -190,12 +190,12 @@ func handleError(c *Context, err error) {
 
 	// Check if it's an HTTPError
 	if httpErr, ok := IsHTTPError(err); ok {
-		c.Error(httpErr.Code, httpErr.Message)
+		_ = c.Error(httpErr.Code, httpErr.Message)
 		return
 	}
 
 	// Default to internal server error
-	c.Error(http.StatusInternalServerError, "internal server error")
+	_ = c.Error(http.StatusInternalServerError, "internal server error")
 }
 
 // CalculatePriority calculates the priority for a route pattern.

@@ -301,9 +301,10 @@ func compilePathPattern(pattern string) (*regexp.Regexp, error) {
 			j := i + 1
 			depth := 1
 			for j < len(pattern) && depth > 0 {
-				if pattern[j] == '(' {
+				switch pattern[j] {
+				case '(':
 					depth++
-				} else if pattern[j] == ')' {
+				case ')':
 					depth--
 				}
 				j++

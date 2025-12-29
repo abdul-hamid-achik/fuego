@@ -375,7 +375,7 @@ func TestExecuteProxyWithHeaders(t *testing.T) {
 		return ResponseJSON(200, `{}`).WithHeader("X-Custom", "value"), nil
 	}
 
-	executeProxy(ctx, proxy, nil)
+	_, _ = executeProxy(ctx, proxy, nil)
 
 	if w.Header().Get("X-Custom") != "value" {
 		t.Errorf("expected X-Custom header to be %q, got %q", "value", w.Header().Get("X-Custom"))
@@ -386,7 +386,7 @@ func TestExecuteProxyWithMatcher(t *testing.T) {
 	config := &ProxyConfig{
 		Matcher: []string{"/api/:path*"},
 	}
-	config.Compile()
+	_ = config.Compile()
 
 	// Test path that matches
 	w := httptest.NewRecorder()
@@ -399,7 +399,7 @@ func TestExecuteProxyWithMatcher(t *testing.T) {
 		return Continue(), nil
 	}
 
-	executeProxy(ctx, proxy, config)
+	_, _ = executeProxy(ctx, proxy, config)
 
 	if !proxyCalled {
 		t.Error("proxy should have been called for matching path")
@@ -411,7 +411,7 @@ func TestExecuteProxyWithMatcher(t *testing.T) {
 	ctx = NewContext(w, r)
 
 	proxyCalled = false
-	executeProxy(ctx, proxy, config)
+	_, _ = executeProxy(ctx, proxy, config)
 
 	if proxyCalled {
 		t.Error("proxy should not have been called for non-matching path")
@@ -462,7 +462,7 @@ func TestAppServeHTTPWithProxy(t *testing.T) {
 	app := New()
 
 	// Set up a proxy that blocks /admin paths
-	app.SetProxy(func(c *Context) (*ProxyResult, error) {
+	_ = app.SetProxy(func(c *Context) (*ProxyResult, error) {
 		if c.Path() == "/admin" {
 			return ResponseJSON(403, `{"error":"forbidden"}`), nil
 		}
@@ -502,7 +502,7 @@ func TestAppServeHTTPWithProxyRewrite(t *testing.T) {
 	app := New()
 
 	// Set up a proxy that rewrites /old to /new
-	app.SetProxy(func(c *Context) (*ProxyResult, error) {
+	_ = app.SetProxy(func(c *Context) (*ProxyResult, error) {
 		if c.Path() == "/old" {
 			return Rewrite("/new"), nil
 		}
@@ -684,7 +684,7 @@ func TestRouteTreeProxyConfiguration(t *testing.T) {
 		return Continue(), nil
 	}
 
-	rt.SetProxy(proxy, config)
+	_ = rt.SetProxy(proxy, config)
 
 	retrievedConfig := rt.ProxyConfiguration()
 	if retrievedConfig == nil {
