@@ -80,7 +80,7 @@ func runBuild(cmd *cobra.Command, args []string) {
 
 	// Check for templ files and run templ generate
 	hasTemplFiles := false
-	filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+	_ = filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil
 		}

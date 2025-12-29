@@ -55,7 +55,7 @@ func runDev(cmd *cobra.Command, args []string) {
 
 	// Check for templ files and run templ generate if needed
 	hasTemplFiles := false
-	filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+	_ = filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil
 		}
@@ -87,7 +87,7 @@ func runDev(cmd *cobra.Command, args []string) {
 		fmt.Printf("  %s Failed to create file watcher: %v\n", red("Error:"), err)
 		os.Exit(1)
 	}
-	defer watcher.Close()
+	defer func() { _ = watcher.Close() }()
 
 	// Watch directories recursively
 	watchDirs := []string{"."}
@@ -96,7 +96,7 @@ func runDev(cmd *cobra.Command, args []string) {
 	}
 
 	for _, dir := range watchDirs {
-		filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		_ = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return nil
 			}
@@ -106,7 +106,7 @@ func runDev(cmd *cobra.Command, args []string) {
 				if strings.HasPrefix(name, ".") || name == "node_modules" || name == "vendor" || name == "tmp" {
 					return filepath.SkipDir
 				}
-				watcher.Add(path)
+				_ = watcher.Add(path)
 			}
 			return nil
 		})
@@ -169,8 +169,8 @@ func runDev(cmd *cobra.Command, args []string) {
 
 				// Stop old server
 				if serverProcess != nil && serverProcess.Process != nil {
-					serverProcess.Process.Signal(syscall.SIGTERM)
-					serverProcess.Wait()
+					_ = serverProcess.Process.Signal(syscall.SIGTERM)
+					_ = serverProcess.Wait()
 				}
 
 				// Start new server
@@ -188,8 +188,8 @@ func runDev(cmd *cobra.Command, args []string) {
 		case <-signals:
 			fmt.Println("\n  Shutting down...")
 			if serverProcess != nil && serverProcess.Process != nil {
-				serverProcess.Process.Signal(syscall.SIGTERM)
-				serverProcess.Wait()
+				_ = serverProcess.Process.Signal(syscall.SIGTERM)
+				_ = serverProcess.Wait()
 			}
 			os.Exit(0)
 		}
