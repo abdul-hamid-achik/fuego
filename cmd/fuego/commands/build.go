@@ -21,10 +21,11 @@ This command:
   1. Runs templ generate (if .templ files exist)
   2. Builds an optimized Go binary with ldflags
 
-Example:
+Examples:
   fuego build
   fuego build --output ./bin/myapp
-  fuego build --os linux --arch amd64`,
+  fuego build --os linux --arch amd64
+  fuego build --json`,
 	Run: runBuild,
 }
 
@@ -41,25 +42,24 @@ func init() {
 }
 
 func runBuild(cmd *cobra.Command, args []string) {
-	cyan := color.New(color.FgCyan).SprintFunc()
-	green := color.New(color.FgGreen).SprintFunc()
-	yellow := color.New(color.FgYellow).SprintFunc()
-	red := color.New(color.FgRed).SprintFunc()
-
-	fmt.Printf("\n  %s Production Build\n\n", cyan("Fuego"))
-
 	// Check for main.go
 	if _, err := os.Stat("main.go"); os.IsNotExist(err) {
-		fmt.Printf("  %s No main.go found in current directory\n", red("Error:"))
+		if jsonOutput {
+			printJSONError(fmt.Errorf("no main.go found in current directory"))
+		} else {
+			red := color.New(color.FgRed).SprintFunc()
+			fmt.Printf("  %s No main.go found in current directory\n", red("Error:"))
+		}
 		os.Exit(1)
 	}
 
 	// Determine output path
-	if buildOutput == "" {
+	outputPath := buildOutput
+	if outputPath == "" {
 		// Use current directory name as binary name
 		cwd, _ := os.Getwd()
 		projectName := filepath.Base(cwd)
-		buildOutput = filepath.Join("bin", projectName)
+		outputPath = filepath.Join("bin", projectName)
 	}
 
 	// Add .exe extension on Windows
@@ -67,14 +67,28 @@ func runBuild(cmd *cobra.Command, args []string) {
 	if targetOS == "" {
 		targetOS = runtime.GOOS
 	}
-	if targetOS == "windows" && !strings.HasSuffix(buildOutput, ".exe") {
-		buildOutput += ".exe"
+	targetArch := buildArch
+	if targetArch == "" {
+		targetArch = runtime.GOARCH
+	}
+	if targetOS == "windows" && !strings.HasSuffix(outputPath, ".exe") {
+		outputPath += ".exe"
+	}
+
+	if !jsonOutput {
+		cyan := color.New(color.FgCyan).SprintFunc()
+		fmt.Printf("\n  %s Production Build\n\n", cyan("Fuego"))
 	}
 
 	// Create bin directory
-	binDir := filepath.Dir(buildOutput)
+	binDir := filepath.Dir(outputPath)
 	if err := os.MkdirAll(binDir, 0755); err != nil {
-		fmt.Printf("  %s Failed to create output directory: %v\n", red("Error:"), err)
+		if jsonOutput {
+			printJSONError(fmt.Errorf("failed to create output directory: %w", err))
+		} else {
+			red := color.New(color.FgRed).SprintFunc()
+			fmt.Printf("  %s Failed to create output directory: %v\n", red("Error:"), err)
+		}
 		os.Exit(1)
 	}
 
@@ -92,24 +106,40 @@ func runBuild(cmd *cobra.Command, args []string) {
 	})
 
 	if hasTemplFiles {
-		fmt.Printf("  %s Running templ generate...\n", yellow("→"))
+		if !jsonOutput {
+			yellow := color.New(color.FgYellow).SprintFunc()
+			fmt.Printf("  %s Running templ generate...\n", yellow("→"))
+		}
 		templCmd := exec.Command("templ", "generate")
-		templCmd.Stdout = os.Stdout
-		templCmd.Stderr = os.Stderr
+		if !jsonOutput {
+			templCmd.Stdout = os.Stdout
+			templCmd.Stderr = os.Stderr
+		}
 		if err := templCmd.Run(); err != nil {
-			fmt.Printf("  %s templ generate failed: %v\n", red("Error:"), err)
+			if jsonOutput {
+				printJSONError(fmt.Errorf("templ generate failed: %w", err))
+			} else {
+				red := color.New(color.FgRed).SprintFunc()
+				fmt.Printf("  %s templ generate failed: %v\n", red("Error:"), err)
+			}
 			os.Exit(1)
 		}
-		fmt.Printf("  %s Templates generated\n", green("✓"))
+		if !jsonOutput {
+			green := color.New(color.FgGreen).SprintFunc()
+			fmt.Printf("  %s Templates generated\n", green("✓"))
+		}
 	}
 
 	// Build the binary
-	fmt.Printf("  %s Building binary...\n", yellow("→"))
+	if !jsonOutput {
+		yellow := color.New(color.FgYellow).SprintFunc()
+		fmt.Printf("  %s Building binary...\n", yellow("→"))
+	}
 
 	buildArgs := []string{
 		"build",
 		"-ldflags", "-s -w", // Strip debug info for smaller binary
-		"-o", buildOutput,
+		"-o", outputPath,
 		".",
 	}
 
@@ -123,33 +153,56 @@ func runBuild(cmd *cobra.Command, args []string) {
 
 	goBuild := exec.Command("go", buildArgs...)
 	goBuild.Env = buildEnv
-	goBuild.Stdout = os.Stdout
-	goBuild.Stderr = os.Stderr
+	if !jsonOutput {
+		goBuild.Stdout = os.Stdout
+		goBuild.Stderr = os.Stderr
+	}
 
 	if err := goBuild.Run(); err != nil {
-		fmt.Printf("  %s Build failed: %v\n", red("Error:"), err)
+		if jsonOutput {
+			printJSONError(fmt.Errorf("build failed: %w", err))
+		} else {
+			red := color.New(color.FgRed).SprintFunc()
+			fmt.Printf("  %s Build failed: %v\n", red("Error:"), err)
+		}
 		os.Exit(1)
 	}
 
 	// Get binary size
-	info, err := os.Stat(buildOutput)
-	if err != nil {
-		fmt.Printf("  %s Failed to stat binary: %v\n", yellow("Warning:"), err)
+	info, err := os.Stat(outputPath)
+	var size int64
+	if err == nil && info != nil {
+		size = info.Size()
 	}
 
-	size := "unknown"
-	if info != nil {
-		sizeMB := float64(info.Size()) / 1024 / 1024
-		size = fmt.Sprintf("%.2f MB", sizeMB)
+	// Output result
+	if jsonOutput {
+		absPath, _ := filepath.Abs(outputPath)
+		printSuccess(BuildOutput{
+			Binary:  absPath,
+			OS:      targetOS,
+			Arch:    targetArch,
+			Size:    size,
+			Success: true,
+		})
+	} else {
+		cyan := color.New(color.FgCyan).SprintFunc()
+		green := color.New(color.FgGreen).SprintFunc()
+
+		sizeStr := "unknown"
+		if size > 0 {
+			sizeMB := float64(size) / 1024 / 1024
+			sizeStr = fmt.Sprintf("%.2f MB", sizeMB)
+		}
+
+		fmt.Printf("  %s Build successful\n\n", green("✓"))
+		fmt.Printf("  Output: %s\n", cyan(outputPath))
+		fmt.Printf("  Size:   %s\n", sizeStr)
+
+		if buildOS != "" || buildArch != "" {
+			fmt.Printf("  Target: %s/%s\n", targetOS, targetArch)
+		}
+
+		fmt.Printf("\n  Run with: %s\n\n", cyan("./"+outputPath))
 	}
-
-	fmt.Printf("  %s Build successful\n\n", green("✓"))
-	fmt.Printf("  Output: %s\n", cyan(buildOutput))
-	fmt.Printf("  Size:   %s\n", size)
-
-	if buildOS != "" || buildArch != "" {
-		fmt.Printf("  Target: %s/%s\n", targetOS, buildArch)
-	}
-
-	fmt.Printf("\n  Run with: %s\n\n", cyan("./"+buildOutput))
 }

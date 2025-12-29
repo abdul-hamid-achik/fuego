@@ -34,6 +34,10 @@ func Execute() {
 }
 
 func init() {
+	// Global flags
+	rootCmd.PersistentFlags().BoolVar(&jsonOutput, "json", false, "Output in JSON format (for automation and LLM agents)")
+
+	// Commands
 	rootCmd.AddCommand(newCmd)
 	rootCmd.AddCommand(devCmd)
 	rootCmd.AddCommand(buildCmd)

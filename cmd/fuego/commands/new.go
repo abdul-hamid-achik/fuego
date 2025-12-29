@@ -17,9 +17,11 @@ var newCmd = &cobra.Command{
 	Short: "Create a new Fuego project",
 	Long: `Create a new Fuego project with the recommended directory structure.
 
-Example:
+Examples:
   fuego new myapp
-  fuego new my-api --api-only`,
+  fuego new my-api --api-only
+  fuego new myapp --with-proxy
+  fuego new myapp --json`,
 	Args: cobra.ExactArgs(1),
 	Run:  runNew,
 }
@@ -36,17 +38,22 @@ func init() {
 
 func runNew(cmd *cobra.Command, args []string) {
 	name := args[0]
-
-	green := color.New(color.FgGreen).SprintFunc()
-	cyan := color.New(color.FgCyan).SprintFunc()
-	yellow := color.New(color.FgYellow).SprintFunc()
-
-	fmt.Printf("\n  %s Creating new Fuego project: %s\n\n", cyan("Fuego"), green(name))
+	var createdFiles []string
 
 	// Check if directory already exists
 	if _, err := os.Stat(name); !os.IsNotExist(err) {
-		fmt.Printf("  %s Directory %s already exists\n", color.RedString("Error:"), name)
+		if jsonOutput {
+			printJSONError(fmt.Errorf("directory %s already exists", name))
+		} else {
+			fmt.Printf("  %s Directory %s already exists\n", color.RedString("Error:"), name)
+		}
 		os.Exit(1)
+	}
+
+	if !jsonOutput {
+		green := color.New(color.FgGreen).SprintFunc()
+		cyan := color.New(color.FgCyan).SprintFunc()
+		fmt.Printf("\n  %s Creating new Fuego project: %s\n\n", cyan("Fuego"), green(name))
 	}
 
 	// Create directory structure
@@ -59,10 +66,17 @@ func runNew(cmd *cobra.Command, args []string) {
 
 	for _, dir := range dirs {
 		if err := os.MkdirAll(dir, 0755); err != nil {
-			fmt.Printf("  %s Failed to create directory %s: %v\n", color.RedString("Error:"), dir, err)
+			if jsonOutput {
+				printJSONError(fmt.Errorf("failed to create directory %s: %w", dir, err))
+			} else {
+				fmt.Printf("  %s Failed to create directory %s: %v\n", color.RedString("Error:"), dir, err)
+			}
 			os.Exit(1)
 		}
-		fmt.Printf("  %s Created %s/\n", green("✓"), dir)
+		if !jsonOutput {
+			green := color.New(color.FgGreen).SprintFunc()
+			fmt.Printf("  %s Created %s/\n", green("✓"), dir)
+		}
 	}
 
 	// Template data
@@ -94,39 +108,76 @@ func runNew(cmd *cobra.Command, args []string) {
 
 	for path, tmplContent := range files {
 		if err := createFileFromTemplate(path, tmplContent, data); err != nil {
-			fmt.Printf("  %s Failed to create %s: %v\n", color.RedString("Error:"), path, err)
+			if jsonOutput {
+				printJSONError(fmt.Errorf("failed to create %s: %w", path, err))
+			} else {
+				fmt.Printf("  %s Failed to create %s: %v\n", color.RedString("Error:"), path, err)
+			}
 			os.Exit(1)
 		}
-		fmt.Printf("  %s Created %s\n", green("✓"), path)
+		createdFiles = append(createdFiles, path)
+		if !jsonOutput {
+			green := color.New(color.FgGreen).SprintFunc()
+			fmt.Printf("  %s Created %s\n", green("✓"), path)
+		}
 	}
 
-	// Initialize git repository
-	fmt.Printf("\n  %s Initializing git repository...\n", yellow("→"))
+	// Initialize git repository (silently in JSON mode)
+	if !jsonOutput {
+		yellow := color.New(color.FgYellow).SprintFunc()
+		fmt.Printf("\n  %s Initializing git repository...\n", yellow("→"))
+	}
 	gitCmd := exec.Command("git", "init")
 	gitCmd.Dir = name
 	if err := gitCmd.Run(); err != nil {
-		fmt.Printf("  %s Failed to initialize git: %v\n", yellow("Warning:"), err)
-	} else {
+		if !jsonOutput {
+			yellow := color.New(color.FgYellow).SprintFunc()
+			fmt.Printf("  %s Failed to initialize git: %v\n", yellow("Warning:"), err)
+		}
+	} else if !jsonOutput {
+		green := color.New(color.FgGreen).SprintFunc()
 		fmt.Printf("  %s Initialized git repository\n", green("✓"))
 	}
 
-	// Run go mod tidy
-	fmt.Printf("  %s Running go mod tidy...\n", yellow("→"))
+	// Run go mod tidy (silently in JSON mode)
+	if !jsonOutput {
+		yellow := color.New(color.FgYellow).SprintFunc()
+		fmt.Printf("  %s Running go mod tidy...\n", yellow("→"))
+	}
 	tidyCmd := exec.Command("go", "mod", "tidy")
 	tidyCmd.Dir = name
 	if err := tidyCmd.Run(); err != nil {
-		fmt.Printf("  %s Failed to run go mod tidy: %v\n", yellow("Warning:"), err)
-	} else {
+		if !jsonOutput {
+			yellow := color.New(color.FgYellow).SprintFunc()
+			fmt.Printf("  %s Failed to run go mod tidy: %v\n", yellow("Warning:"), err)
+		}
+	} else if !jsonOutput {
+		green := color.New(color.FgGreen).SprintFunc()
 		fmt.Printf("  %s Dependencies installed\n", green("✓"))
 	}
 
-	// Success message
-	fmt.Printf("\n  %s Project created successfully!\n\n", green("✓"))
-	fmt.Printf("  Next steps:\n")
-	fmt.Printf("    %s cd %s\n", cyan("$"), name)
-	fmt.Printf("    %s fuego dev\n\n", cyan("$"))
-	fmt.Printf("  Or run with go directly:\n")
-	fmt.Printf("    %s go run .\n\n", cyan("$"))
+	// Output result
+	if jsonOutput {
+		absPath, _ := filepath.Abs(name)
+		printSuccess(NewProjectOutput{
+			Project:   name,
+			Directory: absPath,
+			Created:   createdFiles,
+			NextSteps: []string{
+				fmt.Sprintf("cd %s", name),
+				"fuego dev",
+			},
+		})
+	} else {
+		green := color.New(color.FgGreen).SprintFunc()
+		cyan := color.New(color.FgCyan).SprintFunc()
+		fmt.Printf("\n  %s Project created successfully!\n\n", green("✓"))
+		fmt.Printf("  Next steps:\n")
+		fmt.Printf("    %s cd %s\n", cyan("$"), name)
+		fmt.Printf("    %s fuego dev\n\n", cyan("$"))
+		fmt.Printf("  Or run with go directly:\n")
+		fmt.Printf("    %s go run .\n\n", cyan("$"))
+	}
 }
 
 func createFileFromTemplate(path, tmplContent string, data any) error {

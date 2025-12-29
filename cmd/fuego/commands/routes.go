@@ -18,8 +18,10 @@ var routesCmd = &cobra.Command{
 This command scans the app/ directory and displays all route.go files
 with their HTTP methods and patterns.
 
-Example:
-  fuego routes`,
+Examples:
+  fuego routes
+  fuego routes --json
+  fuego routes --app-dir custom/app`,
 	Run: runRoutes,
 }
 
@@ -32,6 +34,95 @@ func init() {
 }
 
 func runRoutes(cmd *cobra.Command, args []string) {
+	// Check if app directory exists
+	if _, err := os.Stat(routesAppDir); os.IsNotExist(err) {
+		if jsonOutput {
+			printSuccess(RoutesOutput{
+				Routes: []RouteOutput{},
+				Total:  0,
+			})
+		} else {
+			yellow := color.New(color.FgYellow).SprintFunc()
+			fmt.Printf("\n  %s No app directory found at %s\n\n", yellow("Warning:"), routesAppDir)
+		}
+		return
+	}
+
+	// Scan for routes
+	scanner := fuego.NewScanner(routesAppDir)
+
+	// Check for proxy
+	proxyInfo, proxyErr := scanner.ScanProxyInfo()
+
+	// Scan for middleware
+	middlewares, mwErr := scanner.ScanMiddlewareInfo()
+
+	// Scan for routes
+	routes, routeErr := scanner.ScanRouteInfo()
+	if routeErr != nil {
+		if jsonOutput {
+			printJSONError(routeErr)
+		} else {
+			red := color.New(color.FgRed).SprintFunc()
+			fmt.Printf("  %s Failed to scan routes: %v\n", red("Error:"), routeErr)
+		}
+		os.Exit(1)
+	}
+
+	// Sort routes by pattern
+	sort.Slice(routes, func(i, j int) bool {
+		if routes[i].Pattern != routes[j].Pattern {
+			return routes[i].Pattern < routes[j].Pattern
+		}
+		return routes[i].Method < routes[j].Method
+	})
+
+	// JSON output mode
+	if jsonOutput {
+		output := RoutesOutput{
+			Routes: make([]RouteOutput, 0, len(routes)),
+			Total:  len(routes),
+		}
+
+		// Add proxy info
+		if proxyErr == nil && proxyInfo != nil && proxyInfo.HasProxy {
+			output.Proxy = &ProxyOutput{
+				Enabled:  true,
+				File:     proxyInfo.FilePath,
+				Matchers: proxyInfo.Matchers,
+			}
+		}
+
+		// Add middleware info
+		if mwErr == nil && len(middlewares) > 0 {
+			output.Middleware = make([]MiddlewareOutput, 0, len(middlewares))
+			for _, mw := range middlewares {
+				path := mw.Path
+				if path == "" {
+					path = "/"
+				}
+				output.Middleware = append(output.Middleware, MiddlewareOutput{
+					Path: path,
+					File: mw.FilePath,
+				})
+			}
+		}
+
+		// Add routes
+		for _, r := range routes {
+			output.Routes = append(output.Routes, RouteOutput{
+				Method:   r.Method,
+				Pattern:  r.Pattern,
+				File:     r.FilePath,
+				Priority: r.Priority,
+			})
+		}
+
+		printSuccess(output)
+		return
+	}
+
+	// Text output mode
 	cyan := color.New(color.FgCyan).SprintFunc()
 	green := color.New(color.FgGreen).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
@@ -41,19 +132,9 @@ func runRoutes(cmd *cobra.Command, args []string) {
 
 	fmt.Printf("\n  %s Routes\n\n", cyan("Fuego"))
 
-	// Check if app directory exists
-	if _, err := os.Stat(routesAppDir); os.IsNotExist(err) {
-		fmt.Printf("  %s No app directory found at %s\n\n", yellow("Warning:"), routesAppDir)
-		return
-	}
-
-	// Scan for routes
-	scanner := fuego.NewScanner(routesAppDir)
-
-	// Check for proxy
-	proxyInfo, err := scanner.ScanProxyInfo()
-	if err != nil {
-		fmt.Printf("  %s Failed to scan proxy: %v\n", yellow("Warning:"), err)
+	// Show proxy info
+	if proxyErr != nil {
+		fmt.Printf("  %s Failed to scan proxy: %v\n", yellow("Warning:"), proxyErr)
 	} else if proxyInfo != nil && proxyInfo.HasProxy {
 		fmt.Printf("  %s Proxy enabled\n", magenta("PROXY"))
 		if len(proxyInfo.Matchers) > 0 {
@@ -64,10 +145,9 @@ func runRoutes(cmd *cobra.Command, args []string) {
 		fmt.Printf("        File: %s\n\n", dim(proxyInfo.FilePath))
 	}
 
-	// Scan for middleware
-	middlewares, err := scanner.ScanMiddlewareInfo()
-	if err != nil {
-		fmt.Printf("  %s Failed to scan middleware: %v\n", yellow("Warning:"), err)
+	// Show middleware info
+	if mwErr != nil {
+		fmt.Printf("  %s Failed to scan middleware: %v\n", yellow("Warning:"), mwErr)
 	} else if len(middlewares) > 0 {
 		fmt.Printf("  %s\n", cyan("Middleware:"))
 		for _, mw := range middlewares {
@@ -80,26 +160,12 @@ func runRoutes(cmd *cobra.Command, args []string) {
 		fmt.Printf("\n")
 	}
 
-	routes, err := scanner.ScanRouteInfo()
-	if err != nil {
-		fmt.Printf("  %s Failed to scan routes: %v\n", red("Error:"), err)
-		os.Exit(1)
-	}
-
 	if len(routes) == 0 {
 		fmt.Printf("  %s No routes found\n\n", yellow("Warning:"))
 		fmt.Printf("  Create a route by adding a route.go file:\n")
 		fmt.Printf("    %s/api/health/route.go\n\n", routesAppDir)
 		return
 	}
-
-	// Sort routes by pattern
-	sort.Slice(routes, func(i, j int) bool {
-		if routes[i].Pattern != routes[j].Pattern {
-			return routes[i].Pattern < routes[j].Pattern
-		}
-		return routes[i].Method < routes[j].Method
-	})
 
 	// Method colors
 	methodColor := func(method string) string {

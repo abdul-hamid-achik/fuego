@@ -1,0 +1,119 @@
+# Fuego Framework - LLM Agent Reference
+
+> A file-system based Go framework for APIs and websites, inspired by Next.js App Router.
+
+## Quick Commands
+
+Create project:       fuego new <name> [--api-only] [--with-proxy]
+Generate route:       fuego generate route <path> --methods GET,POST
+Generate middleware:  fuego generate middleware <name> --path <path> --template <template>
+Generate proxy:       fuego generate proxy --template <template>
+Generate page:        fuego generate page <path> [--with-layout]
+List routes:          fuego routes [--json]
+Start dev server:     fuego dev [--port 3000]
+Build:                fuego build [--output bin/app]
+Validate:             fuego validate (via MCP)
+
+## MCP Server
+
+Start: fuego mcp serve --workdir /path/to/project
+
+Tools:
+- fuego_new: Create new project
+- fuego_generate_route: Generate route file
+- fuego_generate_middleware: Generate middleware
+- fuego_generate_proxy: Generate proxy file
+- fuego_generate_page: Generate page template
+- fuego_list_routes: List all routes
+- fuego_info: Get project info
+- fuego_validate: Validate project
+
+## File Conventions
+
+app/
+├── api/
+│   ├── route.go              # Handlers for /api
+│   ├── middleware.go         # Middleware for /api/*
+│   ├── users/
+│   │   ├── route.go          # GET /api/users
+│   │   └── [id]/
+│   │       └── route.go      # GET /api/users/:id
+│   └── posts/
+│       └── [...slug]/
+│           └── route.go      # GET /api/posts/* (catch-all)
+├── proxy.go                  # Request interceptor (runs before routing)
+├── page.templ                # HTML page for /
+└── layout.templ              # Shared layout
+
+## Route Patterns
+
+[param]      -> Dynamic segment   -> /users/[id] -> /users/:id
+[...param]   -> Catch-all         -> /docs/[...slug] -> /docs/*
+[[...param]] -> Optional catch-all -> /shop/[[...cat]] -> /shop and /shop/*
+(group)      -> Route group       -> /(admin)/settings -> /settings (no /admin)
+_folder      -> Private           -> /_utils -> not routed
+
+## Handler Signature
+
+func Get(c *fuego.Context) error {
+    id := c.Param("id")           // URL parameter
+    q := c.Query("filter")        // Query string
+    return c.JSON(200, data)      // JSON response
+}
+
+HTTP Methods: Get, Post, Put, Patch, Delete, Head, Options
+
+## Middleware Signature
+
+func Middleware(next fuego.HandlerFunc) fuego.HandlerFunc {
+    return func(c *fuego.Context) error {
+        // before
+        err := next(c)
+        // after
+        return err
+    }
+}
+
+## Proxy Signature
+
+func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+    return fuego.Continue(), nil          // proceed normally
+    return fuego.Redirect(url, 301), nil  // redirect
+    return fuego.Rewrite("/new"), nil     // rewrite URL
+    return fuego.ResponseJSON(403, data), nil // return response
+}
+
+## Context API
+
+Request:
+- c.Param("id")          // URL parameter
+- c.Query("key")         // Query string
+- c.Header("X-Key")      // Request header
+- c.Bind(&body)          // Parse JSON body
+- c.Cookie("session")    // Get cookie
+- c.Method()             // HTTP method
+- c.Path()               // Request path
+- c.ClientIP()           // Client IP
+
+Response:
+- c.JSON(200, data)      // JSON response
+- c.String(200, "text")  // Plain text
+- c.HTML(200, html)      // HTML
+- c.Redirect(302, url)   // Redirect
+- c.NoContent()          // 204 No Content
+- c.SetHeader(k, v)      // Set response header
+- c.SetCookie(cookie)    // Set cookie
+
+Context:
+- c.Set("key", value)    // Store value
+- c.Get("key")           // Retrieve value
+
+## Generate Templates
+
+Middleware templates: blank, auth, logging, timing, cors
+Proxy templates: blank, auth-check, rate-limit, maintenance, redirect-www
+
+## JSON Output
+
+All commands support --json flag for machine-readable output.
+Example: fuego routes --json
