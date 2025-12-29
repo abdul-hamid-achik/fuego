@@ -4,6 +4,9 @@ A file-system based Go framework for APIs and websites, inspired by Next.js App 
 
 The name "Fuego" (Spanish for "fire") contains "GO" naturally embedded (fue**GO**) and reflects its Mexican origin and blazing fast performance.
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/abdul-hamid-achik/fuego.svg)](https://pkg.go.dev/github.com/abdul-hamid-achik/fuego)
+[![Go Report Card](https://goreportcard.com/badge/github.com/abdul-hamid-achik/fuego)](https://goreportcard.com/report/github.com/abdul-hamid-achik/fuego)
+
 ## Features
 
 - **File system is the router** - No manual route registration. Drop a file, get a route.
@@ -12,6 +15,8 @@ The name "Fuego" (Spanish for "fire") contains "GO" naturally embedded (fue**GO*
 - **Fast iteration** - Hot reload in dev, sub-second rebuilds.
 - **Scalable conventions** - Works for a 3-route API or a 300-route app.
 - **Templ-native** - First-class support for type-safe HTML templating.
+- **Proxy layer** - Intercept requests for rewrites, redirects, and early responses.
+- **Built-in middleware** - Logger, CORS, rate limiting, auth, and more.
 
 ## Quick Start
 
@@ -27,14 +32,19 @@ cd myapp
 fuego dev
 ```
 
+Visit http://localhost:3000
+
 ## Project Structure
 
 ```
 myapp/
 ├── app/
+│   ├── proxy.go              # Request interception (optional)
+│   ├── middleware.go         # Global middleware
 │   ├── layout.templ          # Root layout
 │   ├── page.templ            # GET /
 │   └── api/
+│       ├── middleware.go     # API middleware
 │       └── health/
 │           └── route.go      # GET /api/health
 ├── static/
@@ -48,10 +58,10 @@ myapp/
 | File | Purpose |
 |------|---------|
 | `route.go` | API endpoint (exports Get, Post, Put, Patch, Delete, etc.) |
+| `proxy.go` | Request interception before routing (app root only) |
+| `middleware.go` | Middleware for segment and children |
 | `page.templ` | UI for a route |
 | `layout.templ` | Shared UI wrapper |
-| `middleware.go` | Middleware for segment and children |
-| `loader.go` | Data fetching for pages |
 | `error.templ` | Error boundary UI |
 | `loading.templ` | Loading skeleton |
 | `notfound.templ` | Not found UI |
@@ -85,13 +95,70 @@ func Post(c *fuego.Context) error {
         Name string `json:"name"`
     }
     if err := c.Bind(&input); err != nil {
-        return c.Error(400, "invalid input")
+        return fuego.BadRequest("invalid input")
     }
     return c.JSON(201, map[string]string{"created": input.Name})
 }
 ```
 
+## Example: Dynamic Route
+
+```go
+// app/api/users/[id]/route.go
+package users
+
+import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+
+// GET /api/users/:id
+func Get(c *fuego.Context) error {
+    id := c.Param("id")
+    return c.JSON(200, map[string]any{
+        "id": id,
+        "name": "User " + id,
+    })
+}
+```
+
+## Proxy (Request Interception)
+
+Intercept requests before routing for rewrites, redirects, and early responses:
+
+```go
+// app/proxy.go
+package app
+
+import (
+    "strings"
+    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+)
+
+func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+    path := c.Path()
+    
+    // Redirect old URLs
+    if strings.HasPrefix(path, "/api/v1/") {
+        newPath := strings.Replace(path, "/api/v1/", "/api/v2/", 1)
+        return fuego.Redirect(newPath, 301), nil
+    }
+    
+    // Block unauthorized access
+    if strings.HasPrefix(path, "/admin") && !isAdmin(c) {
+        return fuego.ResponseJSON(403, `{"error":"forbidden"}`), nil
+    }
+    
+    // Rewrite for A/B testing
+    if c.Cookie("experiment") == "variant-b" {
+        return fuego.Rewrite("/variant-b" + path), nil
+    }
+    
+    // Continue to normal routing
+    return fuego.Continue(), nil
+}
+```
+
 ## Middleware
+
+### File-based Middleware
 
 ```go
 // app/api/middleware.go
@@ -110,11 +177,123 @@ func Middleware() fuego.MiddlewareFunc {
 }
 ```
 
+### Built-in Middleware
+
+```go
+app := fuego.New()
+
+// Logging
+app.Use(fuego.Logger())
+
+// Panic recovery
+app.Use(fuego.Recover())
+
+// Request ID
+app.Use(fuego.RequestID())
+
+// CORS
+app.Use(fuego.CORSWithConfig(fuego.CORSConfig{
+    AllowOrigins: []string{"https://example.com"},
+    AllowMethods: []string{"GET", "POST", "PUT", "DELETE"},
+}))
+
+// Rate limiting
+app.Use(fuego.RateLimiter(100, time.Minute))
+
+// Timeout
+app.Use(fuego.Timeout(30 * time.Second))
+
+// Basic auth
+app.Use(fuego.BasicAuth(map[string]string{
+    "admin": "secret",
+}))
+
+// Security headers
+app.Use(fuego.SecureHeaders())
+```
+
+## Context API
+
+```go
+func Get(c *fuego.Context) error {
+    // URL parameters
+    id := c.Param("id")
+    idInt, _ := c.ParamInt("id")
+    
+    // Query parameters
+    page := c.Query("page")
+    limit := c.QueryDefault("limit", "10")
+    
+    // Headers
+    auth := c.Header("Authorization")
+    c.SetHeader("X-Custom", "value")
+    
+    // Request body
+    var body MyStruct
+    c.Bind(&body)
+    
+    // Cookies
+    token := c.Cookie("session")
+    c.SetCookie("session", "abc123", 3600)
+    
+    // Context store
+    c.Set("user", user)
+    user := c.Get("user")
+    
+    // Response
+    return c.JSON(200, data)
+    return c.String(200, "Hello")
+    return c.HTML(200, "<h1>Hello</h1>")
+    return c.Redirect("/login", 302)
+    return c.NoContent()
+    return c.Blob(200, "application/pdf", pdfBytes)
+}
+```
+
+## Error Handling
+
+```go
+func Get(c *fuego.Context) error {
+    if notFound {
+        return fuego.NotFound("resource not found")
+    }
+    
+    if unauthorized {
+        return fuego.Unauthorized("invalid token")
+    }
+    
+    if badInput {
+        return fuego.BadRequest("invalid input")
+    }
+    
+    return fuego.InternalServerError("something went wrong")
+}
+```
+
+## CLI Commands
+
+```bash
+# Create new project
+fuego new myapp
+fuego new myapp --api-only      # Without templ templates
+fuego new myapp --with-proxy    # Include proxy.go example
+
+# Development server with hot reload
+fuego dev
+
+# Build for production
+fuego build
+
+# List all routes
+fuego routes
+```
+
 ## Configuration
 
 ```yaml
 # fuego.yaml
 port: 3000
+host: "0.0.0.0"
 app_dir: "app"
 static_dir: "static"
 static_path: "/static"
@@ -122,19 +301,46 @@ static_path: "/static"
 dev:
   hot_reload: true
   watch_extensions: [".go", ".templ"]
+  exclude_dirs: ["node_modules", ".git"]
 
 middleware:
   logger: true
   recover: true
 ```
 
+## Development
+
+We use [Task](https://taskfile.dev) for development commands:
+
+```bash
+# Build
+task build
+
+# Run tests
+task test
+
+# Format code
+task fmt
+
+# Run all checks
+task check
+
+# Install globally
+task install
+```
+
 ## Documentation
 
-- [Getting Started](docs/getting-started.md)
-- [Routing](docs/routing.md)
-- [Middleware](docs/middleware.md)
-- [Templating](docs/templating.md)
-- [API Reference](docs/api-reference.md)
+- [Quick Start](docs/getting-started/quickstart.md)
+- [File-based Routing](docs/routing/file-based.md)
+- [Middleware](docs/middleware/overview.md)
+- [Proxy](docs/middleware/proxy.md)
+
+## Examples
+
+See the [examples](examples/) directory for complete examples:
+
+- [Basic](examples/basic/) - Simple API with file-based routing
 
 ## Acknowledgments
 
@@ -151,7 +357,12 @@ Thank you for making the Go ecosystem amazing!
 
 ## Author
 
-**Abdul Hamid Achik** - [@abdul-hamid-achik](https://github.com/abdul-hamid-achik)
+**Abdul Hamid Achik** ([@abdulachik](https://x.com/abdulachik))
+
+A Syrian-Mexican software engineer based in Guadalajara, Mexico.
+
+- GitHub: [@abdul-hamid-achik](https://github.com/abdul-hamid-achik)
+- Twitter/X: [@abdulachik](https://x.com/abdulachik)
 
 ## License
 

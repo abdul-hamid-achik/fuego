@@ -2,6 +2,7 @@ package fuego
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -414,5 +415,310 @@ func TestContext_Blob(t *testing.T) {
 
 	if !bytes.Equal(w.Body.Bytes(), data) {
 		t.Error("Response body doesn't match")
+	}
+}
+
+// ---------- Additional Context Tests ----------
+
+func TestContext_Context(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	ctx := c.Context()
+	if ctx == nil {
+		t.Error("expected Context() to return non-nil")
+	}
+
+	// Should be the same as request's context
+	if ctx != req.Context() {
+		t.Error("expected Context() to return request's context")
+	}
+}
+
+func TestContext_WithContext(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	type ctxKey string
+	key := ctxKey("testKey")
+
+	// Create new context with value
+	baseCtx := c.Request.Context()
+	newCtx := context.WithValue(baseCtx, key, "testValue")
+
+	c.WithContext(newCtx)
+
+	// Verify context was updated
+	if c.Context().Value(key) != "testValue" {
+		t.Error("expected WithContext to update request context")
+	}
+}
+
+func TestContext_QueryAll(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/test?tags=go&tags=web&tags=api", nil)
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	tags := c.QueryAll("tags")
+	if len(tags) != 3 {
+		t.Errorf("expected 3 tags, got %d", len(tags))
+	}
+
+	expected := []string{"go", "web", "api"}
+	for i, tag := range expected {
+		if i < len(tags) && tags[i] != tag {
+			t.Errorf("expected tags[%d] = %q, got %q", i, tag, tags[i])
+		}
+	}
+}
+
+func TestContext_QueryAll_Empty(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	tags := c.QueryAll("missing")
+	if tags != nil {
+		t.Errorf("expected nil for missing query param, got %v", tags)
+	}
+}
+
+func TestContext_AddHeader(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	c.AddHeader("X-Custom", "value1")
+	c.AddHeader("X-Custom", "value2")
+
+	values := w.Header().Values("X-Custom")
+	if len(values) != 2 {
+		t.Errorf("expected 2 header values, got %d", len(values))
+	}
+
+	if values[0] != "value1" || values[1] != "value2" {
+		t.Errorf("expected [value1, value2], got %v", values)
+	}
+}
+
+func TestContext_Status(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	result := c.Status(201)
+
+	// Should return same context for chaining
+	if result != c {
+		t.Error("expected Status() to return same context")
+	}
+
+	if c.status != 201 {
+		t.Errorf("expected status 201, got %d", c.status)
+	}
+}
+
+func TestContext_StatusCode(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	// Default should be 200
+	if c.StatusCode() != 200 {
+		t.Errorf("expected default status 200, got %d", c.StatusCode())
+	}
+
+	c.JSON(201, map[string]string{"created": "true"})
+
+	if c.StatusCode() != 201 {
+		t.Errorf("expected status 201 after JSON, got %d", c.StatusCode())
+	}
+}
+
+func TestContext_QueryInt_InvalidReturnsDefault(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/test?page=abc&limit=", nil)
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	// Invalid value should return default
+	page := c.QueryInt("page", 1)
+	if page != 1 {
+		t.Errorf("expected default 1 for invalid int, got %d", page)
+	}
+
+	// Empty value should return default
+	limit := c.QueryInt("limit", 10)
+	if limit != 10 {
+		t.Errorf("expected default 10 for empty value, got %d", limit)
+	}
+}
+
+func TestContext_QueryBool_AllVariants(t *testing.T) {
+	tests := []struct {
+		value    string
+		expected bool
+	}{
+		{"true", true},
+		{"TRUE", true},
+		{"True", true},
+		{"1", true},
+		{"yes", true},
+		{"YES", true},
+		{"on", true},
+		{"ON", true},
+		{"false", false},
+		{"FALSE", false},
+		{"0", false},
+		{"no", false},
+		{"off", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.value, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/test?flag="+tt.value, nil)
+			w := httptest.NewRecorder()
+			c := NewContext(w, req)
+
+			result := c.QueryBool("flag", !tt.expected)
+			if result != tt.expected {
+				t.Errorf("QueryBool(%q) = %v, expected %v", tt.value, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestContext_QueryBool_InvalidReturnsDefault(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/test?flag=maybe", nil)
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	// Invalid value should return default
+	result := c.QueryBool("flag", true)
+	if result != true {
+		t.Error("expected default true for invalid bool value")
+	}
+}
+
+func TestContext_QueryDefault_WithValue(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/test?name=fuego", nil)
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	result := c.QueryDefault("name", "default")
+	if result != "fuego" {
+		t.Errorf("expected 'fuego', got %q", result)
+	}
+}
+
+func TestContext_Bind_EmptyBody(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/", nil)
+	req.Body = nil // Explicitly set body to nil
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	var data struct{}
+	err := c.Bind(&data)
+	if err == nil {
+		t.Error("expected error for nil body")
+	}
+
+	httpErr, ok := IsHTTPError(err)
+	if !ok {
+		t.Error("expected HTTPError")
+	}
+	if httpErr.Code != http.StatusBadRequest {
+		t.Errorf("expected status 400, got %d", httpErr.Code)
+	}
+}
+
+func TestContext_ClientIP_XRealIP(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("X-Real-IP", "10.0.0.1")
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	if c.ClientIP() != "10.0.0.1" {
+		t.Errorf("expected '10.0.0.1', got '%s'", c.ClientIP())
+	}
+}
+
+func TestContext_ClientIP_RemoteAddr(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = "192.168.1.100:12345"
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	// No X-Forwarded-For or X-Real-IP, should fall back to RemoteAddr
+	if c.ClientIP() != "192.168.1.100:12345" {
+		t.Errorf("expected '192.168.1.100:12345', got '%s'", c.ClientIP())
+	}
+}
+
+func TestContext_ContentType(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/", nil)
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	if c.ContentType() != "application/json; charset=utf-8" {
+		t.Errorf("expected 'application/json; charset=utf-8', got '%s'", c.ContentType())
+	}
+}
+
+func TestContext_IsWebSocket(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/ws", nil)
+	req.Header.Set("Upgrade", "websocket")
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	if !c.IsWebSocket() {
+		t.Error("expected IsWebSocket() to be true")
+	}
+
+	// Test without upgrade header
+	req2 := httptest.NewRequest(http.MethodGet, "/", nil)
+	c2 := NewContext(httptest.NewRecorder(), req2)
+
+	if c2.IsWebSocket() {
+		t.Error("expected IsWebSocket() to be false")
+	}
+}
+
+func TestContext_IsJSON_Wildcard(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Accept", "*/*")
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	if !c.IsJSON() {
+		t.Error("expected IsJSON() to be true for */*")
+	}
+}
+
+func TestContext_GetString_NonString(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	c.Set("number", 42)
+
+	result := c.GetString("number")
+	if result != "" {
+		t.Errorf("expected empty string for non-string value, got %q", result)
+	}
+}
+
+func TestContext_GetInt_NonInt(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	c.Set("text", "hello")
+
+	result := c.GetInt("text")
+	if result != 0 {
+		t.Errorf("expected 0 for non-int value, got %d", result)
 	}
 }

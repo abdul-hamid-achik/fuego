@@ -360,6 +360,12 @@ type RouteInfo struct {
 	Priority int
 }
 
+// MiddlewareInfo holds information about discovered middleware (for CLI display).
+type MiddlewareInfo struct {
+	Path     string
+	FilePath string
+}
+
 // ScanRouteInfo scans and returns route info without registering handlers.
 func (s *Scanner) ScanRouteInfo() ([]RouteInfo, error) {
 	var routes []RouteInfo
@@ -420,4 +426,233 @@ func (s *Scanner) ScanRouteInfo() ([]RouteInfo, error) {
 	})
 
 	return routes, err
+}
+
+// ScanMiddlewareInfo scans and returns middleware info without registering handlers.
+func (s *Scanner) ScanMiddlewareInfo() ([]MiddlewareInfo, error) {
+	var middlewares []MiddlewareInfo
+
+	if _, err := os.Stat(s.appDir); os.IsNotExist(err) {
+		return middlewares, nil
+	}
+
+	err := filepath.Walk(s.appDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if strings.HasPrefix(info.Name(), ".") {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		if info.IsDir() && privateFolderRe.MatchString(info.Name()) {
+			return filepath.SkipDir
+		}
+
+		if info.IsDir() || info.Name() != "middleware.go" {
+			return nil
+		}
+
+		file, err := parser.ParseFile(s.fset, path, nil, parser.ParseComments)
+		if err != nil {
+			return nil // Skip files that can't be parsed
+		}
+
+		pathPrefix := s.pathToRoute(path)
+
+		for _, decl := range file.Decls {
+			fn, ok := decl.(*ast.FuncDecl)
+			if !ok {
+				continue
+			}
+
+			if fn.Name.Name != "Middleware" {
+				continue
+			}
+
+			if s.isValidMiddlewareSignature(fn) {
+				middlewares = append(middlewares, MiddlewareInfo{
+					Path:     pathPrefix,
+					FilePath: path,
+				})
+			}
+		}
+
+		return nil
+	})
+
+	return middlewares, err
+}
+
+// ScanProxyInfo scans for proxy.go in the app directory root and returns info.
+func (s *Scanner) ScanProxyInfo() (*ProxyInfo, error) {
+	proxyPath := filepath.Join(s.appDir, "proxy.go")
+
+	// Check if proxy.go exists
+	if _, err := os.Stat(proxyPath); os.IsNotExist(err) {
+		return &ProxyInfo{HasProxy: false}, nil
+	}
+
+	// Parse the file
+	file, err := parser.ParseFile(s.fset, proxyPath, nil, parser.ParseComments)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse %s: %w", proxyPath, err)
+	}
+
+	info := &ProxyInfo{
+		FilePath: proxyPath,
+		HasProxy: false,
+	}
+
+	// Look for Proxy function and ProxyConfig variable
+	for _, decl := range file.Decls {
+		switch d := decl.(type) {
+		case *ast.FuncDecl:
+			if d.Name.Name == "Proxy" && s.isValidProxySignature(d) {
+				info.HasProxy = true
+			}
+		case *ast.GenDecl:
+			// Look for ProxyConfig variable to extract matchers
+			if d.Tok == token.VAR {
+				for _, spec := range d.Specs {
+					vs, ok := spec.(*ast.ValueSpec)
+					if !ok {
+						continue
+					}
+					for _, name := range vs.Names {
+						if name.Name == "ProxyConfig" {
+							// Try to extract Matcher strings from the composite literal
+							info.Matchers = s.extractMatchersFromSpec(vs)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return info, nil
+}
+
+// isValidProxySignature checks if a function has the signature:
+// func(c *fuego.Context) (*fuego.ProxyResult, error)
+func (s *Scanner) isValidProxySignature(fn *ast.FuncDecl) bool {
+	// Must have exactly one parameter
+	if fn.Type.Params == nil || len(fn.Type.Params.List) != 1 {
+		return false
+	}
+
+	// Parameter must be a pointer type (*Context)
+	param := fn.Type.Params.List[0]
+	starExpr, ok := param.Type.(*ast.StarExpr)
+	if !ok {
+		return false
+	}
+
+	// Check if it's a selector (package.Type) or ident (Type)
+	switch x := starExpr.X.(type) {
+	case *ast.SelectorExpr:
+		if ident, ok := x.X.(*ast.Ident); ok {
+			if ident.Name == "fuego" && x.Sel.Name == "Context" {
+				goto checkReturn
+			}
+		}
+	case *ast.Ident:
+		if x.Name == "Context" {
+			goto checkReturn
+		}
+	}
+	return false
+
+checkReturn:
+	// Must have exactly two return values
+	if fn.Type.Results == nil || len(fn.Type.Results.List) != 2 {
+		return false
+	}
+
+	// First return must be *ProxyResult
+	result0 := fn.Type.Results.List[0]
+	starResult, ok := result0.Type.(*ast.StarExpr)
+	if !ok {
+		return false
+	}
+
+	switch x := starResult.X.(type) {
+	case *ast.SelectorExpr:
+		if ident, ok := x.X.(*ast.Ident); ok {
+			if !(ident.Name == "fuego" && x.Sel.Name == "ProxyResult") {
+				return false
+			}
+		} else {
+			return false
+		}
+	case *ast.Ident:
+		if x.Name != "ProxyResult" {
+			return false
+		}
+	default:
+		return false
+	}
+
+	// Second return must be error
+	result1 := fn.Type.Results.List[1]
+	if ident, ok := result1.Type.(*ast.Ident); ok {
+		return ident.Name == "error"
+	}
+
+	return false
+}
+
+// extractMatchersFromSpec extracts matcher strings from a ProxyConfig variable declaration.
+func (s *Scanner) extractMatchersFromSpec(vs *ast.ValueSpec) []string {
+	var matchers []string
+
+	if len(vs.Values) == 0 {
+		return matchers
+	}
+
+	// Look for composite literal
+	compLit, ok := vs.Values[0].(*ast.CompositeLit)
+	if !ok {
+		// Could be address of composite literal
+		if unary, ok := vs.Values[0].(*ast.UnaryExpr); ok && unary.Op == token.AND {
+			compLit, ok = unary.X.(*ast.CompositeLit)
+			if !ok {
+				return matchers
+			}
+		} else {
+			return matchers
+		}
+	}
+
+	// Look through the elements for Matcher field
+	for _, elt := range compLit.Elts {
+		kv, ok := elt.(*ast.KeyValueExpr)
+		if !ok {
+			continue
+		}
+
+		key, ok := kv.Key.(*ast.Ident)
+		if !ok || key.Name != "Matcher" {
+			continue
+		}
+
+		// Matcher should be a slice of strings
+		sliceLit, ok := kv.Value.(*ast.CompositeLit)
+		if !ok {
+			continue
+		}
+
+		for _, elt := range sliceLit.Elts {
+			if lit, ok := elt.(*ast.BasicLit); ok && lit.Kind == token.STRING {
+				// Remove quotes from string
+				val := strings.Trim(lit.Value, `"'`+"`")
+				matchers = append(matchers, val)
+			}
+		}
+	}
+
+	return matchers
 }

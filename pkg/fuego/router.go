@@ -40,6 +40,8 @@ type Route struct {
 type RouteTree struct {
 	routes      []*Route
 	middlewares map[string][]MiddlewareFunc // path -> middlewares
+	proxy       ProxyFunc                   // proxy function (from app/proxy.go)
+	proxyConfig *ProxyConfig                // proxy configuration (optional)
 }
 
 // NewRouteTree creates a new RouteTree.
@@ -58,6 +60,36 @@ func (rt *RouteTree) AddRoute(route *Route) {
 // AddMiddleware adds middleware for a path prefix.
 func (rt *RouteTree) AddMiddleware(path string, mw MiddlewareFunc) {
 	rt.middlewares[path] = append(rt.middlewares[path], mw)
+}
+
+// SetProxy sets the proxy function and optional configuration.
+func (rt *RouteTree) SetProxy(proxy ProxyFunc, config *ProxyConfig) error {
+	rt.proxy = proxy
+	rt.proxyConfig = config
+
+	// Compile matchers if config provided
+	if config != nil && len(config.Matcher) > 0 {
+		if err := config.Compile(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// HasProxy returns true if a proxy function is configured.
+func (rt *RouteTree) HasProxy() bool {
+	return rt.proxy != nil
+}
+
+// Proxy returns the proxy function.
+func (rt *RouteTree) Proxy() ProxyFunc {
+	return rt.proxy
+}
+
+// ProxyConfig returns the proxy configuration.
+func (rt *RouteTree) ProxyConfiguration() *ProxyConfig {
+	return rt.proxyConfig
 }
 
 // Routes returns all registered routes (sorted by priority).

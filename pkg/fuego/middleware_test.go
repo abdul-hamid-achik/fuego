@@ -386,6 +386,282 @@ func TestSecureHeaders(t *testing.T) {
 	}
 }
 
+func TestLoggerWithConfig_AllMethods(t *testing.T) {
+	methods := []string{
+		http.MethodGet,
+		http.MethodPost,
+		http.MethodPut,
+		http.MethodDelete,
+		http.MethodPatch,
+		http.MethodOptions, // Tests default method color
+	}
+
+	for _, method := range methods {
+		t.Run(method, func(t *testing.T) {
+			handler := func(c *Context) error {
+				return c.String(http.StatusOK, "ok")
+			}
+
+			mw := LoggerWithConfig(LoggerConfig{})
+			wrapped := mw(handler)
+
+			req := httptest.NewRequest(method, "/test", nil)
+			w := httptest.NewRecorder()
+			c := NewContext(w, req)
+
+			err := wrapped(c)
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestLoggerWithConfig_AllStatusCodes(t *testing.T) {
+	statusCodes := []int{
+		http.StatusOK,                  // 2xx (green)
+		http.StatusMovedPermanently,    // 3xx (cyan)
+		http.StatusBadRequest,          // 4xx (yellow)
+		http.StatusInternalServerError, // 5xx (red)
+	}
+
+	for _, status := range statusCodes {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			handler := func(c *Context) error {
+				return c.String(status, "test")
+			}
+
+			mw := LoggerWithConfig(LoggerConfig{})
+			wrapped := mw(handler)
+
+			req := httptest.NewRequest(http.MethodGet, "/test", nil)
+			w := httptest.NewRecorder()
+			c := NewContext(w, req)
+
+			err := wrapped(c)
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestLoggerWithConfig_Error(t *testing.T) {
+	t.Run("HTTPError", func(t *testing.T) {
+		handler := func(c *Context) error {
+			return NewHTTPError(http.StatusNotFound, "not found")
+		}
+
+		mw := LoggerWithConfig(LoggerConfig{})
+		wrapped := mw(handler)
+
+		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		w := httptest.NewRecorder()
+		c := NewContext(w, req)
+
+		err := wrapped(c)
+		if err == nil {
+			t.Error("Expected error")
+		}
+	})
+
+	t.Run("GenericError", func(t *testing.T) {
+		handler := func(c *Context) error {
+			return NewHTTPError(http.StatusInternalServerError, "internal error")
+		}
+
+		mw := LoggerWithConfig(LoggerConfig{})
+		wrapped := mw(handler)
+
+		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		w := httptest.NewRecorder()
+		c := NewContext(w, req)
+
+		_ = wrapped(c)
+	})
+}
+
+func TestCompress_WithGzip(t *testing.T) {
+	handler := func(c *Context) error {
+		return c.String(http.StatusOK, "This is a test response that could be compressed")
+	}
+
+	mw := Compress()
+	wrapped := mw(handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Accept-Encoding", "gzip, deflate")
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	err := wrapped(c)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", w.Code)
+	}
+}
+
+func TestCompress_WithoutGzip(t *testing.T) {
+	handler := func(c *Context) error {
+		return c.String(http.StatusOK, "ok")
+	}
+
+	mw := Compress()
+	wrapped := mw(handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	// No Accept-Encoding header
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	err := wrapped(c)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", w.Code)
+	}
+}
+
+func TestRecoverWithConfig_LogStackTrace(t *testing.T) {
+	handler := func(c *Context) error {
+		panic("test panic with stack")
+	}
+
+	mw := RecoverWithConfig(RecoverConfig{
+		StackTrace:    true,
+		LogStackTrace: true,
+	})
+	wrapped := mw(handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	err := wrapped(c)
+	if err == nil {
+		t.Error("Expected error from panic recovery")
+	}
+}
+
+func TestRecoverWithConfig_CustomHandler(t *testing.T) {
+	customHandlerCalled := false
+
+	handler := func(c *Context) error {
+		panic("test panic")
+	}
+
+	mw := RecoverWithConfig(RecoverConfig{
+		ErrorHandler: func(c *Context, recovered any) {
+			customHandlerCalled = true
+			c.JSON(http.StatusInternalServerError, map[string]string{
+				"error": "custom handled",
+			})
+		},
+	})
+	wrapped := mw(handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	err := wrapped(c)
+	// RecoverWithConfig always returns an HTTPError after panic
+	if err == nil {
+		t.Error("Expected error from recover middleware")
+	}
+
+	if !customHandlerCalled {
+		t.Error("Custom panic handler was not called")
+	}
+}
+
+func TestRequestIDWithConfig(t *testing.T) {
+	customHeaderName := "X-Custom-Request-ID"
+
+	handler := func(c *Context) error {
+		return c.NoContent()
+	}
+
+	mw := RequestIDWithConfig(RequestIDConfig{
+		Header: customHeaderName,
+	})
+	wrapped := mw(handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	err := wrapped(c)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	reqID := w.Header().Get(customHeaderName)
+	if reqID == "" {
+		t.Errorf("Expected %s header to be set", customHeaderName)
+	}
+}
+
+func TestRequestIDWithConfig_CustomGenerator(t *testing.T) {
+	customID := "custom-123"
+
+	handler := func(c *Context) error {
+		return c.NoContent()
+	}
+
+	mw := RequestIDWithConfig(RequestIDConfig{
+		Generator: func() string {
+			return customID
+		},
+	})
+	wrapped := mw(handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	err := wrapped(c)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	reqID := w.Header().Get("X-Request-ID")
+	if reqID != customID {
+		t.Errorf("Expected custom ID %s, got %s", customID, reqID)
+	}
+}
+
+func TestBasicAuthWithConfig_CustomRealm(t *testing.T) {
+	handler := func(c *Context) error {
+		return c.NoContent()
+	}
+
+	mw := BasicAuthWithConfig(BasicAuthConfig{
+		Realm: "Custom Realm",
+		Validator: func(user, pass string) bool {
+			return false
+		},
+	})
+	wrapped := mw(handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.SetBasicAuth("user", "pass")
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	_ = wrapped(c)
+
+	wwwAuth := w.Header().Get("WWW-Authenticate")
+	if !strings.Contains(wwwAuth, "Custom Realm") {
+		t.Errorf("Expected custom realm in WWW-Authenticate, got: %s", wwwAuth)
+	}
+}
+
 func TestMiddlewareChain(t *testing.T) {
 	var order []string
 

@@ -450,3 +450,553 @@ func TestCalculatePriority(t *testing.T) {
 		})
 	}
 }
+
+// ---------- Proxy Scanning Tests ----------
+
+func TestScanner_ScanProxyInfo_ValidProxy(t *testing.T) {
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+	if err := os.MkdirAll(appDir, 0755); err != nil {
+		t.Fatalf("failed to create app dir: %v", err)
+	}
+
+	proxyContent := `package app
+
+import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+
+func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+	return fuego.Continue(), nil
+}
+`
+	if err := os.WriteFile(filepath.Join(appDir, "proxy.go"), []byte(proxyContent), 0644); err != nil {
+		t.Fatalf("failed to write proxy.go: %v", err)
+	}
+
+	scanner := NewScanner(appDir)
+	info, err := scanner.ScanProxyInfo()
+	if err != nil {
+		t.Fatalf("ScanProxyInfo failed: %v", err)
+	}
+
+	if !info.HasProxy {
+		t.Error("expected HasProxy to be true")
+	}
+	if info.FilePath == "" {
+		t.Error("expected FilePath to be set")
+	}
+}
+
+func TestScanner_ScanProxyInfo_ValidProxyWithContext(t *testing.T) {
+	// Test with just "Context" (same package) instead of "fuego.Context"
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+	if err := os.MkdirAll(appDir, 0755); err != nil {
+		t.Fatalf("failed to create app dir: %v", err)
+	}
+
+	proxyContent := `package app
+
+func Proxy(c *Context) (*ProxyResult, error) {
+	return Continue(), nil
+}
+`
+	if err := os.WriteFile(filepath.Join(appDir, "proxy.go"), []byte(proxyContent), 0644); err != nil {
+		t.Fatalf("failed to write proxy.go: %v", err)
+	}
+
+	scanner := NewScanner(appDir)
+	info, err := scanner.ScanProxyInfo()
+	if err != nil {
+		t.Fatalf("ScanProxyInfo failed: %v", err)
+	}
+
+	if !info.HasProxy {
+		t.Error("expected HasProxy to be true for same-package types")
+	}
+}
+
+func TestScanner_ScanProxyInfo_NoProxy(t *testing.T) {
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+	if err := os.MkdirAll(appDir, 0755); err != nil {
+		t.Fatalf("failed to create app dir: %v", err)
+	}
+
+	// No proxy.go file exists
+
+	scanner := NewScanner(appDir)
+	info, err := scanner.ScanProxyInfo()
+	if err != nil {
+		t.Fatalf("ScanProxyInfo failed: %v", err)
+	}
+
+	if info.HasProxy {
+		t.Error("expected HasProxy to be false")
+	}
+}
+
+func TestScanner_ScanProxyInfo_InvalidSignature_WrongParams(t *testing.T) {
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+	if err := os.MkdirAll(appDir, 0755); err != nil {
+		t.Fatalf("failed to create app dir: %v", err)
+	}
+
+	// Proxy with wrong parameter count
+	proxyContent := `package app
+
+func Proxy() (*ProxyResult, error) {
+	return nil, nil
+}
+`
+	if err := os.WriteFile(filepath.Join(appDir, "proxy.go"), []byte(proxyContent), 0644); err != nil {
+		t.Fatalf("failed to write proxy.go: %v", err)
+	}
+
+	scanner := NewScanner(appDir)
+	info, err := scanner.ScanProxyInfo()
+	if err != nil {
+		t.Fatalf("ScanProxyInfo failed: %v", err)
+	}
+
+	if info.HasProxy {
+		t.Error("expected HasProxy to be false for invalid signature")
+	}
+}
+
+func TestScanner_ScanProxyInfo_InvalidSignature_WrongReturn(t *testing.T) {
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+	if err := os.MkdirAll(appDir, 0755); err != nil {
+		t.Fatalf("failed to create app dir: %v", err)
+	}
+
+	// Proxy with wrong return type
+	proxyContent := `package app
+
+func Proxy(c *Context) error {
+	return nil
+}
+`
+	if err := os.WriteFile(filepath.Join(appDir, "proxy.go"), []byte(proxyContent), 0644); err != nil {
+		t.Fatalf("failed to write proxy.go: %v", err)
+	}
+
+	scanner := NewScanner(appDir)
+	info, err := scanner.ScanProxyInfo()
+	if err != nil {
+		t.Fatalf("ScanProxyInfo failed: %v", err)
+	}
+
+	if info.HasProxy {
+		t.Error("expected HasProxy to be false for wrong return type")
+	}
+}
+
+func TestScanner_ScanProxyInfo_InvalidSignature_NotPointer(t *testing.T) {
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+	if err := os.MkdirAll(appDir, 0755); err != nil {
+		t.Fatalf("failed to create app dir: %v", err)
+	}
+
+	// Proxy with non-pointer parameter
+	proxyContent := `package app
+
+func Proxy(c Context) (*ProxyResult, error) {
+	return nil, nil
+}
+`
+	if err := os.WriteFile(filepath.Join(appDir, "proxy.go"), []byte(proxyContent), 0644); err != nil {
+		t.Fatalf("failed to write proxy.go: %v", err)
+	}
+
+	scanner := NewScanner(appDir)
+	info, err := scanner.ScanProxyInfo()
+	if err != nil {
+		t.Fatalf("ScanProxyInfo failed: %v", err)
+	}
+
+	if info.HasProxy {
+		t.Error("expected HasProxy to be false for non-pointer param")
+	}
+}
+
+func TestScanner_ScanProxyInfo_WithMatchers(t *testing.T) {
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+	if err := os.MkdirAll(appDir, 0755); err != nil {
+		t.Fatalf("failed to create app dir: %v", err)
+	}
+
+	proxyContent := `package app
+
+import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+
+var ProxyConfig = fuego.ProxyConfig{
+	Matcher: []string{
+		"/api/*",
+		"/admin/*",
+	},
+}
+
+func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+	return fuego.Continue(), nil
+}
+`
+	if err := os.WriteFile(filepath.Join(appDir, "proxy.go"), []byte(proxyContent), 0644); err != nil {
+		t.Fatalf("failed to write proxy.go: %v", err)
+	}
+
+	scanner := NewScanner(appDir)
+	info, err := scanner.ScanProxyInfo()
+	if err != nil {
+		t.Fatalf("ScanProxyInfo failed: %v", err)
+	}
+
+	if !info.HasProxy {
+		t.Error("expected HasProxy to be true")
+	}
+
+	if len(info.Matchers) != 2 {
+		t.Errorf("expected 2 matchers, got %d", len(info.Matchers))
+	}
+
+	expectedMatchers := []string{"/api/*", "/admin/*"}
+	for i, expected := range expectedMatchers {
+		if i < len(info.Matchers) && info.Matchers[i] != expected {
+			t.Errorf("expected matcher[%d] = %q, got %q", i, expected, info.Matchers[i])
+		}
+	}
+}
+
+func TestScanner_ScanProxyInfo_WithMatchersPointer(t *testing.T) {
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+	if err := os.MkdirAll(appDir, 0755); err != nil {
+		t.Fatalf("failed to create app dir: %v", err)
+	}
+
+	// ProxyConfig with pointer syntax (&fuego.ProxyConfig{})
+	proxyContent := `package app
+
+import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+
+var ProxyConfig = &fuego.ProxyConfig{
+	Matcher: []string{
+		"/v1/*",
+	},
+}
+
+func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+	return fuego.Continue(), nil
+}
+`
+	if err := os.WriteFile(filepath.Join(appDir, "proxy.go"), []byte(proxyContent), 0644); err != nil {
+		t.Fatalf("failed to write proxy.go: %v", err)
+	}
+
+	scanner := NewScanner(appDir)
+	info, err := scanner.ScanProxyInfo()
+	if err != nil {
+		t.Fatalf("ScanProxyInfo failed: %v", err)
+	}
+
+	if len(info.Matchers) != 1 {
+		t.Errorf("expected 1 matcher, got %d", len(info.Matchers))
+	}
+
+	if len(info.Matchers) > 0 && info.Matchers[0] != "/v1/*" {
+		t.Errorf("expected matcher /v1/*, got %q", info.Matchers[0])
+	}
+}
+
+func TestScanner_ScanProxyInfo_ParseError(t *testing.T) {
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+	if err := os.MkdirAll(appDir, 0755); err != nil {
+		t.Fatalf("failed to create app dir: %v", err)
+	}
+
+	// Invalid Go syntax
+	proxyContent := `package app
+
+func Proxy(c *Context) {
+	this is not valid go code
+}
+`
+	if err := os.WriteFile(filepath.Join(appDir, "proxy.go"), []byte(proxyContent), 0644); err != nil {
+		t.Fatalf("failed to write proxy.go: %v", err)
+	}
+
+	scanner := NewScanner(appDir)
+	_, err := scanner.ScanProxyInfo()
+	if err == nil {
+		t.Error("expected error for invalid Go syntax")
+	}
+}
+
+// ---------- Middleware Scanning Tests ----------
+
+func TestScanner_ScanMiddlewareInfo_Valid(t *testing.T) {
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+	apiDir := filepath.Join(appDir, "api")
+	if err := os.MkdirAll(apiDir, 0755); err != nil {
+		t.Fatalf("failed to create api dir: %v", err)
+	}
+
+	middlewareContent := `package api
+
+import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+
+func Middleware() fuego.MiddlewareFunc {
+	return func(next fuego.HandlerFunc) fuego.HandlerFunc {
+		return func(c *fuego.Context) error {
+			return next(c)
+		}
+	}
+}
+`
+	if err := os.WriteFile(filepath.Join(apiDir, "middleware.go"), []byte(middlewareContent), 0644); err != nil {
+		t.Fatalf("failed to write middleware.go: %v", err)
+	}
+
+	scanner := NewScanner(appDir)
+	middlewares, err := scanner.ScanMiddlewareInfo()
+	if err != nil {
+		t.Fatalf("ScanMiddlewareInfo failed: %v", err)
+	}
+
+	if len(middlewares) != 1 {
+		t.Errorf("expected 1 middleware, got %d", len(middlewares))
+	}
+
+	if len(middlewares) > 0 {
+		if middlewares[0].Path != "/api" {
+			t.Errorf("expected path /api, got %s", middlewares[0].Path)
+		}
+	}
+}
+
+func TestScanner_ScanMiddlewareInfo_ValidSamePackage(t *testing.T) {
+	// Test with just "MiddlewareFunc" instead of "fuego.MiddlewareFunc"
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+	if err := os.MkdirAll(appDir, 0755); err != nil {
+		t.Fatalf("failed to create app dir: %v", err)
+	}
+
+	middlewareContent := `package app
+
+func Middleware() MiddlewareFunc {
+	return nil
+}
+`
+	if err := os.WriteFile(filepath.Join(appDir, "middleware.go"), []byte(middlewareContent), 0644); err != nil {
+		t.Fatalf("failed to write middleware.go: %v", err)
+	}
+
+	scanner := NewScanner(appDir)
+	middlewares, err := scanner.ScanMiddlewareInfo()
+	if err != nil {
+		t.Fatalf("ScanMiddlewareInfo failed: %v", err)
+	}
+
+	if len(middlewares) != 1 {
+		t.Errorf("expected 1 middleware for same-package type, got %d", len(middlewares))
+	}
+}
+
+func TestScanner_ScanMiddlewareInfo_NoMiddleware(t *testing.T) {
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+	if err := os.MkdirAll(appDir, 0755); err != nil {
+		t.Fatalf("failed to create app dir: %v", err)
+	}
+
+	// No middleware.go files
+
+	scanner := NewScanner(appDir)
+	middlewares, err := scanner.ScanMiddlewareInfo()
+	if err != nil {
+		t.Fatalf("ScanMiddlewareInfo failed: %v", err)
+	}
+
+	if len(middlewares) != 0 {
+		t.Errorf("expected 0 middlewares, got %d", len(middlewares))
+	}
+}
+
+func TestScanner_ScanMiddlewareInfo_NonExistentDir(t *testing.T) {
+	scanner := NewScanner("/nonexistent/path")
+	middlewares, err := scanner.ScanMiddlewareInfo()
+	if err != nil {
+		t.Fatalf("expected no error for non-existent dir, got: %v", err)
+	}
+
+	if len(middlewares) != 0 {
+		t.Errorf("expected 0 middlewares, got %d", len(middlewares))
+	}
+}
+
+func TestScanner_ScanMiddlewareInfo_MultipleFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+	apiDir := filepath.Join(appDir, "api")
+	usersDir := filepath.Join(apiDir, "users")
+	if err := os.MkdirAll(usersDir, 0755); err != nil {
+		t.Fatalf("failed to create users dir: %v", err)
+	}
+
+	middlewareContent := `package placeholder
+
+import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+
+func Middleware() fuego.MiddlewareFunc {
+	return nil
+}
+`
+	// Middleware at /api
+	if err := os.WriteFile(filepath.Join(apiDir, "middleware.go"), []byte(middlewareContent), 0644); err != nil {
+		t.Fatalf("failed to write api middleware.go: %v", err)
+	}
+
+	// Middleware at /api/users
+	if err := os.WriteFile(filepath.Join(usersDir, "middleware.go"), []byte(middlewareContent), 0644); err != nil {
+		t.Fatalf("failed to write users middleware.go: %v", err)
+	}
+
+	scanner := NewScanner(appDir)
+	middlewares, err := scanner.ScanMiddlewareInfo()
+	if err != nil {
+		t.Fatalf("ScanMiddlewareInfo failed: %v", err)
+	}
+
+	if len(middlewares) != 2 {
+		t.Errorf("expected 2 middlewares, got %d", len(middlewares))
+	}
+}
+
+func TestScanner_ScanMiddlewareInfo_InvalidSignature(t *testing.T) {
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+	if err := os.MkdirAll(appDir, 0755); err != nil {
+		t.Fatalf("failed to create app dir: %v", err)
+	}
+
+	// Middleware with wrong signature (has parameters)
+	middlewareContent := `package app
+
+func Middleware(name string) MiddlewareFunc {
+	return nil
+}
+`
+	if err := os.WriteFile(filepath.Join(appDir, "middleware.go"), []byte(middlewareContent), 0644); err != nil {
+		t.Fatalf("failed to write middleware.go: %v", err)
+	}
+
+	scanner := NewScanner(appDir)
+	middlewares, err := scanner.ScanMiddlewareInfo()
+	if err != nil {
+		t.Fatalf("ScanMiddlewareInfo failed: %v", err)
+	}
+
+	if len(middlewares) != 0 {
+		t.Errorf("expected 0 middlewares for invalid signature, got %d", len(middlewares))
+	}
+}
+
+func TestScanner_ScanMiddlewareInfo_WrongReturnType(t *testing.T) {
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+	if err := os.MkdirAll(appDir, 0755); err != nil {
+		t.Fatalf("failed to create app dir: %v", err)
+	}
+
+	// Middleware with wrong return type
+	middlewareContent := `package app
+
+func Middleware() string {
+	return ""
+}
+`
+	if err := os.WriteFile(filepath.Join(appDir, "middleware.go"), []byte(middlewareContent), 0644); err != nil {
+		t.Fatalf("failed to write middleware.go: %v", err)
+	}
+
+	scanner := NewScanner(appDir)
+	middlewares, err := scanner.ScanMiddlewareInfo()
+	if err != nil {
+		t.Fatalf("ScanMiddlewareInfo failed: %v", err)
+	}
+
+	if len(middlewares) != 0 {
+		t.Errorf("expected 0 middlewares for wrong return type, got %d", len(middlewares))
+	}
+}
+
+func TestScanner_Scan_RegistersMiddleware(t *testing.T) {
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+	apiDir := filepath.Join(appDir, "api")
+	if err := os.MkdirAll(apiDir, 0755); err != nil {
+		t.Fatalf("failed to create api dir: %v", err)
+	}
+
+	middlewareContent := `package api
+
+import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+
+func Middleware() fuego.MiddlewareFunc {
+	return func(next fuego.HandlerFunc) fuego.HandlerFunc {
+		return func(c *fuego.Context) error {
+			c.SetHeader("X-Middleware", "true")
+			return next(c)
+		}
+	}
+}
+`
+	if err := os.WriteFile(filepath.Join(apiDir, "middleware.go"), []byte(middlewareContent), 0644); err != nil {
+		t.Fatalf("failed to write middleware.go: %v", err)
+	}
+
+	routeContent := `package api
+
+import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+
+func Get(c *fuego.Context) error {
+	return nil
+}
+`
+	if err := os.WriteFile(filepath.Join(apiDir, "route.go"), []byte(routeContent), 0644); err != nil {
+		t.Fatalf("failed to write route.go: %v", err)
+	}
+
+	scanner := NewScanner(appDir)
+	tree := NewRouteTree()
+
+	if err := scanner.Scan(tree); err != nil {
+		t.Fatalf("Scan failed: %v", err)
+	}
+
+	// Verify middleware was registered
+	chain := tree.GetMiddlewareChain("/api")
+	if len(chain) != 1 {
+		t.Errorf("expected 1 middleware in chain, got %d", len(chain))
+	}
+}
+
+func TestScanner_SetVerbose(t *testing.T) {
+	scanner := NewScanner("app")
+	scanner.SetVerbose(true)
+
+	if !scanner.verbose {
+		t.Error("expected verbose to be true")
+	}
+
+	scanner.SetVerbose(false)
+	if scanner.verbose {
+		t.Error("expected verbose to be false")
+	}
+}

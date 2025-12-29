@@ -25,11 +25,13 @@ Example:
 }
 
 var (
-	apiOnly bool
+	apiOnly   bool
+	withProxy bool
 )
 
 func init() {
 	newCmd.Flags().BoolVar(&apiOnly, "api-only", false, "Create an API-only project without templ templates")
+	newCmd.Flags().BoolVar(&withProxy, "with-proxy", false, "Include a proxy.go example for request manipulation")
 }
 
 func runNew(cmd *cobra.Command, args []string) {
@@ -84,6 +86,10 @@ func runNew(cmd *cobra.Command, args []string) {
 	if !apiOnly {
 		files[filepath.Join(name, "app", "layout.templ")] = layoutTemplTmpl
 		files[filepath.Join(name, "app", "page.templ")] = pageTemplTmpl
+	}
+
+	if withProxy {
+		files[filepath.Join(name, "app", "proxy.go")] = proxyGoTmpl
 	}
 
 	for path, tmplContent := range files {
@@ -290,5 +296,58 @@ templ Page() {
 			</div>
 		</main>
 	}
+}
+`) + "\n"
+
+var proxyGoTmpl = strings.TrimSpace(`
+package app
+
+import (
+	"strings"
+
+	"github.com/abdul-hamid-achik/fuego/pkg/fuego"
+)
+
+// ProxyConfig configures which paths the proxy should run on.
+// Leave Matcher empty to run on all paths.
+var ProxyConfig = &fuego.ProxyConfig{
+	Matcher: []string{
+		// Examples:
+		// "/api/:path*",           // Match all API routes
+		// "/admin/*",              // Match admin routes
+		// "/((?!_next|static).*)", // Match all except _next and static (Next.js style - note: negative lookahead not supported in Go)
+	},
+}
+
+// Proxy runs before route matching, allowing you to:
+// - Rewrite URLs (A/B testing, feature flags)
+// - Redirect old URLs to new ones
+// - Return early responses (rate limiting, auth checks, maintenance mode)
+// - Add headers to requests
+//
+// Return fuego.Continue() to proceed with normal routing.
+func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+	path := c.Path()
+
+	// Example: Redirect old API versions
+	if strings.HasPrefix(path, "/api/v1/") {
+		newPath := strings.Replace(path, "/api/v1/", "/api/v2/", 1)
+		return fuego.Redirect(newPath, 301), nil
+	}
+
+	// Example: Rewrite for A/B testing
+	// if c.Cookie("experiment") == "variant-b" {
+	//     return fuego.Rewrite("/variant-b" + path), nil
+	// }
+
+	// Example: Block certain paths
+	// if strings.HasPrefix(path, "/admin") && !isAdmin(c) {
+	//     return fuego.ResponseJSON(403, `+"`"+`{"error":"forbidden"}`+"`"+`), nil
+	// }
+
+	// Example: Add a header and continue
+	c.SetHeader("X-Proxy-Processed", "true")
+
+	return fuego.Continue(), nil
 }
 `) + "\n"

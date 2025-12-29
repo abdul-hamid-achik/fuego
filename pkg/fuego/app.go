@@ -85,7 +85,28 @@ func (a *App) Mount() {
 }
 
 // ServeHTTP implements http.Handler interface.
+// Request flow: Proxy → Router (with middlewares → handlers)
 func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Execute proxy if configured
+	if a.routeTree.HasProxy() {
+		ctx := NewContext(w, r)
+		continueToRouter, err := executeProxy(ctx, a.routeTree.Proxy(), a.routeTree.ProxyConfiguration())
+
+		if err != nil {
+			// Proxy error - return 500
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		if !continueToRouter {
+			// Proxy handled the request (redirect or response)
+			return
+		}
+
+		// Use potentially rewritten request
+		r = ctx.Request
+	}
+
 	a.router.ServeHTTP(w, r)
 }
 
@@ -105,10 +126,10 @@ func (a *App) Listen(addr ...string) error {
 	// Mount routes to router
 	a.Mount()
 
-	// Create server
+	// Create server - use App as handler to enable proxy
 	a.server = &http.Server{
 		Addr:              address,
-		Handler:           a.router,
+		Handler:           a,
 		ReadTimeout:       15 * time.Second,
 		ReadHeaderTimeout: 5 * time.Second,
 		WriteTimeout:      15 * time.Second,
@@ -156,6 +177,35 @@ func (a *App) Shutdown(ctx context.Context) error {
 		return nil
 	}
 	return a.server.Shutdown(ctx)
+}
+
+// Addr returns the address the server is listening on.
+// Returns empty string if server hasn't started.
+func (a *App) Addr() string {
+	if a.server == nil {
+		return ""
+	}
+	return a.server.Addr
+}
+
+// SetProxy sets the proxy function and optional configuration.
+// The proxy runs before route matching, allowing rewrites, redirects, and early responses.
+//
+// Example:
+//
+//	app.SetProxy(func(c *fuego.Context) (*fuego.ProxyResult, error) {
+//	    if strings.HasPrefix(c.Path(), "/old/") {
+//	        return fuego.Redirect("/new/"+strings.TrimPrefix(c.Path(), "/old/"), 301), nil
+//	    }
+//	    return fuego.Continue(), nil
+//	}, nil)
+func (a *App) SetProxy(proxy ProxyFunc, config *ProxyConfig) error {
+	return a.routeTree.SetProxy(proxy, config)
+}
+
+// HasProxy returns true if a proxy function is configured.
+func (a *App) HasProxy() bool {
+	return a.routeTree.HasProxy()
 }
 
 // RegisterRoute manually registers a route (useful for testing or custom routes).

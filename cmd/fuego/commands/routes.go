@@ -37,6 +37,7 @@ func runRoutes(cmd *cobra.Command, args []string) {
 	yellow := color.New(color.FgYellow).SprintFunc()
 	red := color.New(color.FgRed).SprintFunc()
 	dim := color.New(color.Faint).SprintFunc()
+	magenta := color.New(color.FgMagenta).SprintFunc()
 
 	fmt.Printf("\n  %s Routes\n\n", cyan("Fuego"))
 
@@ -48,6 +49,37 @@ func runRoutes(cmd *cobra.Command, args []string) {
 
 	// Scan for routes
 	scanner := fuego.NewScanner(routesAppDir)
+
+	// Check for proxy
+	proxyInfo, err := scanner.ScanProxyInfo()
+	if err != nil {
+		fmt.Printf("  %s Failed to scan proxy: %v\n", yellow("Warning:"), err)
+	} else if proxyInfo != nil && proxyInfo.HasProxy {
+		fmt.Printf("  %s Proxy enabled\n", magenta("PROXY"))
+		if len(proxyInfo.Matchers) > 0 {
+			fmt.Printf("        Matchers: %v\n", proxyInfo.Matchers)
+		} else {
+			fmt.Printf("        Matchers: all paths\n")
+		}
+		fmt.Printf("        File: %s\n\n", dim(proxyInfo.FilePath))
+	}
+
+	// Scan for middleware
+	middlewares, err := scanner.ScanMiddlewareInfo()
+	if err != nil {
+		fmt.Printf("  %s Failed to scan middleware: %v\n", yellow("Warning:"), err)
+	} else if len(middlewares) > 0 {
+		fmt.Printf("  %s\n", cyan("Middleware:"))
+		for _, mw := range middlewares {
+			path := mw.Path
+			if path == "" {
+				path = "/"
+			}
+			fmt.Printf("        %s  %s\n", fmt.Sprintf("%-30s", path), dim(mw.FilePath))
+		}
+		fmt.Printf("\n")
+	}
+
 	routes, err := scanner.ScanRouteInfo()
 	if err != nil {
 		fmt.Printf("  %s Failed to scan routes: %v\n", red("Error:"), err)
