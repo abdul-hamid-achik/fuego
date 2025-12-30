@@ -3,7 +3,9 @@ package commands
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/abdul-hamid-achik/fuego/pkg/fuego"
 	"github.com/fatih/color"
@@ -12,11 +14,12 @@ import (
 
 var routesCmd = &cobra.Command{
 	Use:   "routes",
-	Short: "List all registered routes",
-	Long: `Display all routes discovered in the app directory.
+	Short: "List all registered routes and pages",
+	Long: `Display all routes and pages discovered in the app directory.
 
-This command scans the app/ directory and displays all route.go files
-with their HTTP methods and patterns.
+This command scans the app/ directory and displays:
+- API routes (route.go files) with their HTTP methods and patterns
+- Pages (page.templ files) with their URL patterns and associated layouts
 
 Examples:
   fuego routes
@@ -38,8 +41,8 @@ func runRoutes(cmd *cobra.Command, args []string) {
 	if _, err := os.Stat(routesAppDir); os.IsNotExist(err) {
 		if jsonOutput {
 			printSuccess(RoutesOutput{
-				Routes: []RouteOutput{},
-				Total:  0,
+				Routes:      []RouteOutput{},
+				TotalRoutes: 0,
 			})
 		} else {
 			yellow := color.New(color.FgYellow).SprintFunc()
@@ -77,11 +80,37 @@ func runRoutes(cmd *cobra.Command, args []string) {
 		return routes[i].Method < routes[j].Method
 	})
 
+	// Scan for pages
+	pages, pageErr := scanner.ScanPageInfo()
+	if pageErr != nil {
+		if jsonOutput {
+			printJSONError(pageErr)
+		} else {
+			red := color.New(color.FgRed).SprintFunc()
+			fmt.Printf("  %s Failed to scan pages: %v\n", red("Error:"), pageErr)
+		}
+		os.Exit(1)
+	}
+
+	// Scan for layouts
+	layouts, layoutErr := scanner.ScanLayoutInfo()
+	if layoutErr != nil {
+		if jsonOutput {
+			printJSONError(layoutErr)
+		} else {
+			red := color.New(color.FgRed).SprintFunc()
+			fmt.Printf("  %s Failed to scan layouts: %v\n", red("Error:"), layoutErr)
+		}
+		os.Exit(1)
+	}
+
 	// JSON output mode
 	if jsonOutput {
 		output := RoutesOutput{
-			Routes: make([]RouteOutput, 0, len(routes)),
-			Total:  len(routes),
+			Routes:      make([]RouteOutput, 0, len(routes)),
+			Pages:       make([]PageOutput, 0, len(pages)),
+			TotalRoutes: len(routes),
+			TotalPages:  len(pages),
 		}
 
 		// Add proxy info
@@ -115,6 +144,16 @@ func runRoutes(cmd *cobra.Command, args []string) {
 				Pattern:  r.Pattern,
 				File:     r.FilePath,
 				Priority: r.Priority,
+			})
+		}
+
+		// Add pages
+		for _, p := range pages {
+			output.Pages = append(output.Pages, PageOutput{
+				Pattern: p.Pattern,
+				File:    p.FilePath,
+				Title:   p.Title,
+				Layout:  findLayoutForPage(p.Pattern, layouts),
 			})
 		}
 
@@ -160,13 +199,6 @@ func runRoutes(cmd *cobra.Command, args []string) {
 		fmt.Printf("\n")
 	}
 
-	if len(routes) == 0 {
-		fmt.Printf("  %s No routes found\n\n", yellow("Warning:"))
-		fmt.Printf("  Create a route by adding a route.go file:\n")
-		fmt.Printf("    %s/api/health/route.go\n\n", routesAppDir)
-		return
-	}
-
 	// Method colors
 	methodColor := func(method string) string {
 		switch method {
@@ -185,14 +217,70 @@ func runRoutes(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	// Print routes
-	for _, route := range routes {
-		fmt.Printf("  %s %s  %s\n",
-			methodColor(route.Method),
-			fmt.Sprintf("%-30s", route.Pattern),
-			dim(route.FilePath),
-		)
+	// Print API routes section
+	if len(routes) > 0 {
+		fmt.Printf("  %s\n\n", cyan("API Routes:"))
+		for _, route := range routes {
+			fmt.Printf("  %s %s  %s\n",
+				methodColor(route.Method),
+				fmt.Sprintf("%-30s", route.Pattern),
+				dim(route.FilePath),
+			)
+		}
 	}
 
-	fmt.Printf("\n  Total: %d routes\n\n", len(routes))
+	// Print pages section (only if pages exist)
+	if len(pages) > 0 {
+		if len(routes) > 0 {
+			fmt.Printf("\n")
+		}
+		fmt.Printf("  %s\n\n", cyan("Pages:"))
+		for _, page := range pages {
+			layoutInfo := ""
+			if layout := findLayoutForPage(page.Pattern, layouts); layout != "" {
+				// Extract just the directory name from the layout path
+				layoutDir := filepath.Base(filepath.Dir(layout))
+				layoutInfo = dim(fmt.Sprintf(" [layout: %s]", layoutDir))
+			}
+			fmt.Printf("  %s %s  %s%s\n",
+				green("GET    "),
+				fmt.Sprintf("%-30s", page.Pattern),
+				dim(page.FilePath),
+				layoutInfo,
+			)
+		}
+	}
+
+	// Show warning if no routes and no pages
+	if len(routes) == 0 && len(pages) == 0 {
+		fmt.Printf("  %s No routes or pages found\n\n", yellow("Warning:"))
+		fmt.Printf("  Create an API route by adding a route.go file:\n")
+		fmt.Printf("    %s/api/health/route.go\n\n", routesAppDir)
+		fmt.Printf("  Or create a page by adding a page.templ file:\n")
+		fmt.Printf("    %s/page.templ\n\n", routesAppDir)
+		return
+	}
+
+	fmt.Printf("\n  Total: %d API routes, %d pages\n\n", len(routes), len(pages))
+}
+
+// findLayoutForPage returns the layout file path that applies to a page pattern.
+// It finds the most specific layout that matches the page path.
+func findLayoutForPage(pagePattern string, layouts []fuego.LayoutInfo) string {
+	var bestMatch string
+	var bestMatchLen int
+
+	for _, layout := range layouts {
+		prefix := layout.PathPrefix
+		// Check if the page pattern starts with the layout prefix
+		// or if the layout is at root level
+		if strings.HasPrefix(pagePattern, prefix) || prefix == "/" {
+			// Prefer more specific matches (longer prefix)
+			if len(prefix) > bestMatchLen {
+				bestMatch = layout.FilePath
+				bestMatchLen = len(prefix)
+			}
+		}
+	}
+	return bestMatch
 }

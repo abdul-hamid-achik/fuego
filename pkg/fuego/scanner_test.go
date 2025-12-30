@@ -1436,3 +1436,165 @@ func TestScanner_ScanLayoutInfo_NonExistentDir(t *testing.T) {
 		t.Errorf("expected 0 layouts, got %d", len(layouts))
 	}
 }
+
+// ---------- Dynamic Page Discovery Tests ----------
+
+func TestScanner_ScanPageInfo_DynamicSegment(t *testing.T) {
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+	postsDir := filepath.Join(appDir, "posts")
+	slugDir := filepath.Join(postsDir, "[slug]")
+
+	if err := os.MkdirAll(slugDir, 0755); err != nil {
+		t.Fatalf("failed to create dir: %v", err)
+	}
+
+	pageContent := `package slug
+
+templ Page(slug string) {
+	<div>Post: { slug }</div>
+}
+`
+	if err := os.WriteFile(filepath.Join(slugDir, "page.templ"), []byte(pageContent), 0644); err != nil {
+		t.Fatalf("failed to write page.templ: %v", err)
+	}
+
+	scanner := NewScanner(appDir)
+	pages, err := scanner.ScanPageInfo()
+	if err != nil {
+		t.Fatalf("ScanPageInfo failed: %v", err)
+	}
+
+	if len(pages) != 1 {
+		t.Errorf("expected 1 page, got %d", len(pages))
+	}
+
+	if len(pages) > 0 {
+		if pages[0].Pattern != "/posts/{slug}" {
+			t.Errorf("expected pattern /posts/{slug}, got %s", pages[0].Pattern)
+		}
+	}
+}
+
+func TestScanner_ScanPageInfo_NestedDynamicSegment(t *testing.T) {
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+	tagsDir := filepath.Join(appDir, "posts", "tags", "[tag]")
+
+	if err := os.MkdirAll(tagsDir, 0755); err != nil {
+		t.Fatalf("failed to create dir: %v", err)
+	}
+
+	pageContent := `package tag
+
+templ Page(tag string) {
+	<div>Tag: { tag }</div>
+}
+`
+	if err := os.WriteFile(filepath.Join(tagsDir, "page.templ"), []byte(pageContent), 0644); err != nil {
+		t.Fatalf("failed to write page.templ: %v", err)
+	}
+
+	scanner := NewScanner(appDir)
+	pages, err := scanner.ScanPageInfo()
+	if err != nil {
+		t.Fatalf("ScanPageInfo failed: %v", err)
+	}
+
+	if len(pages) != 1 {
+		t.Errorf("expected 1 page, got %d", len(pages))
+	}
+
+	if len(pages) > 0 {
+		if pages[0].Pattern != "/posts/tags/{tag}" {
+			t.Errorf("expected pattern /posts/tags/{tag}, got %s", pages[0].Pattern)
+		}
+	}
+}
+
+func TestScanner_ScanPageInfo_CatchAll(t *testing.T) {
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+	docsDir := filepath.Join(appDir, "docs", "[...slug]")
+
+	if err := os.MkdirAll(docsDir, 0755); err != nil {
+		t.Fatalf("failed to create dir: %v", err)
+	}
+
+	pageContent := `package slug
+
+templ Page(slug []string) {
+	<div>Docs</div>
+}
+`
+	if err := os.WriteFile(filepath.Join(docsDir, "page.templ"), []byte(pageContent), 0644); err != nil {
+		t.Fatalf("failed to write page.templ: %v", err)
+	}
+
+	scanner := NewScanner(appDir)
+	pages, err := scanner.ScanPageInfo()
+	if err != nil {
+		t.Fatalf("ScanPageInfo failed: %v", err)
+	}
+
+	if len(pages) != 1 {
+		t.Errorf("expected 1 page, got %d", len(pages))
+	}
+
+	if len(pages) > 0 {
+		if pages[0].Pattern != "/docs/*" {
+			t.Errorf("expected pattern /docs/*, got %s", pages[0].Pattern)
+		}
+	}
+}
+
+func TestScanner_ScanPageInfo_MultipleDynamicPages(t *testing.T) {
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+
+	// Create multiple pages with dynamic segments
+	dirs := []string{
+		filepath.Join(appDir, "posts", "[slug]"),
+		filepath.Join(appDir, "posts", "tags", "[tag]"),
+		filepath.Join(appDir, "users", "[id]"),
+	}
+
+	pageContent := `package placeholder
+
+templ Page() {
+	<div>Page</div>
+}
+`
+
+	for _, dir := range dirs {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			t.Fatalf("failed to create dir %s: %v", dir, err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "page.templ"), []byte(pageContent), 0644); err != nil {
+			t.Fatalf("failed to write page.templ: %v", err)
+		}
+	}
+
+	scanner := NewScanner(appDir)
+	pages, err := scanner.ScanPageInfo()
+	if err != nil {
+		t.Fatalf("ScanPageInfo failed: %v", err)
+	}
+
+	if len(pages) != 3 {
+		t.Errorf("expected 3 pages, got %d", len(pages))
+	}
+
+	// Verify patterns are correct (order may vary)
+	patterns := make(map[string]bool)
+	for _, p := range pages {
+		patterns[p.Pattern] = true
+	}
+
+	expectedPatterns := []string{"/posts/{slug}", "/posts/tags/{tag}", "/users/{id}"}
+	for _, expected := range expectedPatterns {
+		if !patterns[expected] {
+			t.Errorf("expected pattern %s to be found", expected)
+		}
+	}
+}

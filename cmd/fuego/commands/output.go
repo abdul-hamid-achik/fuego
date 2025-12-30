@@ -19,10 +19,12 @@ type JSONResponse struct {
 
 // RoutesOutput represents the JSON output for the routes command
 type RoutesOutput struct {
-	Proxy      *ProxyOutput       `json:"proxy,omitempty"`
-	Middleware []MiddlewareOutput `json:"middleware,omitempty"`
-	Routes     []RouteOutput      `json:"routes"`
-	Total      int                `json:"total"`
+	Proxy       *ProxyOutput       `json:"proxy,omitempty"`
+	Middleware  []MiddlewareOutput `json:"middleware,omitempty"`
+	Routes      []RouteOutput      `json:"routes"`
+	Pages       []PageOutput       `json:"pages,omitempty"`
+	TotalRoutes int                `json:"total_routes"`
+	TotalPages  int                `json:"total_pages,omitempty"`
 }
 
 // ProxyOutput represents proxy information in JSON output
@@ -44,6 +46,14 @@ type RouteOutput struct {
 	Pattern  string `json:"pattern"`
 	File     string `json:"file"`
 	Priority int    `json:"priority,omitempty"`
+}
+
+// PageOutput represents a single page in JSON output
+type PageOutput struct {
+	Pattern string `json:"pattern"`
+	File    string `json:"file"`
+	Title   string `json:"title,omitempty"`
+	Layout  string `json:"layout,omitempty"`
 }
 
 // NewProjectOutput represents the JSON output for the new command
