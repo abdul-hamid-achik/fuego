@@ -1,8 +1,12 @@
 package fuego
 
 import (
+	"bytes"
+	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -713,5 +717,88 @@ func TestMiddlewareChain(t *testing.T) {
 		if i < len(order) && order[i] != v {
 			t.Errorf("Order[%d]: expected '%s', got '%s'", i, v, order[i])
 		}
+	}
+}
+
+func TestLoggerWithConfig_SanitizesErrorBody(t *testing.T) {
+	handler := func(c *Context) error {
+		return fmt.Errorf("<!DOCTYPE html><html><body>Error</body></html>")
+	}
+
+	mw := LoggerWithConfig(LoggerConfig{})
+	wrapped := mw(handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	_ = wrapped(c)
+
+	output := buf.String()
+	if strings.Contains(output, "<!DOCTYPE") {
+		t.Error("Log should not contain HTML doctype")
+	}
+	if strings.Contains(output, "<html>") {
+		t.Error("Log should not contain HTML tags")
+	}
+	if strings.Contains(output, "<body>") {
+		t.Error("Log should not contain body tags")
+	}
+}
+
+func TestFormatErrorForLog(t *testing.T) {
+	tests := []struct {
+		name     string
+		err      error
+		expected string
+	}{
+		{"nil error", nil, ""},
+		{"simple error", fmt.Errorf("not found"), "not found"},
+		{"HTTPError", NewHTTPError(404, "resource not found"), "resource not found"},
+		{"HTML content", fmt.Errorf("<html>error</html>"), ""},
+		{"HTML doctype", fmt.Errorf("<!DOCTYPE html>..."), ""},
+		{"head tag", fmt.Errorf("<head>...</head>"), ""},
+		{"body tag", fmt.Errorf("<body>...</body>"), ""},
+		{"long error", fmt.Errorf("%s", strings.Repeat("x", 150)), strings.Repeat("x", 97) + "..."},
+		{"large JSON", fmt.Errorf("%s", `{"data": "`+strings.Repeat("x", 250)+`"}`), ""},
+		{"small JSON allowed", fmt.Errorf(`{"error": "ok"}`), `{"error": "ok"}`},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := formatErrorForLog(tc.err)
+			if result != tc.expected {
+				t.Errorf("formatErrorForLog() = %q, want %q", result, tc.expected)
+			}
+		})
+	}
+}
+
+func TestLoggerWithConfig_LargeJSONNotLogged(t *testing.T) {
+	largeJSON := `{"data": "` + strings.Repeat("x", 300) + `"}`
+	handler := func(c *Context) error {
+		return fmt.Errorf("%s", largeJSON)
+	}
+
+	mw := LoggerWithConfig(LoggerConfig{})
+	wrapped := mw(handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	w := httptest.NewRecorder()
+	c := NewContext(w, req)
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	_ = wrapped(c)
+
+	output := buf.String()
+	if strings.Contains(output, `"data"`) {
+		t.Error("Log should not contain large JSON body")
 	}
 }

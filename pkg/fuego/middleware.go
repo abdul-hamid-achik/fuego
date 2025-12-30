@@ -12,6 +12,44 @@ import (
 	"github.com/fatih/color"
 )
 
+// formatErrorForLog extracts a clean error message for logging.
+// Returns empty string if error is nil or contains body content.
+func formatErrorForLog(err error) string {
+	if err == nil {
+		return ""
+	}
+
+	var msg string
+	if httpErr, ok := IsHTTPError(err); ok {
+		msg = httpErr.Message
+	} else {
+		msg = err.Error()
+	}
+
+	// Skip body content (HTML, large JSON)
+	trimmed := strings.TrimSpace(msg)
+	if strings.HasPrefix(trimmed, "<!") ||
+		strings.HasPrefix(trimmed, "<html") ||
+		strings.HasPrefix(trimmed, "<HTML") ||
+		strings.HasPrefix(trimmed, "<head") ||
+		strings.HasPrefix(trimmed, "<HEAD") ||
+		strings.HasPrefix(trimmed, "<body") ||
+		strings.HasPrefix(trimmed, "<BODY") {
+		return ""
+	}
+	if (strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[")) && len(trimmed) > 200 {
+		return ""
+	}
+
+	// Truncate long messages
+	const maxLen = 100
+	if len(msg) > maxLen {
+		return msg[:maxLen-3] + "..."
+	}
+
+	return msg
+}
+
 // ---------- Logger Middleware ----------
 
 // Logger returns a middleware that logs HTTP requests.
@@ -111,13 +149,23 @@ func LoggerWithConfig(config LoggerConfig) MiddlewareFunc {
 			}
 
 			// Log the request
-			log.Printf("%s %s %s %s %v",
-				statusColor(fmt.Sprintf("%d", status)),
-				methodColor(fmt.Sprintf("%-7s", c.Method())),
-				c.Path(),
-				color.New(color.Faint).Sprint(latency.Round(time.Microsecond)),
-				err,
-			)
+			errMsg := formatErrorForLog(err)
+			if errMsg != "" {
+				log.Printf("%s %s %s %s %s",
+					statusColor(fmt.Sprintf("%d", status)),
+					methodColor(fmt.Sprintf("%-7s", c.Method())),
+					c.Path(),
+					color.New(color.Faint).Sprint(latency.Round(time.Microsecond)),
+					color.New(color.FgYellow).Sprintf("[%s]", errMsg),
+				)
+			} else {
+				log.Printf("%s %s %s %s",
+					statusColor(fmt.Sprintf("%d", status)),
+					methodColor(fmt.Sprintf("%-7s", c.Method())),
+					c.Path(),
+					color.New(color.Faint).Sprint(latency.Round(time.Microsecond)),
+				)
+			}
 
 			return err
 		}

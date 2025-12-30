@@ -2,6 +2,7 @@ package fuego
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -505,5 +506,161 @@ func TestNewRequestLogger_ColorsDisabledInNonTTY(t *testing.T) {
 
 	if !rl.config.DisableColors {
 		t.Error("Expected DisableColors to be true")
+	}
+}
+
+func TestLooksLikeBody(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		{"empty string", "", false},
+		{"simple error", "not found", false},
+		{"short message", "database connection failed", false},
+		{"html doctype", "<!DOCTYPE html><html>...", true},
+		{"html tag lowercase", "<html><head>...</head></html>", true},
+		{"html tag uppercase", "<HTML><HEAD>...</HEAD></HTML>", true},
+		{"head tag lowercase", "<head><title>Error</title></head>", true},
+		{"head tag uppercase", "<HEAD><title>Error</title></HEAD>", true},
+		{"body tag lowercase", "<body>Some content</body>", true},
+		{"body tag uppercase", "<BODY>Some content</BODY>", true},
+		{"small json object", `{"error": "not found"}`, false},
+		{"large json object", `{"data": "` + strings.Repeat("x", 250) + `"}`, true},
+		{"large json array", `["` + strings.Repeat("x", 250) + `"]`, true},
+		{"whitespace prefix html", "  <!DOCTYPE html>...", true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := looksLikeBody(tc.input)
+			if result != tc.expected {
+				t.Errorf("looksLikeBody() = %v, want %v", result, tc.expected)
+			}
+		})
+	}
+}
+
+func TestRequestLogger_formatError_SanitizesBody(t *testing.T) {
+	rl := NewRequestLogger(RequestLoggerConfig{
+		MaxErrorLength: 100,
+	})
+
+	tests := []struct {
+		name     string
+		err      error
+		expected string
+	}{
+		{"nil error", nil, ""},
+		{"simple HTTPError", NewHTTPError(404, "user not found"), "user not found"},
+		{"simple error", fmt.Errorf("connection refused"), "connection refused"},
+		{"HTML doctype error", fmt.Errorf("<!DOCTYPE html><html><body>Error page</body></html>"), ""},
+		{"html tag error", fmt.Errorf("<html>Error</html>"), ""},
+		{"head tag error", fmt.Errorf("<head><title>Error</title></head>"), ""},
+		{"body tag error", fmt.Errorf("<body>Content</body>"), ""},
+		{"long error truncated", fmt.Errorf("%s", strings.Repeat("a", 150)), strings.Repeat("a", 97) + "..."},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := rl.formatError(tc.err)
+			if result != tc.expected {
+				t.Errorf("formatError() = %q, want %q", result, tc.expected)
+			}
+		})
+	}
+}
+
+func TestRequestLogger_formatError_MaxErrorLength(t *testing.T) {
+	tests := []struct {
+		name        string
+		maxLen      int
+		errorMsg    string
+		expectedLen int
+	}{
+		{"default truncation", 0, strings.Repeat("x", 150), 100},
+		{"custom max 50", 50, strings.Repeat("x", 100), 50},
+		{"no truncation needed", 100, "short error", 11},
+		{"exact length", 100, strings.Repeat("x", 100), 100},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			rl := NewRequestLogger(RequestLoggerConfig{
+				MaxErrorLength: tc.maxLen,
+			})
+			result := rl.formatError(fmt.Errorf("%s", tc.errorMsg))
+			if len(result) > tc.expectedLen {
+				t.Errorf("formatError() length = %d, want <= %d", len(result), tc.expectedLen)
+			}
+		})
+	}
+}
+
+func TestRequestLogger_Log_NoBodyInOutput(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	rl := NewRequestLogger(RequestLoggerConfig{
+		ShowErrors:    true,
+		DisableColors: true,
+		Level:         LogLevelInfo,
+	})
+
+	htmlError := fmt.Errorf("<!DOCTYPE html><html><body>Big error page</body></html>")
+	r := httptest.NewRequest(http.MethodGet, "/api/fail", nil)
+	rl.Log(r, 500, 1024, 10*time.Millisecond, nil, htmlError)
+
+	output := buf.String()
+	if strings.Contains(output, "<!DOCTYPE") {
+		t.Error("Log output should not contain HTML doctype")
+	}
+	if strings.Contains(output, "<html>") {
+		t.Error("Log output should not contain HTML tags")
+	}
+}
+
+func TestRequestLogger_Log_LargeJSONNotLogged(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	rl := NewRequestLogger(RequestLoggerConfig{
+		ShowErrors:    true,
+		DisableColors: true,
+		Level:         LogLevelInfo,
+	})
+
+	largeJSON := `{"data": "` + strings.Repeat("x", 300) + `"}`
+	jsonError := fmt.Errorf("%s", largeJSON)
+	r := httptest.NewRequest(http.MethodGet, "/api/fail", nil)
+	rl.Log(r, 500, 1024, 10*time.Millisecond, nil, jsonError)
+
+	output := buf.String()
+	if strings.Contains(output, `"data"`) {
+		t.Error("Log output should not contain large JSON body")
+	}
+}
+
+func TestRequestLogger_Log_SmallJSONIsLogged(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	rl := NewRequestLogger(RequestLoggerConfig{
+		ShowErrors:    true,
+		DisableColors: true,
+		Level:         LogLevelInfo,
+	})
+
+	smallJSON := `{"error": "not found"}`
+	jsonError := fmt.Errorf("%s", smallJSON)
+	r := httptest.NewRequest(http.MethodGet, "/api/fail", nil)
+	rl.Log(r, 404, 100, 10*time.Millisecond, nil, jsonError)
+
+	output := buf.String()
+	if !strings.Contains(output, "not found") {
+		t.Error("Log output should contain small JSON error message")
 	}
 }

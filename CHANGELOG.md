@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.2] - 2025-12-30
+
+### Fixed
+
+- **Improved Request Logging - No More Body Content in Logs**
+  - Logger no longer outputs HTML body content that pollutes logs
+  - Added `looksLikeBody()` detection for HTML (`<!DOCTYPE`, `<html>`, `<head>`, `<body>`) and large JSON (>200 chars)
+  - Error messages are now sanitized before logging - only concise semantic messages are shown
+  - Added `MaxErrorLength` config option (default: 100) to truncate long error messages
+  - Both app-level logger and middleware logger now behave consistently
+  - Small JSON errors (< 200 chars) are still logged for debugging
+
+### Added
+
+- `MaxErrorLength` field in `RequestLoggerConfig` for configurable error message truncation
+- `looksLikeBody()` helper function to detect body-like content
+- `formatErrorForLog()` helper in middleware for consistent error formatting
+- Comprehensive tests for body detection, error sanitization, and truncation
+
 ## [0.9.1] - 2025-12-30
 
 ### Added

@@ -88,6 +88,10 @@ type RequestLoggerConfig struct {
 
 	// Colors
 	DisableColors bool // Force disable colors (default: false, auto-detected)
+
+	// MaxErrorLength is the maximum length for error messages in logs.
+	// Messages longer than this are truncated. Default: 100.
+	MaxErrorLength int
 }
 
 // DefaultRequestLoggerConfig returns sensible defaults for the request logger.
@@ -116,6 +120,7 @@ func DefaultRequestLoggerConfig() RequestLoggerConfig {
 		TimestampFormat: "15:04:05",
 		Level:           level,
 		StaticPaths:     []string{"/static", "/assets", "/public", "/_next"},
+		MaxErrorLength:  100,
 	}
 }
 
@@ -284,18 +289,64 @@ func (rl *RequestLogger) formatSize(size int64) string {
 	}
 }
 
-// formatError extracts a clean error message.
+// looksLikeBody detects if content looks like HTML/JSON body content
+// that shouldn't appear in request logs.
+func looksLikeBody(s string) bool {
+	s = strings.TrimSpace(s)
+	if len(s) == 0 {
+		return false
+	}
+
+	// HTML indicators
+	if strings.HasPrefix(s, "<!") ||
+		strings.HasPrefix(s, "<html") ||
+		strings.HasPrefix(s, "<HTML") ||
+		strings.HasPrefix(s, "<head") ||
+		strings.HasPrefix(s, "<HEAD") ||
+		strings.HasPrefix(s, "<body") ||
+		strings.HasPrefix(s, "<BODY") {
+		return true
+	}
+
+	// Large JSON objects/arrays (likely response bodies)
+	if (strings.HasPrefix(s, "{") || strings.HasPrefix(s, "[")) && len(s) > 200 {
+		return true
+	}
+
+	return false
+}
+
+// formatError extracts a clean, sanitized error message suitable for logging.
+// It never returns body content (HTML, large JSON) - only concise error messages.
 func (rl *RequestLogger) formatError(err error) string {
 	if err == nil {
 		return ""
 	}
 
-	// Check for HTTPError
+	var msg string
+
+	// Check for HTTPError - use only the semantic message
 	if httpErr, ok := IsHTTPError(err); ok {
-		return httpErr.Message
+		msg = httpErr.Message
+	} else {
+		msg = err.Error()
 	}
 
-	return err.Error()
+	// Skip if it looks like body content
+	if looksLikeBody(msg) {
+		return ""
+	}
+
+	// Truncate if too long
+	maxLen := rl.config.MaxErrorLength
+	if maxLen <= 0 {
+		maxLen = 100
+	}
+	if len(msg) > maxLen {
+		return msg[:maxLen-3] + "..."
+	}
+
+	return msg
 }
 
 // ProxyAction represents the action taken by the proxy.
