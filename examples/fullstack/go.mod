@@ -1,4 +1,4 @@
-module fullstack
+module github.com/abdul-hamid-achik/fuego/examples/fullstack
 
 go 1.25.5
 

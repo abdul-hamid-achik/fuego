@@ -1,7 +1,7 @@
 {
   "$schema": "https://context7.com/schema/context7.json",
   "projectTitle": "Fuego",
-  "description": "A file-system based Go framework for APIs and websites, inspired by Next.js App Router",
+  "description": "File-based routing for Go. Fast to write. Faster to run. Build APIs and full-stack apps with conventions that feel natural.",
   "folders": ["docs", "examples"],
   "excludeFolders": [
     "node_modules",
@@ -20,15 +20,23 @@
     "Always use file-based routing under the app/ directory",
     "Route handlers must be named after HTTP methods (Get, Post, Put, Delete, etc.)",
     "Use fuego.Context for handling requests and responses",
-    "Middleware functions must accept and return fuego.HandlerFunc",
+    "Middleware must use factory pattern: func Middleware() fuego.MiddlewareFunc",
     "Proxy functions must return *fuego.ProxyResult",
     "Page templates must use templ syntax with the Page() component",
     "Layout templates must accept children... parameter",
     "Use fuego generate commands for scaffolding new routes, middleware, pages, and proxies",
     "Always run golangci-lint before committing to avoid CI failures",
-    "For deferred operations, use: defer func() { _ = file.Close() }()"
+    "For deferred operations, use: defer func() { _ = file.Close() }()",
+    "Examples use replace directive in go.mod for local development",
+    "Use c.JSON(status, data) for JSON responses",
+    "Use c.Bind(&struct) to parse JSON request bodies",
+    "Use c.Param(name) for URL parameters like [id]",
+    "Use c.Query(name) for query string parameters"
   ],
   "previousVersions": [
+    {
+      "tag": "v0.5.0"
+    },
     {
       "tag": "v0.4.3"
     },

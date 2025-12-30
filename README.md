@@ -1,22 +1,47 @@
 # Fuego
 
-A file-system based Go framework for APIs and websites, inspired by Next.js App Router.
+**File-based routing for Go. Fast to write. Faster to run.**
 
-The name "Fuego" (Spanish for "fire") contains "GO" naturally embedded (fue**GO**) and reflects its Mexican origin and blazing fast performance.
+Your file structure *is* your router. Build APIs and full-stack web apps with conventions that feel natural — if you've used modern meta-frameworks, you'll be productive in minutes.
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/abdul-hamid-achik/fuego.svg)](https://pkg.go.dev/github.com/abdul-hamid-achik/fuego)
 [![Go Report Card](https://goreportcard.com/badge/github.com/abdul-hamid-achik/fuego)](https://goreportcard.com/report/github.com/abdul-hamid-achik/fuego)
 
+> **fue**GO — Spanish for "fire", with Go built right in. Born in Mexico, built for speed.
+
+## Why Fuego?
+
+Traditional Go routing requires manual registration:
+
+```go
+// The old way
+r.HandleFunc("/api/users", usersHandler)
+r.HandleFunc("/api/users/{id}", userHandler)
+r.HandleFunc("/api/posts", postsHandler)
+// ...repeat for every route
+```
+
+With Fuego, your file structure is your router:
+
+```
+app/api/users/route.go      → GET/POST /api/users
+app/api/users/[id]/route.go → GET/PUT/DELETE /api/users/:id
+app/api/posts/route.go      → GET/POST /api/posts
+```
+
+**No registration. No configuration. Just files.**
+
 ## Features
 
-- **File system is the router** - No manual route registration. Drop a file, get a route.
-- **Zero boilerplate to start** - `main.go` is 5 lines.
-- **Explicit over magic** - Handlers are plain Go functions.
-- **Fast iteration** - Hot reload in dev, sub-second rebuilds.
-- **Scalable conventions** - Works for a 3-route API or a 300-route app.
-- **Templ-native** - First-class support for type-safe HTML templating.
-- **Proxy layer** - Intercept requests for rewrites, redirects, and early responses.
-- **Built-in middleware** - Logger, CORS, rate limiting, auth, and more.
+- **File system routing** — Your directory structure defines your routes. No manual registration.
+- **Zero-config start** — A working API in 5 lines of code.
+- **Convention over configuration** — Sensible defaults, full control when you need it.
+- **Type-safe templates** — First-class [templ](https://templ.guide) support with compile-time HTML validation.
+- **HTMX-ready** — Build interactive UIs without client-side JavaScript frameworks.
+- **Standalone Tailwind** — Built-in Tailwind CSS v4 binary. No Node.js required.
+- **Request interception** — Proxy layer for auth checks, rewrites, and early responses.
+- **Hot reload** — Sub-second rebuilds during development.
+- **Production ready** — Single binary deployment, minimal dependencies.
 
 ## Quick Start
 
@@ -53,6 +78,22 @@ myapp/
 └── go.mod
 ```
 
+## Familiar Conventions
+
+Fuego uses file-based routing patterns found in modern web frameworks:
+
+| Pattern | File | Route |
+|---------|------|-------|
+| Static | `app/api/users/route.go` | `/api/users` |
+| Dynamic | `app/api/users/[id]/route.go` | `/api/users/:id` |
+| Catch-all | `app/docs/[...slug]/route.go` | `/docs/*` |
+| Optional catch-all | `app/shop/[[...categories]]/route.go` | `/shop`, `/shop/*` |
+| Middleware | `app/api/middleware.go` | Applies to `/api/*` |
+| Pages | `app/dashboard/page.templ` | `/dashboard` |
+| Layouts | `app/layout.templ` | Wraps child pages |
+
+If you've used Next.js, Nuxt, SvelteKit, or similar frameworks, these patterns will feel familiar.
+
 ## File Conventions
 
 | File | Purpose |
@@ -65,14 +106,6 @@ myapp/
 | `error.templ` | Error boundary UI |
 | `loading.templ` | Loading skeleton |
 | `notfound.templ` | Not found UI |
-
-## Dynamic Routes
-
-| Pattern | Example | Matches |
-|---------|---------|---------|
-| `[param]` | `app/users/[id]/` | `/users/123` |
-| `[...param]` | `app/docs/[...slug]/` | `/docs/a/b/c` |
-| `[[...param]]` | `app/shop/[[...categories]]/` | `/shop`, `/shop/clothes` |
 
 ## Example: API Route
 
@@ -308,6 +341,28 @@ middleware:
   recover: true
 ```
 
+## Examples
+
+Explore working examples in the [examples/](examples/) directory:
+
+| Example | What You'll Learn |
+|---------|-------------------|
+| [basic](examples/basic/) | File-based routing fundamentals, middleware basics |
+| [dynamic-routes](examples/dynamic-routes/) | URL parameters, catch-all routes, route groups |
+| [fullstack](examples/fullstack/) | Templ pages, Tailwind CSS, HTMX interactivity |
+| [middleware](examples/middleware/) | Authentication, CORS, request timing, middleware chains |
+| [proxy](examples/proxy/) | Request interception, URL rewrites, access control |
+
+## Documentation
+
+- [Quick Start](docs/getting-started/quickstart.md)
+- [Familiar Patterns](docs/getting-started/familiar-patterns.md)
+- [File-based Routing](docs/routing/file-based.md)
+- [Middleware](docs/middleware/overview.md)
+- [Proxy](docs/middleware/proxy.md)
+- [Context API](docs/api/context.md)
+- [Deployment](docs/guides/deployment.md)
+
 ## Development
 
 We use [Task](https://taskfile.dev) for development commands:
@@ -329,31 +384,15 @@ task check
 task install
 ```
 
-## Documentation
-
-- [Quick Start](docs/getting-started/quickstart.md)
-- [File-based Routing](docs/routing/file-based.md)
-- [Middleware](docs/middleware/overview.md)
-- [Proxy](docs/middleware/proxy.md)
-
-## Examples
-
-See the [examples](examples/) directory for complete examples:
-
-- [Basic](examples/basic/) - Simple API with file-based routing
-
 ## Acknowledgments
 
-Fuego stands on the shoulders of giants. We're grateful to the authors and maintainers of:
+Fuego stands on the shoulders of giants:
 
-- **[chi](https://github.com/go-chi/chi)** by Peter Kieltyka - The lightweight router that powers Fuego
-- **[templ](https://github.com/a-h/templ)** by Adrian Hesketh - Type-safe HTML templating for Go
-- **[fsnotify](https://github.com/fsnotify/fsnotify)** - Cross-platform file watching
-- **[cobra](https://github.com/spf13/cobra)** by Steve Francia - CLI framework
-- **[viper](https://github.com/spf13/viper)** by Steve Francia - Configuration management
-- **[Next.js](https://nextjs.org)** by Vercel - The inspiration for our file-system routing
-
-Thank you for making the Go ecosystem amazing!
+- **[chi](https://github.com/go-chi/chi)** by Peter Kieltyka — The lightweight router that powers Fuego
+- **[templ](https://github.com/a-h/templ)** by Adrian Hesketh — Type-safe HTML templating for Go
+- **[fsnotify](https://github.com/fsnotify/fsnotify)** — Cross-platform file watching
+- **[cobra](https://github.com/spf13/cobra)** by Steve Francia — CLI framework
+- **[viper](https://github.com/spf13/viper)** by Steve Francia — Configuration management
 
 ## Author
 

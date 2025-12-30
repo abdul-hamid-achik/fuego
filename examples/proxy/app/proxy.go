@@ -20,8 +20,8 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
 		return fuego.Rewrite(newPath), nil
 	}
 
-	// 2. Access Control: Block /admin without auth
-	if strings.HasPrefix(path, "/admin") {
+	// 2. Access Control: Block /api/admin without auth
+	if strings.HasPrefix(path, "/api/admin") {
 		authHeader := c.Header("Authorization")
 		if authHeader == "" {
 			return fuego.ResponseJSON(401, `{"error":"unauthorized","message":"Admin access requires authentication"}`), nil
@@ -48,8 +48,8 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
 // Only these paths will trigger the proxy.
 func ProxyMatchers() []string {
 	return []string{
-		"/v1/*",    // Legacy API paths
-		"/admin/*", // Admin paths
-		"/api/*",   // API paths (for header injection)
+		"/v1/*",        // Legacy API paths
+		"/api/admin/*", // Admin paths (protected)
+		"/api/*",       // API paths (for header injection)
 	}
 }

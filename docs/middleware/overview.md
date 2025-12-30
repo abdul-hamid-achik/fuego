@@ -7,17 +7,19 @@ Fuego provides a powerful middleware system with built-in middleware and support
 Middleware wraps handlers to add functionality:
 
 ```go
-func MyMiddleware(next fuego.HandlerFunc) fuego.HandlerFunc {
-    return func(c *fuego.Context) error {
-        // Before handler
-        fmt.Println("Request started")
-        
-        err := next(c) // Call the handler
-        
-        // After handler
-        fmt.Println("Request finished")
-        
-        return err
+func MyMiddleware() fuego.MiddlewareFunc {
+    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
+        return func(c *fuego.Context) error {
+            // Before handler
+            fmt.Println("Request started")
+            
+            err := next(c) // Call the handler
+            
+            // After handler
+            fmt.Println("Request finished")
+            
+            return err
+        }
     }
 }
 ```
@@ -174,25 +176,27 @@ app.Use(fuego.RateLimiter(100, time.Minute)) // 100 requests per minute
 
 ## Custom Middleware
 
-Create your own middleware:
+Create your own middleware using the factory pattern:
 
 ```go
-func AuthMiddleware(next fuego.HandlerFunc) fuego.HandlerFunc {
-    return func(c *fuego.Context) error {
-        token := c.Header("Authorization")
-        if token == "" {
-            return fuego.Unauthorized("missing authorization header")
+func AuthMiddleware() fuego.MiddlewareFunc {
+    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
+        return func(c *fuego.Context) error {
+            token := c.Header("Authorization")
+            if token == "" {
+                return fuego.Unauthorized("missing authorization header")
+            }
+            
+            user, err := validateToken(token)
+            if err != nil {
+                return fuego.Unauthorized("invalid token")
+            }
+            
+            // Store user in context for handlers
+            c.Set("user", user)
+            
+            return next(c)
         }
-        
-        user, err := validateToken(token)
-        if err != nil {
-            return fuego.Unauthorized("invalid token")
-        }
-        
-        // Store user in context for handlers
-        c.Set("user", user)
-        
-        return next(c)
     }
 }
 ```

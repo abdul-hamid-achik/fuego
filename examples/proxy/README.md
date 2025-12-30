@@ -5,7 +5,7 @@ Demonstrates the Fuego proxy layer for request interception before routing.
 ## Features Demonstrated
 
 1. **URL Rewriting** - Migrate legacy `/v1/*` paths to `/api/*`
-2. **Access Control** - Block `/admin/*` without valid authorization
+2. **Access Control** - Block `/api/admin/*` without valid authorization
 3. **Header Injection** - Add tracking headers to all requests
 4. **Selective Matching** - Only run proxy for specific path patterns
 
@@ -28,6 +28,7 @@ proxy/
 
 ```bash
 cd examples/proxy
+go mod tidy
 go run .
 ```
 
@@ -59,17 +60,17 @@ curl http://localhost:3000/v1/users
 
 Without auth (401):
 ```bash
-curl http://localhost:3000/admin
+curl http://localhost:3000/api/admin
 ```
 
 With invalid token (403):
 ```bash
-curl -H "Authorization: Bearer wrong-token" http://localhost:3000/admin
+curl -H "Authorization: Bearer wrong-token" http://localhost:3000/api/admin
 ```
 
 With valid token (200):
 ```bash
-curl -H "Authorization: Bearer admin-token" http://localhost:3000/admin
+curl -H "Authorization: Bearer admin-token" http://localhost:3000/api/admin
 ```
 
 ## Proxy Configuration
@@ -78,13 +79,15 @@ The proxy is defined in `app/proxy.go`:
 
 ```go
 func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+    path := c.Path()
+
     // URL Rewriting
     if strings.HasPrefix(path, "/v1/") {
         return fuego.Rewrite(strings.Replace(path, "/v1/", "/api/", 1)), nil
     }
 
     // Access Control
-    if strings.HasPrefix(path, "/admin") {
+    if strings.HasPrefix(path, "/api/admin") {
         if c.Header("Authorization") == "" {
             return fuego.ResponseJSON(401, `{"error":"unauthorized"}`), nil
         }
