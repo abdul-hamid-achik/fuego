@@ -49,4 +49,4 @@ coverage.txt
 # Local environment
 .env
 .env.local
-fuego
+/fuego

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.3] - 2025-12-30
+
+### Fixed
+
+- **CI/CD Pipeline Build Failures**
+  - Added missing `upgrade.go` command file to repository
+  - File was unintentionally ignored by `.gitignore` pattern
+  - Fixes `undefined: CheckForUpdateInBackground` build error in CI/CD workflows
+  - Resolves failed builds for v0.9.1 and v0.9.2 releases
+
+### Changed
+
+- Improved `.gitignore` pattern from `fuego` to `/fuego` to only ignore fuego binary in root directory
+- Prevents future issues where files containing "fuego" in their path might be accidentally ignored
+
 ## [0.9.2] - 2025-12-30
 
 ### Fixed
