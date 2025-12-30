@@ -1,0 +1,138 @@
+---
+title: API Reference
+description: 'Complete API documentation for the Fuego framework'
+---
+
+The Fuego framework provides a clean, intuitive API for building web applications and APIs in Go. This reference documents all public types, functions, and methods.
+
+<CardGroup cols={2}>
+  <Card title="App" icon="rocket" href="/docs/api/app">
+    Application lifecycle, routing, and server management
+  </Card>
+  <Card title="Context" icon="brackets-curly" href="/docs/api/context">
+    Request handling, response methods, and context storage
+  </Card>
+  <Card title="Config" icon="gear" href="/docs/api/config">
+    Configuration options and environment variables
+  </Card>
+  <Card title="Middleware" icon="layer-group" href="/docs/api/middleware">
+    Built-in middleware and custom middleware patterns
+  </Card>
+  <Card title="Proxy" icon="shield" href="/docs/api/proxy">
+    Request interception and routing control
+  </Card>
+  <Card title="Errors" icon="circle-exclamation" href="/docs/api/errors">
+    HTTP error types and error handling helpers
+  </Card>
+  <Card title="CLI Reference" icon="terminal" href="/docs/api/cli">
+    Command-line interface and code generation
+  </Card>
+</CardGroup>
+
+---
+
+## Quick Reference
+
+### Core Types
+
+| Type | Description |
+|------|-------------|
+| `App` | Main application struct that manages routing, middleware, and server lifecycle |
+| `Context` | Request context passed to handlers with request/response methods |
+| `Config` | Application configuration struct |
+| `HandlerFunc` | `func(c *Context) error` - Handler function signature |
+| `MiddlewareFunc` | `func(next HandlerFunc) HandlerFunc` - Middleware function signature |
+| `ProxyFunc` | `func(c *Context) (*ProxyResult, error)` - Proxy function signature |
+
+### App Methods
+
+| Method | Description |
+|--------|-------------|
+| `fuego.New(opts...)` | Create a new App with optional configuration |
+| `app.Get/Post/Put/Delete(pattern, handler)` | Register route handlers |
+| `app.Use(middleware)` | Add global middleware |
+| `app.Group(pattern, fn)` | Create a route group with shared middleware |
+| `app.Static(path, dir)` | Serve static files |
+| `app.Listen(addr)` | Start the HTTP server |
+| `app.Shutdown(ctx)` | Gracefully shutdown the server |
+
+### Context Methods
+
+| Method | Description |
+|--------|-------------|
+| `c.Param(name)` | Get URL parameter |
+| `c.Query(name)` | Get query string value |
+| `c.Header(name)` | Get request header |
+| `c.Bind(&struct)` | Parse JSON body into struct |
+| `c.JSON(status, data)` | Return JSON response |
+| `c.HTML(status, html)` | Return HTML response |
+| `c.Redirect(status, url)` | Redirect to URL |
+| `c.Set/Get(key, value)` | Context storage |
+
+### Built-in Middleware
+
+| Middleware | Description |
+|------------|-------------|
+| `Logger()` | Request/response logging |
+| `Recover()` | Panic recovery |
+| `CORS()` | Cross-origin resource sharing |
+| `RequestID()` | Add unique request IDs |
+| `Timeout(duration)` | Request timeout |
+| `BasicAuth(validator)` | HTTP Basic authentication |
+| `Compress()` | Response compression |
+| `RateLimiter(max, window)` | Rate limiting |
+| `SecureHeaders()` | Security headers |
+
+### Proxy Actions
+
+| Function | Description |
+|----------|-------------|
+| `Continue()` | Continue with normal routing |
+| `Redirect(url, code)` | Redirect to another URL |
+| `Rewrite(path)` | Internal URL rewrite |
+| `ResponseJSON(code, data)` | Return JSON response immediately |
+| `ResponseHTML(code, html)` | Return HTML response immediately |
+
+### Error Helpers
+
+| Function | Status Code |
+|----------|-------------|
+| `BadRequest(msg)` | 400 |
+| `Unauthorized(msg)` | 401 |
+| `Forbidden(msg)` | 403 |
+| `NotFound(msg)` | 404 |
+| `Conflict(msg)` | 409 |
+| `InternalServerError(msg)` | 500 |
+
+---
+
+## Import
+
+```go
+import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+```
+
+## Basic Example
+
+```go
+package main
+
+import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+
+func main() {
+    app := fuego.New()
+    
+    app.Use(fuego.Logger())
+    app.Use(fuego.Recover())
+    
+    app.Get("/", func(c *fuego.Context) error {
+        return c.JSON(200, map[string]string{"message": "Hello, World!"})
+    })
+    
+    app.Listen(":3000")
+}
+```
+
+<Info>
+For Go documentation with full type details, see the [pkg.go.dev documentation](https://pkg.go.dev/github.com/abdul-hamid-achik/fuego/pkg/fuego).
+</Info>

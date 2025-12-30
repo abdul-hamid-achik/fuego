@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.4] - 2024-12-30
+
+### Added
+
+- **Comprehensive API Reference Documentation**
+  - `docs/api/overview.mdx` - API Reference landing page with quick reference tables
+  - `docs/api/app.mdx` - Complete App struct and methods documentation
+  - `docs/api/config.mdx` - Configuration options and environment variables
+  - `docs/api/middleware.mdx` - All built-in middleware with examples
+  - `docs/api/proxy.mdx` - Proxy API and common patterns
+  - `docs/api/errors.mdx` - Error types and helper functions
+
+### Changed
+
+- **Reorganized documentation navigation**
+  - Renamed "Documentation" tab to "Guides" for clarity
+  - Expanded "API Reference" tab with comprehensive content
+  - Moved CLI Reference from `docs/reference/` to `docs/api/`
+
+- **Improved CLI Reference documentation**
+  - Replaced plain text tree views with `<FileTree>` components
+  - Added `<Steps>` components for sequential processes
+  - Better visual organization
+
+- **Improved Context API documentation**
+  - Added `<CardGroup>` navigation at top of page
+  - Replaced tables with `<AccordionGroup>` for method categories
+  - Added return types to all method signatures
+
+### Fixed
+
+- Fixed broken internal links referencing old `docs/reference/cli` path
+
+## [0.7.0] - 2024-12-30
+
+### Changed
+
+- **Migrated documentation to Mintlify MDX format**
+  - Converted all `.md` files to `.mdx` format
+  - Added Mintlify components (Cards, Tabs, Accordions, FileTree, etc.)
+  - Consolidated examples into `docs/guides/examples.mdx`
+  - Removed standalone `examples/` folder
+
+- Updated domain to `gofuego.dev`
+
 ## [0.6.0] - 2024-12-29
 
 ### Added

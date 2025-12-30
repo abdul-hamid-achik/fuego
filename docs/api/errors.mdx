@@ -1,0 +1,521 @@
+---
+title: Errors
+description: 'HTTP error types and error handling helpers'
+---
+
+Fuego provides structured HTTP error types and helper functions for consistent error responses.
+
+## HTTPError Struct
+
+```go
+type HTTPError struct {
+    Code    int    `json:"code"`
+    Message string `json:"message"`
+    Err     error  `json:"-"` // Not exposed to client
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `Code` | `int` | HTTP status code |
+| `Message` | `string` | Error message returned to client |
+| `Err` | `error` | Underlying error (for logging, not sent to client) |
+
+### Methods
+
+```go
+func (e *HTTPError) Error() string   // Returns message
+func (e *HTTPError) Unwrap() error   // Returns underlying Err
+```
+
+---
+
+## Error Helpers
+
+Convenient functions for common HTTP errors:
+
+<CardGroup cols={3}>
+  <Card title="BadRequest" icon="circle-exclamation">
+    400 Bad Request
+  </Card>
+  <Card title="Unauthorized" icon="lock">
+    401 Unauthorized
+  </Card>
+  <Card title="Forbidden" icon="ban">
+    403 Forbidden
+  </Card>
+  <Card title="NotFound" icon="magnifying-glass">
+    404 Not Found
+  </Card>
+  <Card title="Conflict" icon="code-merge">
+    409 Conflict
+  </Card>
+  <Card title="InternalServerError" icon="server">
+    500 Internal Server Error
+  </Card>
+</CardGroup>
+
+### Usage
+
+<Tabs>
+  <Tab title="BadRequest">
+    ```go
+    func Post(c *fuego.Context) error {
+        var req CreateUserRequest
+        if err := c.Bind(&req); err != nil {
+            return fuego.BadRequest("invalid request body")
+        }
+        
+        if req.Email == "" {
+            return fuego.BadRequest("email is required")
+        }
+        
+        // ...
+    }
+    ```
+    
+    **Response:**
+    ```json
+    {
+      "error": "bad_request",
+      "message": "email is required"
+    }
+    ```
+  </Tab>
+  <Tab title="Unauthorized">
+    ```go
+    func Get(c *fuego.Context) error {
+        token := c.Header("Authorization")
+        if token == "" {
+            return fuego.Unauthorized("authentication required")
+        }
+        
+        user, err := validateToken(token)
+        if err != nil {
+            return fuego.Unauthorized("invalid or expired token")
+        }
+        
+        // ...
+    }
+    ```
+    
+    **Response:**
+    ```json
+    {
+      "error": "unauthorized",
+      "message": "invalid or expired token"
+    }
+    ```
+  </Tab>
+  <Tab title="Forbidden">
+    ```go
+    func Delete(c *fuego.Context) error {
+        user := c.Get("user").(User)
+        resourceOwnerID := c.Param("user_id")
+        
+        if user.ID != resourceOwnerID && !user.IsAdmin {
+            return fuego.Forbidden("you don't have permission to delete this resource")
+        }
+        
+        // ...
+    }
+    ```
+    
+    **Response:**
+    ```json
+    {
+      "error": "forbidden",
+      "message": "you don't have permission to delete this resource"
+    }
+    ```
+  </Tab>
+  <Tab title="NotFound">
+    ```go
+    func Get(c *fuego.Context) error {
+        id := c.Param("id")
+        
+        user, err := db.FindUser(id)
+        if err == sql.ErrNoRows {
+            return fuego.NotFound("user not found")
+        }
+        if err != nil {
+            return fuego.InternalServerError("database error")
+        }
+        
+        return c.JSON(200, user)
+    }
+    ```
+    
+    **Response:**
+    ```json
+    {
+      "error": "not_found",
+      "message": "user not found"
+    }
+    ```
+  </Tab>
+  <Tab title="Conflict">
+    ```go
+    func Post(c *fuego.Context) error {
+        var req CreateUserRequest
+        c.Bind(&req)
+        
+        existing, _ := db.FindUserByEmail(req.Email)
+        if existing != nil {
+            return fuego.Conflict("user with this email already exists")
+        }
+        
+        // ...
+    }
+    ```
+    
+    **Response:**
+    ```json
+    {
+      "error": "conflict",
+      "message": "user with this email already exists"
+    }
+    ```
+  </Tab>
+  <Tab title="InternalServerError">
+    ```go
+    func Get(c *fuego.Context) error {
+        data, err := externalService.Fetch()
+        if err != nil {
+            log.Printf("External service error: %v", err)
+            return fuego.InternalServerError("service temporarily unavailable")
+        }
+        
+        return c.JSON(200, data)
+    }
+    ```
+    
+    **Response:**
+    ```json
+    {
+      "error": "internal_server_error",
+      "message": "service temporarily unavailable"
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Creating Custom Errors
+
+### NewHTTPError
+
+Create a custom HTTP error with any status code:
+
+```go
+fuego.NewHTTPError(code int, message string) *HTTPError
+```
+
+```go
+// 402 Payment Required
+return fuego.NewHTTPError(402, "subscription required")
+
+// 418 I'm a teapot
+return fuego.NewHTTPError(418, "cannot brew coffee")
+
+// 429 Too Many Requests
+return fuego.NewHTTPError(429, "rate limit exceeded")
+
+// 503 Service Unavailable
+return fuego.NewHTTPError(503, "service under maintenance")
+```
+
+### NewHTTPErrorWithCause
+
+Create an error with an underlying cause for debugging:
+
+```go
+fuego.NewHTTPErrorWithCause(code int, message string, err error) *HTTPError
+```
+
+```go
+user, err := db.FindUser(id)
+if err != nil {
+    // err is logged but not sent to client
+    return fuego.NewHTTPErrorWithCause(500, "failed to fetch user", err)
+}
+```
+
+The underlying error can be retrieved with `errors.Unwrap()`:
+
+```go
+if httpErr, ok := fuego.IsHTTPError(err); ok {
+    if cause := errors.Unwrap(httpErr); cause != nil {
+        log.Printf("Underlying error: %v", cause)
+    }
+}
+```
+
+---
+
+## Wrapping Errors
+
+### WrapError
+
+Wrap an existing error with additional context:
+
+```go
+fuego.WrapError(err error, message string) error
+```
+
+```go
+func fetchUserData(id string) (*User, error) {
+    user, err := db.FindUser(id)
+    if err != nil {
+        return nil, fuego.WrapError(err, "failed to fetch user from database")
+    }
+    
+    profile, err := api.GetProfile(user.ProfileID)
+    if err != nil {
+        return nil, fuego.WrapError(err, "failed to fetch user profile")
+    }
+    
+    return user, nil
+}
+```
+
+---
+
+## Error Checking
+
+### IsHTTPError
+
+Check if an error is an HTTPError and extract it:
+
+```go
+fuego.IsHTTPError(err error) (*HTTPError, bool)
+```
+
+```go
+func errorMiddleware() fuego.MiddlewareFunc {
+    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
+        return func(c *fuego.Context) error {
+            err := next(c)
+            
+            if httpErr, ok := fuego.IsHTTPError(err); ok {
+                // Log the error
+                log.Printf("[%d] %s", httpErr.Code, httpErr.Message)
+                
+                // Handle specific codes
+                if httpErr.Code == 401 {
+                    // Clear auth cookie
+                    c.SetCookie(&http.Cookie{
+                        Name:   "session",
+                        MaxAge: -1,
+                    })
+                }
+            }
+            
+            return err
+        }
+    }
+}
+```
+
+---
+
+## Error Response Format
+
+All HTTP errors are returned as JSON:
+
+```json
+{
+  "error": "error_code",
+  "message": "Human readable message"
+}
+```
+
+| Status Code | Error Code |
+|-------------|------------|
+| 400 | `bad_request` |
+| 401 | `unauthorized` |
+| 403 | `forbidden` |
+| 404 | `not_found` |
+| 409 | `conflict` |
+| 500 | `internal_server_error` |
+
+---
+
+## Custom Error Responses
+
+For more control over error responses, use `c.JSON()` directly:
+
+```go
+type ErrorResponse struct {
+    Error   string            `json:"error"`
+    Message string            `json:"message"`
+    Details map[string]string `json:"details,omitempty"`
+    TraceID string            `json:"trace_id,omitempty"`
+}
+
+func Post(c *fuego.Context) error {
+    var req CreateUserRequest
+    if err := c.Bind(&req); err != nil {
+        return c.JSON(400, ErrorResponse{
+            Error:   "validation_error",
+            Message: "Invalid request body",
+            Details: map[string]string{
+                "body": "must be valid JSON",
+            },
+            TraceID: c.Header("X-Request-ID"),
+        })
+    }
+    
+    errors := validateUser(req)
+    if len(errors) > 0 {
+        return c.JSON(422, ErrorResponse{
+            Error:   "validation_error",
+            Message: "Validation failed",
+            Details: errors,
+            TraceID: c.Header("X-Request-ID"),
+        })
+    }
+    
+    // ...
+}
+```
+
+---
+
+## Error Handling Middleware
+
+Create a centralized error handler:
+
+```go
+func ErrorHandler() fuego.MiddlewareFunc {
+    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
+        return func(c *fuego.Context) error {
+            err := next(c)
+            if err == nil {
+                return nil
+            }
+            
+            // Check if it's already an HTTP error
+            if httpErr, ok := fuego.IsHTTPError(err); ok {
+                return c.JSON(httpErr.Code, map[string]string{
+                    "error":   httpCodeToString(httpErr.Code),
+                    "message": httpErr.Message,
+                })
+            }
+            
+            // Log unexpected errors
+            log.Printf("Unexpected error: %v", err)
+            
+            // Return generic error to client
+            return c.JSON(500, map[string]string{
+                "error":   "internal_server_error",
+                "message": "An unexpected error occurred",
+            })
+        }
+    }
+}
+
+func httpCodeToString(code int) string {
+    switch code {
+    case 400:
+        return "bad_request"
+    case 401:
+        return "unauthorized"
+    case 403:
+        return "forbidden"
+    case 404:
+        return "not_found"
+    case 409:
+        return "conflict"
+    default:
+        return "internal_server_error"
+    }
+}
+```
+
+---
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use specific error messages" icon="message">
+    **Do:**
+    ```go
+    return fuego.BadRequest("email must be a valid email address")
+    return fuego.NotFound("user with ID 123 not found")
+    ```
+    
+    **Don't:**
+    ```go
+    return fuego.BadRequest("invalid input")
+    return fuego.NotFound("not found")
+    ```
+  </Accordion>
+  
+  <Accordion title="Don't expose internal details" icon="eye-slash">
+    **Do:**
+    ```go
+    if err != nil {
+        log.Printf("Database error: %v", err)
+        return fuego.InternalServerError("failed to process request")
+    }
+    ```
+    
+    **Don't:**
+    ```go
+    if err != nil {
+        return fuego.InternalServerError(err.Error()) // Exposes SQL errors!
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Use appropriate status codes" icon="list-ol">
+    | Situation | Status Code |
+    |-----------|-------------|
+    | Invalid JSON body | 400 Bad Request |
+    | Missing required field | 400 Bad Request |
+    | Invalid field format | 400 Bad Request (or 422) |
+    | Missing/invalid auth | 401 Unauthorized |
+    | Valid auth, no permission | 403 Forbidden |
+    | Resource doesn't exist | 404 Not Found |
+    | Resource already exists | 409 Conflict |
+    | Server error | 500 Internal Server Error |
+    | Service unavailable | 503 Service Unavailable |
+  </Accordion>
+  
+  <Accordion title="Log underlying errors" icon="file-lines">
+    ```go
+    user, err := db.FindUser(id)
+    if err != nil {
+        // Log the actual error
+        log.Printf("Failed to find user %s: %v", id, err)
+        
+        // Return safe message to client
+        if errors.Is(err, sql.ErrNoRows) {
+            return fuego.NotFound("user not found")
+        }
+        return fuego.InternalServerError("failed to fetch user")
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Context" icon="brackets-curly" href="/docs/api/context">
+    Response methods
+  </Card>
+  <Card title="Middleware" icon="layer-group" href="/docs/api/middleware">
+    Error handling middleware
+  </Card>
+  <Card title="Error Handling Guide" icon="book" href="/docs/advanced/error-handling">
+    In-depth error patterns
+  </Card>
+  <Card title="Testing" icon="flask" href="/docs/advanced/testing">
+    Testing error cases
+  </Card>
+</CardGroup>

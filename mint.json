@@ -27,7 +27,7 @@
   },
   "tabs": [
     {
-      "name": "Documentation",
+      "name": "Guides",
       "url": "/docs"
     },
     {
@@ -95,8 +95,14 @@
     {
       "group": "API Reference",
       "pages": [
+        "docs/api/overview",
+        "docs/api/app",
         "docs/api/context",
-        "docs/reference/cli"
+        "docs/api/config",
+        "docs/api/middleware",
+        "docs/api/proxy",
+        "docs/api/errors",
+        "docs/api/cli"
       ]
     }
   ],

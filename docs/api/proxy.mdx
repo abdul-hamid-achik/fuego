@@ -1,0 +1,445 @@
+---
+title: Proxy
+description: 'Request interception and routing control'
+---
+
+The proxy layer runs **before** route matching, allowing you to intercept, redirect, rewrite, or block requests globally.
+
+## Overview
+
+```go
+type ProxyFunc func(c *Context) (*ProxyResult, error)
+```
+
+The proxy function receives a context and returns a `ProxyResult` that determines what happens to the request:
+
+- **Continue** - Proceed with normal routing
+- **Redirect** - Send client to a different URL
+- **Rewrite** - Internally change the request path
+- **Response** - Return a response immediately (skip routing)
+
+<Info>
+The proxy runs before route matching, so you cannot access route parameters (`c.Param()`) in the proxy. Use path parsing or middleware for route-specific logic.
+</Info>
+
+---
+
+## Proxy Actions
+
+<AccordionGroup>
+  <Accordion title="Continue" icon="arrow-right" defaultOpen>
+    Continue with normal routing.
+
+    ```go
+    func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+        // Let the request proceed to the router
+        return fuego.Continue(), nil
+    }
+    ```
+
+    This is the default action when the proxy doesn't need to intervene.
+  </Accordion>
+
+  <Accordion title="Redirect" icon="arrow-turn-right">
+    Redirect the client to a different URL.
+
+    ```go
+    fuego.Redirect(url string, statusCode int) *ProxyResult
+    ```
+
+    **Parameters:**
+    | Name | Type | Description |
+    |------|------|-------------|
+    | `url` | `string` | Target URL (absolute or relative) |
+    | `statusCode` | `int` | HTTP status code (301, 302, 307, 308) |
+
+    **Status codes:**
+    | Code | Name | Use Case |
+    |------|------|----------|
+    | 301 | Moved Permanently | Permanent URL change, cacheable |
+    | 302 | Found | Temporary redirect (common default) |
+    | 307 | Temporary Redirect | Preserves HTTP method |
+    | 308 | Permanent Redirect | Permanent, preserves HTTP method |
+
+    **Examples:**
+
+    ```go
+    // Redirect HTTP to HTTPS
+    func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+        if c.Request().TLS == nil {
+            url := "https://" + c.Request().Host + c.Path()
+            return fuego.Redirect(url, 301), nil
+        }
+        return fuego.Continue(), nil
+    }
+    ```
+
+    ```go
+    // Redirect www to non-www
+    func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+        host := c.Request().Host
+        if strings.HasPrefix(host, "www.") {
+            newHost := strings.TrimPrefix(host, "www.")
+            url := "https://" + newHost + c.Path()
+            return fuego.Redirect(url, 301), nil
+        }
+        return fuego.Continue(), nil
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Rewrite" icon="pen">
+    Internally rewrite the request path. The client doesn't see the change.
+
+    ```go
+    fuego.Rewrite(path string) *ProxyResult
+    ```
+
+    **Parameters:**
+    | Name | Type | Description |
+    |------|------|-------------|
+    | `path` | `string` | New internal path |
+
+    **Examples:**
+
+    ```go
+    // Rewrite /v1/* to /api/*
+    func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+        path := c.Path()
+        if strings.HasPrefix(path, "/v1/") {
+            newPath := "/api/" + strings.TrimPrefix(path, "/v1/")
+            return fuego.Rewrite(newPath), nil
+        }
+        return fuego.Continue(), nil
+    }
+    ```
+
+    ```go
+    // A/B testing - route 10% of users to new UI
+    func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+        if c.Path() == "/" && rand.Float32() < 0.1 {
+            return fuego.Rewrite("/new-homepage"), nil
+        }
+        return fuego.Continue(), nil
+    }
+    ```
+
+    <Tip>
+    Use rewrites for versioning, A/B testing, or gradually migrating routes without changing client URLs.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Response" icon="reply">
+    Return a response immediately, skipping the router entirely.
+
+    ### Response(statusCode, body, contentType)
+
+    ```go
+    fuego.Response(statusCode int, body []byte, contentType string) *ProxyResult
+    ```
+
+    **Parameters:**
+    | Name | Type | Description |
+    |------|------|-------------|
+    | `statusCode` | `int` | HTTP status code |
+    | `body` | `[]byte` | Response body |
+    | `contentType` | `string` | Content-Type header |
+
+    ```go
+    return fuego.Response(503, []byte("Service Unavailable"), "text/plain"), nil
+    ```
+
+    ### ResponseJSON(statusCode, json)
+
+    ```go
+    fuego.ResponseJSON(statusCode int, json string) *ProxyResult
+    ```
+
+    Return a JSON response.
+
+    ```go
+    return fuego.ResponseJSON(401, `{"error":"unauthorized","message":"Invalid API key"}`), nil
+    ```
+
+    ### ResponseHTML(statusCode, html)
+
+    ```go
+    fuego.ResponseHTML(statusCode int, html string) *ProxyResult
+    ```
+
+    Return an HTML response.
+
+    ```go
+    return fuego.ResponseHTML(503, `
+        <!DOCTYPE html>
+        <html>
+        <head><title>Maintenance</title></head>
+        <body>
+            <h1>Under Maintenance</h1>
+            <p>We'll be back shortly.</p>
+        </body>
+        </html>
+    `), nil
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Response Modifiers
+
+Chain methods to add headers to proxy responses:
+
+### WithHeader(key, value)
+
+```go
+return fuego.ResponseJSON(200, `{"status":"ok"}`).
+    WithHeader("X-Custom", "value"), nil
+```
+
+### WithHeaders(headers)
+
+```go
+return fuego.Redirect("/login", 302).
+    WithHeaders(map[string]string{
+        "X-Redirect-Reason": "session-expired",
+        "Cache-Control":     "no-store",
+    }), nil
+```
+
+---
+
+## ProxyConfig
+
+Configure which requests the proxy handles:
+
+```go
+type ProxyConfig struct {
+    Matchers []string  // Path patterns to match
+    Excludes []string  // Paths to exclude
+}
+```
+
+### Setting Proxy with Config
+
+```go
+app.SetProxy(proxyFunc, &fuego.ProxyConfig{
+    Matchers: []string{"/api/*", "/admin/*"},
+    Excludes: []string{"/api/health", "/api/docs/*"},
+})
+```
+
+### Pattern Syntax
+
+| Pattern | Matches |
+|---------|---------|
+| `/api/*` | `/api/users`, `/api/posts/123` |
+| `/users/{id}` | `/users/123`, `/users/abc` |
+| `/docs/**` | `/docs/`, `/docs/api/context` |
+| `*` | All paths |
+
+<Info>
+If no config is provided, the proxy runs on all requests.
+</Info>
+
+---
+
+## Common Patterns
+
+### Authentication Check
+
+```go
+func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+    path := c.Path()
+    
+    // Skip auth for public paths
+    publicPaths := []string{"/", "/api/health", "/api/auth/login", "/static/"}
+    for _, p := range publicPaths {
+        if strings.HasPrefix(path, p) {
+            return fuego.Continue(), nil
+        }
+    }
+    
+    // Check API key
+    apiKey := c.Header("X-API-Key")
+    if apiKey == "" {
+        return fuego.ResponseJSON(401, `{"error":"unauthorized","message":"API key required"}`), nil
+    }
+    
+    // Validate API key
+    if !isValidAPIKey(apiKey) {
+        return fuego.ResponseJSON(401, `{"error":"unauthorized","message":"Invalid API key"}`), nil
+    }
+    
+    return fuego.Continue(), nil
+}
+```
+
+### Rate Limiting
+
+```go
+var (
+    requestCounts = make(map[string]int)
+    mu            sync.Mutex
+)
+
+func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+    ip := c.ClientIP()
+    
+    mu.Lock()
+    count := requestCounts[ip]
+    requestCounts[ip] = count + 1
+    mu.Unlock()
+    
+    if count > 100 { // 100 requests per window
+        return fuego.ResponseJSON(429, `{"error":"rate_limit_exceeded"}`).
+            WithHeader("Retry-After", "60"), nil
+    }
+    
+    return fuego.Continue(), nil
+}
+```
+
+### Maintenance Mode
+
+```go
+var maintenanceMode = false
+var allowedIPs = []string{"192.168.1.100", "10.0.0.1"}
+
+func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+    if !maintenanceMode {
+        return fuego.Continue(), nil
+    }
+    
+    // Allow certain IPs during maintenance
+    clientIP := c.ClientIP()
+    for _, ip := range allowedIPs {
+        if clientIP == ip {
+            return fuego.Continue(), nil
+        }
+    }
+    
+    return fuego.ResponseHTML(503, `
+        <!DOCTYPE html>
+        <html>
+        <head><title>Maintenance</title></head>
+        <body style="font-family: sans-serif; text-align: center; padding: 50px;">
+            <h1>🔧 Under Maintenance</h1>
+            <p>We're performing scheduled maintenance. Please check back soon.</p>
+        </body>
+        </html>
+    `), nil
+}
+```
+
+### Geolocation Routing
+
+```go
+func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+    country := c.Header("CF-IPCountry") // Cloudflare header
+    
+    switch country {
+    case "DE", "FR", "IT", "ES":
+        return fuego.Rewrite("/eu" + c.Path()), nil
+    case "CN", "JP", "KR":
+        return fuego.Rewrite("/asia" + c.Path()), nil
+    default:
+        return fuego.Continue(), nil
+    }
+}
+```
+
+### Legacy URL Support
+
+```go
+func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+    path := c.Path()
+    
+    // Map old URLs to new ones
+    redirects := map[string]string{
+        "/old-page":     "/new-page",
+        "/blog":         "/posts",
+        "/about-us":     "/about",
+        "/contact-form": "/contact",
+    }
+    
+    if newPath, ok := redirects[path]; ok {
+        return fuego.Redirect(newPath, 301), nil
+    }
+    
+    return fuego.Continue(), nil
+}
+```
+
+---
+
+## File-based Proxy
+
+When using file-based routing, create `app/proxy.go`:
+
+```go
+// app/proxy.go
+package app
+
+import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+
+func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+    // Your proxy logic here
+    return fuego.Continue(), nil
+}
+```
+
+The proxy is automatically discovered and registered.
+
+<Tip>
+Use the CLI to generate a proxy with common patterns:
+```bash
+fuego generate proxy --template auth-check
+fuego generate proxy --template rate-limit
+fuego generate proxy --template maintenance
+```
+</Tip>
+
+---
+
+## Proxy vs Middleware
+
+| Feature | Proxy | Middleware |
+|---------|-------|------------|
+| Runs | Before routing | After routing |
+| Access to route params | No | Yes |
+| Can skip routing entirely | Yes | No |
+| Can modify request path | Yes (rewrite) | No |
+| Scope | Global | Global or per-route |
+| Use case | Auth, redirects, rewrites | Logging, headers, auth |
+
+**Use Proxy for:**
+- Global authentication before routes are matched
+- URL redirects and rewrites
+- Blocking requests (maintenance mode)
+- A/B testing routing
+
+**Use Middleware for:**
+- Request/response logging
+- Adding headers
+- Route-specific authentication
+- Request validation
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Middleware" icon="layer-group" href="/docs/api/middleware">
+    Route-level request processing
+  </Card>
+  <Card title="Proxy Guide" icon="book" href="/docs/middleware/proxy">
+    In-depth proxy patterns
+  </Card>
+  <Card title="CLI Reference" icon="terminal" href="/docs/api/cli">
+    Generate proxy files
+  </Card>
+  <Card title="Authentication" icon="lock" href="/docs/guides/authentication">
+    Auth implementation guide
+  </Card>
+</CardGroup>

@@ -5,6 +5,23 @@ description: 'Complete reference for the fuego.Context object passed to every ha
 
 The `fuego.Context` is passed to every handler and provides access to request data and response methods.
 
+<CardGroup cols={2}>
+  <Card title="Request Data" icon="arrow-down" href="#request-data">
+    Read parameters, headers, body, and cookies
+  </Card>
+  <Card title="Response Methods" icon="arrow-up" href="#response-methods">
+    Send JSON, HTML, redirects, and more
+  </Card>
+  <Card title="Context Storage" icon="database" href="#context-storage">
+    Share data between middleware and handlers
+  </Card>
+  <Card title="Error Helpers" icon="circle-exclamation" href="#error-helpers">
+    Return structured HTTP errors
+  </Card>
+</CardGroup>
+
+---
+
 ## Request Data
 
 ### URL Parameters
@@ -329,49 +346,67 @@ func Get(c *fuego.Context) error {
 
 ## Complete API Reference
 
-### Request Methods
+<AccordionGroup>
+  <Accordion title="URL Parameters" icon="link" defaultOpen>
+    | Method | Return Type | Description |
+    |--------|-------------|-------------|
+    | `c.Param(name)` | `string` | Get URL parameter from dynamic route segments |
+    | `c.ParamInt(name)` | `int` | Get URL parameter as integer (0 if invalid) |
+  </Accordion>
 
-| Method | Description |
-|--------|-------------|
-| `c.Param(name)` | Get URL parameter |
-| `c.ParamInt(name)` | Get URL parameter as int |
-| `c.Query(name)` | Get query string value |
-| `c.QueryDefault(name, def)` | Get query with default |
-| `c.QueryInt(name, def)` | Get query as int |
-| `c.QueryBool(name, def)` | Get query as bool |
-| `c.Header(name)` | Get request header |
-| `c.Bind(&struct)` | Parse JSON body |
-| `c.FormValue(name)` | Get form value |
-| `c.FormFile(name)` | Get uploaded file |
-| `c.Cookie(name)` | Get cookie value |
-| `c.Method()` | Get HTTP method |
-| `c.Path()` | Get request path |
-| `c.ClientIP()` | Get client IP |
-| `c.IsJSON()` | Check if JSON request |
-| `c.IsHTMX()` | Check if HTMX request |
+  <Accordion title="Query Parameters" icon="magnifying-glass">
+    | Method | Return Type | Description |
+    |--------|-------------|-------------|
+    | `c.Query(name)` | `string` | Get query string value |
+    | `c.QueryDefault(name, def)` | `string` | Get query with default value |
+    | `c.QueryInt(name, def)` | `int` | Get query as integer with default |
+    | `c.QueryBool(name, def)` | `bool` | Get query as boolean with default |
+  </Accordion>
 
-### Response Methods
+  <Accordion title="Headers & Body" icon="envelope">
+    | Method | Return Type | Description |
+    |--------|-------------|-------------|
+    | `c.Header(name)` | `string` | Get request header value |
+    | `c.Bind(&struct)` | `error` | Parse JSON body into struct |
+    | `c.FormValue(name)` | `string` | Get form-encoded value |
+    | `c.FormFile(name)` | `File, Header, error` | Get uploaded file |
+    | `c.Cookie(name)` | `string` | Get cookie value |
+  </Accordion>
 
-| Method | Description |
-|--------|-------------|
-| `c.JSON(status, data)` | Return JSON |
-| `c.HTML(status, html)` | Return HTML |
-| `c.String(status, text)` | Return plain text |
-| `c.Redirect(status, url)` | Redirect |
-| `c.NoContent()` | Return 204 |
-| `c.Blob(status, type, data)` | Return binary |
-| `c.SetHeader(key, value)` | Set response header |
-| `c.SetCookie(cookie)` | Set cookie |
+  <Accordion title="Request Info" icon="circle-info">
+    | Method | Return Type | Description |
+    |--------|-------------|-------------|
+    | `c.Method()` | `string` | Get HTTP method (GET, POST, etc.) |
+    | `c.Path()` | `string` | Get request path |
+    | `c.ClientIP()` | `string` | Get client IP address |
+    | `c.IsJSON()` | `bool` | Check if Content-Type is application/json |
+    | `c.IsHTMX()` | `bool` | Check if HX-Request header is present |
+    | `c.Request()` | `*http.Request` | Get underlying HTTP request |
+  </Accordion>
 
-### Context Storage
+  <Accordion title="Response Methods" icon="reply">
+    | Method | Description |
+    |--------|-------------|
+    | `c.JSON(status, data)` | Return JSON response |
+    | `c.HTML(status, html)` | Return HTML response |
+    | `c.String(status, text)` | Return plain text response |
+    | `c.Redirect(status, url)` | Redirect to URL |
+    | `c.NoContent()` | Return 204 No Content |
+    | `c.Blob(status, type, data)` | Return binary data |
+    | `c.SetHeader(key, value)` | Set response header |
+    | `c.SetCookie(cookie)` | Set cookie |
+  </Accordion>
 
-| Method | Description |
-|--------|-------------|
-| `c.Set(key, value)` | Store value |
-| `c.Get(key)` | Get value (any) |
-| `c.GetString(key)` | Get as string |
-| `c.GetInt(key)` | Get as int |
-| `c.GetBool(key)` | Get as bool |
+  <Accordion title="Context Storage" icon="database">
+    | Method | Return Type | Description |
+    |--------|-------------|-------------|
+    | `c.Set(key, value)` | - | Store value in context |
+    | `c.Get(key)` | `any` | Get value (requires type assertion) |
+    | `c.GetString(key)` | `string` | Get value as string |
+    | `c.GetInt(key)` | `int` | Get value as integer |
+    | `c.GetBool(key)` | `bool` | Get value as boolean |
+  </Accordion>
+</AccordionGroup>
 
 ## Full Example
 

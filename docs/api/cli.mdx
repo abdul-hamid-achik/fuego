@@ -65,37 +65,47 @@ fuego new myapp --api-only
 
 <Tabs>
   <Tab title="Full-Stack">
-    ```
-    myapp/
-    ├── app/
-    │   ├── api/
-    │   │   └── health/
-    │   │       └── route.go
-    │   ├── layout.templ
-    │   └── page.templ
-    ├── static/
-    │   └── css/
-    ├── styles/
-    │   └── input.css
-    ├── main.go
-    ├── fuego.yaml
-    ├── go.mod
-    └── .gitignore
-    ```
+    <FileTree>
+      <Folder name="myapp" defaultOpen>
+        <Folder name="app" defaultOpen>
+          <Folder name="api" defaultOpen>
+            <Folder name="health">
+              <File name="route.go" />
+            </Folder>
+          </Folder>
+          <File name="layout.templ" />
+          <File name="page.templ" />
+        </Folder>
+        <Folder name="static">
+          <Folder name="css" />
+        </Folder>
+        <Folder name="styles">
+          <File name="input.css" />
+        </Folder>
+        <File name="main.go" />
+        <File name="fuego.yaml" />
+        <File name="go.mod" />
+        <File name=".gitignore" />
+      </Folder>
+    </FileTree>
   </Tab>
   <Tab title="API-Only">
-    ```
-    myapp/
-    ├── app/
-    │   └── api/
-    │       └── health/
-    │           └── route.go
-    ├── static/
-    ├── main.go
-    ├── fuego.yaml
-    ├── go.mod
-    └── .gitignore
-    ```
+    <FileTree>
+      <Folder name="myapp" defaultOpen>
+        <Folder name="app" defaultOpen>
+          <Folder name="api" defaultOpen>
+            <Folder name="health">
+              <File name="route.go" />
+            </Folder>
+          </Folder>
+        </Folder>
+        <Folder name="static" />
+        <File name="main.go" />
+        <File name="fuego.yaml" />
+        <File name="go.mod" />
+        <File name=".gitignore" />
+      </Folder>
+    </FileTree>
   </Tab>
 </Tabs>
 
@@ -135,11 +145,23 @@ fuego dev --host 127.0.0.1 --port 3000
 
 ### What It Does
 
-1. Generates route registration code from your `app/` directory
-2. Runs `templ generate` if `.templ` files exist
-3. Starts Tailwind CSS watcher if `styles/input.css` exists
-4. Starts the Go server with live reload
-5. Watches for file changes and auto-rebuilds
+<Steps>
+  <Step title="Generate Routes">
+    Scans your `app/` directory and generates route registration code
+  </Step>
+  <Step title="Generate Templates">
+    Runs `templ generate` if `.templ` files exist in your project
+  </Step>
+  <Step title="Start Tailwind">
+    Starts the Tailwind CSS watcher if `styles/input.css` exists
+  </Step>
+  <Step title="Start Server">
+    Starts the Go server with live reload enabled
+  </Step>
+  <Step title="Watch for Changes">
+    Watches for file changes and automatically rebuilds
+  </Step>
+</Steps>
 
 ### Output
 
@@ -201,9 +223,17 @@ fuego build --json
 
 ### Build Process
 
-1. Runs `templ generate` if `.templ` files exist
-2. Builds Tailwind CSS (minified) if `styles/input.css` exists
-3. Compiles Go binary with optimizations (`-ldflags "-s -w"`)
+<Steps>
+  <Step title="Generate Templates">
+    Runs `templ generate` if `.templ` files exist in your project
+  </Step>
+  <Step title="Build CSS">
+    Builds Tailwind CSS (minified) if `styles/input.css` exists
+  </Step>
+  <Step title="Compile Binary">
+    Compiles Go binary with optimizations (`-ldflags "-s -w"`)
+  </Step>
+</Steps>
 
 ### Output
 

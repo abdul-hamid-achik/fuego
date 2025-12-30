@@ -1,0 +1,326 @@
+---
+title: Configuration
+description: 'Application configuration and options'
+---
+
+Fuego applications can be configured through the options pattern, configuration files, or environment variables.
+
+## Config Struct
+
+The `Config` struct holds all application configuration.
+
+```go
+type Config struct {
+    AppDir      string
+    StaticDir   string
+    TemplateDir string
+    Port        string
+    Host        string
+    Dev         bool
+}
+```
+
+<AccordionGroup>
+  <Accordion title="AppDir" icon="folder" defaultOpen>
+    **Type:** `string`  
+    **Default:** `"app"`
+
+    Directory containing route files, middleware, pages, and proxy.
+
+    ```go
+    app := fuego.New(fuego.WithAppDir("routes"))
+    ```
+
+    <FileTree>
+      <Folder name="app" defaultOpen>
+        <Folder name="api">
+          <File name="middleware.go" />
+          <Folder name="users">
+            <File name="route.go" />
+          </Folder>
+        </Folder>
+        <File name="proxy.go" />
+        <File name="page.templ" />
+        <File name="layout.templ" />
+      </Folder>
+    </FileTree>
+  </Accordion>
+
+  <Accordion title="StaticDir" icon="image">
+    **Type:** `string`  
+    **Default:** `"static"`
+
+    Directory for static files (CSS, JS, images).
+
+    ```go
+    app := fuego.New(fuego.WithStaticDir("public"))
+    ```
+
+    Files are served at `/static/*` by default.
+  </Accordion>
+
+  <Accordion title="TemplateDir" icon="file-code">
+    **Type:** `string`  
+    **Default:** `""`
+
+    Directory for Go templates (if using `html/template` instead of templ).
+
+    ```go
+    app := fuego.New(fuego.WithTemplateDir("templates"))
+    ```
+  </Accordion>
+
+  <Accordion title="Port" icon="plug">
+    **Type:** `string`  
+    **Default:** `"3000"`
+
+    Port to listen on. Can be overridden by `PORT` environment variable.
+
+    ```go
+    app := fuego.New(fuego.WithPort("8080"))
+    ```
+  </Accordion>
+
+  <Accordion title="Host" icon="server">
+    **Type:** `string`  
+    **Default:** `"0.0.0.0"`
+
+    Host to bind to.
+
+    ```go
+    app := fuego.New(fuego.WithHost("127.0.0.1"))
+    ```
+  </Accordion>
+
+  <Accordion title="Dev" icon="code">
+    **Type:** `bool`  
+    **Default:** `false`
+
+    Enable development mode with debug logging.
+
+    ```go
+    app := fuego.New(fuego.WithDev(true))
+    ```
+
+    Can be set via `FUEGO_DEV=true` environment variable.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Options Pattern
+
+Use option functions when creating an app:
+
+```go
+app := fuego.New(
+    fuego.WithAppDir("routes"),
+    fuego.WithStaticDir("public"),
+    fuego.WithPort("8080"),
+    fuego.WithHost("127.0.0.1"),
+    fuego.WithDev(true),
+)
+```
+
+### Available Options
+
+| Option | Description |
+|--------|-------------|
+| `WithAppDir(dir)` | Set the app directory |
+| `WithStaticDir(dir)` | Set the static files directory |
+| `WithTemplateDir(dir)` | Set the template directory |
+| `WithPort(port)` | Set the server port |
+| `WithHost(host)` | Set the server host |
+| `WithDev(enabled)` | Enable/disable development mode |
+
+---
+
+## fuego.yaml Configuration
+
+Create a `fuego.yaml` file in your project root for persistent configuration:
+
+```yaml
+# fuego.yaml
+app_dir: app
+static_dir: static
+port: 3000
+host: 0.0.0.0
+dev: false
+```
+
+<Info>
+Configuration precedence (highest to lowest):
+1. Option functions passed to `fuego.New()`
+2. Environment variables
+3. `fuego.yaml` file
+4. Default values
+</Info>
+
+---
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Server port | `3000` |
+| `HOST` | Server host | `0.0.0.0` |
+| `FUEGO_DEV` | Development mode (`true`/`false`) | `false` |
+| `FUEGO_LOG_LEVEL` | Log level (`debug`, `info`, `warn`, `error`, `off`) | `info` |
+| `GO_ENV` | Environment (`development`, `production`, `test`) | - |
+
+### Log Level Behavior
+
+| `GO_ENV` | `FUEGO_DEV` | Default Log Level |
+|----------|-------------|-------------------|
+| `production` | `false` | `warn` |
+| `development` | `true` | `debug` |
+| - | - | `info` |
+
+---
+
+## Request Logger Configuration
+
+Configure the built-in request logger:
+
+```go
+app.SetLogger(fuego.RequestLoggerConfig{
+    Level:         fuego.LogLevelInfo,
+    ShowIP:        true,
+    ShowUserAgent: false,
+    SkipPaths:     []string{"/health", "/metrics"},
+    SkipStatic:    true,
+})
+```
+
+### RequestLoggerConfig Fields
+
+<AccordionGroup>
+  <Accordion title="Level" icon="signal">
+    **Type:** `LogLevel`  
+    **Default:** `LogLevelInfo`
+
+    Minimum log level for requests.
+
+    | Level | Logs |
+    |-------|------|
+    | `LogLevelDebug` | All requests |
+    | `LogLevelInfo` | All requests |
+    | `LogLevelWarn` | 4xx and 5xx only |
+    | `LogLevelError` | 5xx only |
+    | `LogLevelOff` | Nothing |
+
+    ```go
+    app.SetLogger(fuego.RequestLoggerConfig{
+        Level: fuego.LogLevelWarn, // Only log errors
+    })
+    ```
+  </Accordion>
+
+  <Accordion title="ShowIP" icon="location-dot">
+    **Type:** `bool`  
+    **Default:** `false`
+
+    Include client IP address in logs.
+
+    ```
+    [12:34:56] 192.168.1.100 GET /api/users 200 in 45ms
+    ```
+  </Accordion>
+
+  <Accordion title="ShowUserAgent" icon="browser">
+    **Type:** `bool`  
+    **Default:** `false`
+
+    Include User-Agent header in logs.
+  </Accordion>
+
+  <Accordion title="SkipPaths" icon="forward">
+    **Type:** `[]string`  
+    **Default:** `nil`
+
+    Paths to exclude from logging.
+
+    ```go
+    app.SetLogger(fuego.RequestLoggerConfig{
+        SkipPaths: []string{"/health", "/metrics", "/favicon.ico"},
+    })
+    ```
+  </Accordion>
+
+  <Accordion title="SkipStatic" icon="image">
+    **Type:** `bool`  
+    **Default:** `false`
+
+    Skip logging for static file requests.
+
+    ```go
+    app.SetLogger(fuego.RequestLoggerConfig{
+        SkipStatic: true, // Don't log /static/* requests
+    })
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Example Configurations
+
+<Tabs>
+  <Tab title="Development">
+    ```go
+    app := fuego.New(
+        fuego.WithDev(true),
+        fuego.WithPort("3000"),
+    )
+    
+    app.SetLogger(fuego.RequestLoggerConfig{
+        Level:         fuego.LogLevelDebug,
+        ShowIP:        true,
+        ShowUserAgent: true,
+    })
+    ```
+  </Tab>
+  <Tab title="Production">
+    ```go
+    app := fuego.New(
+        fuego.WithHost("0.0.0.0"),
+        fuego.WithPort(os.Getenv("PORT")),
+    )
+    
+    app.SetLogger(fuego.RequestLoggerConfig{
+        Level:      fuego.LogLevelWarn,
+        ShowIP:     true,
+        SkipPaths:  []string{"/health"},
+        SkipStatic: true,
+    })
+    ```
+  </Tab>
+  <Tab title="Testing">
+    ```go
+    app := fuego.New(
+        fuego.WithDev(false),
+    )
+    
+    app.DisableLogger() // No logging during tests
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="App" icon="rocket" href="/docs/api/app">
+    Application lifecycle methods
+  </Card>
+  <Card title="Middleware" icon="layer-group" href="/docs/api/middleware">
+    Built-in middleware
+  </Card>
+  <Card title="CLI Reference" icon="terminal" href="/docs/api/cli">
+    CLI commands and flags
+  </Card>
+  <Card title="Deployment" icon="cloud" href="/docs/guides/deployment">
+    Production deployment guide
+  </Card>
+</CardGroup>

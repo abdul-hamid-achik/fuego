@@ -380,8 +380,9 @@ Full documentation is available at [gofuego.dev](https://gofuego.dev).
 - [Deployment](https://gofuego.dev/guides/deployment)
 
 **Reference:**
+- [API Reference](https://gofuego.dev/api/overview)
 - [Context API](https://gofuego.dev/api/context)
-- [CLI Reference](https://gofuego.dev/reference/cli)
+- [CLI Reference](https://gofuego.dev/api/cli)
 
 ## Development
 

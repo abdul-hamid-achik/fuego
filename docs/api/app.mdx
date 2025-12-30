@@ -1,0 +1,541 @@
+---
+title: App
+description: 'Application struct and lifecycle methods'
+---
+
+The `App` struct is the core of a Fuego application. It manages routing, middleware, server lifecycle, and configuration.
+
+## Creating an App
+
+```go
+import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+
+// Basic app with defaults
+app := fuego.New()
+
+// App with options
+app := fuego.New(
+    fuego.WithAppDir("routes"),
+    fuego.WithStaticDir("public"),
+)
+```
+
+<Info>
+When using file-based routing (the default), you typically don't need to manually register routes. The `app.Scan()` and `app.Mount()` methods handle this automatically.
+</Info>
+
+---
+
+## App Methods
+
+<AccordionGroup>
+  <Accordion title="Routing Methods" icon="route" defaultOpen>
+    Register HTTP route handlers for different methods.
+
+    ### Get
+
+    ```go
+    app.Get(pattern string, handler HandlerFunc)
+    ```
+
+    Register a GET route handler.
+
+    ```go
+    app.Get("/users", func(c *fuego.Context) error {
+        return c.JSON(200, users)
+    })
+    ```
+
+    ### Post
+
+    ```go
+    app.Post(pattern string, handler HandlerFunc)
+    ```
+
+    Register a POST route handler.
+
+    ```go
+    app.Post("/users", func(c *fuego.Context) error {
+        var user User
+        if err := c.Bind(&user); err != nil {
+            return fuego.BadRequest("invalid body")
+        }
+        return c.JSON(201, user)
+    })
+    ```
+
+    ### Put
+
+    ```go
+    app.Put(pattern string, handler HandlerFunc)
+    ```
+
+    Register a PUT route handler for full resource updates.
+
+    ### Patch
+
+    ```go
+    app.Patch(pattern string, handler HandlerFunc)
+    ```
+
+    Register a PATCH route handler for partial updates.
+
+    ### Delete
+
+    ```go
+    app.Delete(pattern string, handler HandlerFunc)
+    ```
+
+    Register a DELETE route handler.
+
+    ```go
+    app.Delete("/users/{id}", func(c *fuego.Context) error {
+        id := c.Param("id")
+        // Delete user...
+        return c.NoContent()
+    })
+    ```
+
+    ### Head
+
+    ```go
+    app.Head(pattern string, handler HandlerFunc)
+    ```
+
+    Register a HEAD route handler.
+
+    ### Options
+
+    ```go
+    app.Options(pattern string, handler HandlerFunc)
+    ```
+
+    Register an OPTIONS route handler.
+
+    ### RegisterRoute
+
+    ```go
+    app.RegisterRoute(method, pattern string, handler HandlerFunc)
+    ```
+
+    Register a route with any HTTP method.
+
+    ```go
+    app.RegisterRoute("CUSTOM", "/webhook", handler)
+    ```
+  </Accordion>
+
+  <Accordion title="Middleware" icon="layer-group">
+    Add middleware to the application.
+
+    ### Use
+
+    ```go
+    app.Use(mw MiddlewareFunc)
+    ```
+
+    Add global middleware that applies to all routes.
+
+    ```go
+    app.Use(fuego.Logger())
+    app.Use(fuego.Recover())
+    app.Use(fuego.CORS())
+    ```
+
+    <Tip>
+    Middleware is executed in the order it's added. Add logging first to capture all requests.
+    </Tip>
+
+    ### Group
+
+    ```go
+    app.Group(pattern string, fn func(g *RouteGroup))
+    ```
+
+    Create a route group with shared middleware and path prefix.
+
+    ```go
+    app.Group("/api", func(api *fuego.RouteGroup) {
+        api.Use(authMiddleware)
+        
+        api.Get("/users", listUsers)
+        api.Post("/users", createUser)
+        
+        // Nested group
+        api.Group("/admin", func(admin *fuego.RouteGroup) {
+            admin.Use(adminOnlyMiddleware)
+            admin.Get("/stats", getStats)
+        })
+    })
+    ```
+  </Accordion>
+
+  <Accordion title="Static Files" icon="image">
+    Serve static files from a directory.
+
+    ### Static
+
+    ```go
+    app.Static(path string, dir string)
+    ```
+
+    Serve static files from the specified directory.
+
+    ```go
+    // Serve files from ./static at /static/*
+    app.Static("/static", "static")
+
+    // Serve files from ./public at /assets/*
+    app.Static("/assets", "public")
+    ```
+
+    <Warning>
+    The static file server does not list directories. Requests to directories without an index file return 404.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="Server Lifecycle" icon="server">
+    Control the HTTP server.
+
+    ### Listen
+
+    ```go
+    app.Listen(addr ...string) error
+    ```
+
+    Start the HTTP server. If no address is provided, uses `:3000` or the `PORT` environment variable.
+
+    ```go
+    // Default port 3000
+    app.Listen()
+
+    // Custom port
+    app.Listen(":8080")
+
+    // Custom host and port
+    app.Listen("127.0.0.1:8080")
+    ```
+
+    <Info>
+    `Listen` blocks until the server is stopped. Use `Shutdown` for graceful shutdown.
+    </Info>
+
+    ### Shutdown
+
+    ```go
+    app.Shutdown(ctx context.Context) error
+    ```
+
+    Gracefully shutdown the server, waiting for active connections to complete.
+
+    ```go
+    // Graceful shutdown with timeout
+    ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+    defer cancel()
+    
+    if err := app.Shutdown(ctx); err != nil {
+        log.Fatal("Shutdown error:", err)
+    }
+    ```
+
+    ### Addr
+
+    ```go
+    app.Addr() string
+    ```
+
+    Get the address the server is listening on.
+
+    ```go
+    go app.Listen(":0") // Random available port
+    time.Sleep(100 * time.Millisecond)
+    fmt.Println("Listening on", app.Addr())
+    ```
+
+    ### ServeHTTP
+
+    ```go
+    app.ServeHTTP(w http.ResponseWriter, r *http.Request)
+    ```
+
+    Implement `http.Handler` interface. Useful for testing or embedding in other servers.
+
+    ```go
+    // Use with http.ListenAndServe
+    http.ListenAndServe(":8080", app)
+
+    // Use with httptest
+    req := httptest.NewRequest("GET", "/", nil)
+    rec := httptest.NewRecorder()
+    app.ServeHTTP(rec, req)
+    ```
+  </Accordion>
+
+  <Accordion title="Configuration" icon="gear">
+    Access and modify app configuration.
+
+    ### Config
+
+    ```go
+    app.Config() *Config
+    ```
+
+    Get the application configuration.
+
+    ```go
+    cfg := app.Config()
+    fmt.Println("App directory:", cfg.AppDir)
+    ```
+
+    ### Router
+
+    ```go
+    app.Router() chi.Router
+    ```
+
+    Get the underlying Chi router for advanced routing needs.
+
+    ```go
+    router := app.Router()
+    router.Mount("/legacy", legacyHandler)
+    ```
+
+    ### RouteTree
+
+    ```go
+    app.RouteTree() *RouteTree
+    ```
+
+    Get the scanned route tree (after calling `Scan`).
+
+    ### Scan
+
+    ```go
+    app.Scan() error
+    ```
+
+    Scan the app directory for routes, middleware, pages, and proxy.
+
+    ```go
+    if err := app.Scan(); err != nil {
+        log.Fatal("Scan error:", err)
+    }
+    ```
+
+    ### Mount
+
+    ```go
+    app.Mount()
+    ```
+
+    Mount all scanned routes to the router. Call after `Scan`.
+
+    ```go
+    app.Scan()
+    app.Mount()
+    app.Listen()
+    ```
+  </Accordion>
+
+  <Accordion title="Logging" icon="file-lines">
+    Control the request logger.
+
+    ### SetLogger
+
+    ```go
+    app.SetLogger(config RequestLoggerConfig)
+    ```
+
+    Configure the request logger with custom settings.
+
+    ```go
+    app.SetLogger(fuego.RequestLoggerConfig{
+        Level:         fuego.LogLevelInfo,
+        ShowIP:        true,
+        ShowUserAgent: true,
+        SkipPaths:     []string{"/health", "/metrics"},
+    })
+    ```
+
+    ### EnableLogger
+
+    ```go
+    app.EnableLogger()
+    ```
+
+    Enable the request logger (enabled by default).
+
+    ### DisableLogger
+
+    ```go
+    app.DisableLogger()
+    ```
+
+    Disable the request logger.
+
+    ```go
+    if os.Getenv("GO_ENV") == "test" {
+        app.DisableLogger()
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Proxy" icon="shield">
+    Configure request interception.
+
+    ### SetProxy
+
+    ```go
+    app.SetProxy(proxy ProxyFunc, config *ProxyConfig) error
+    ```
+
+    Set a proxy function for request interception.
+
+    ```go
+    app.SetProxy(func(c *fuego.Context) (*fuego.ProxyResult, error) {
+        if c.Header("X-API-Key") == "" {
+            return fuego.ResponseJSON(401, `{"error":"unauthorized"}`), nil
+        }
+        return fuego.Continue(), nil
+    }, &fuego.ProxyConfig{
+        Matchers: []string{"/api/*"},
+        Excludes: []string{"/api/health"},
+    })
+    ```
+
+    ### HasProxy
+
+    ```go
+    app.HasProxy() bool
+    ```
+
+    Check if a proxy is configured.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## RouteGroup
+
+Route groups allow you to organize routes with shared middleware and path prefixes.
+
+```go
+type RouteGroup struct {
+    router  chi.Router
+    pattern string
+}
+```
+
+### RouteGroup Methods
+
+| Method | Description |
+|--------|-------------|
+| `g.Use(mw)` | Add middleware to this group |
+| `g.Get(pattern, handler)` | Register GET route |
+| `g.Post(pattern, handler)` | Register POST route |
+| `g.Put(pattern, handler)` | Register PUT route |
+| `g.Patch(pattern, handler)` | Register PATCH route |
+| `g.Delete(pattern, handler)` | Register DELETE route |
+| `g.Group(pattern, fn)` | Create nested group |
+
+### Example
+
+```go
+app.Group("/api/v1", func(v1 *fuego.RouteGroup) {
+    v1.Use(fuego.Logger())
+    
+    v1.Group("/users", func(users *fuego.RouteGroup) {
+        users.Get("/", listUsers)           // GET /api/v1/users
+        users.Post("/", createUser)         // POST /api/v1/users
+        users.Get("/{id}", getUser)         // GET /api/v1/users/{id}
+        users.Put("/{id}", updateUser)      // PUT /api/v1/users/{id}
+        users.Delete("/{id}", deleteUser)   // DELETE /api/v1/users/{id}
+    })
+    
+    v1.Group("/posts", func(posts *fuego.RouteGroup) {
+        posts.Get("/", listPosts)
+        posts.Post("/", createPost)
+    })
+})
+```
+
+---
+
+## Complete Example
+
+```go
+package main
+
+import (
+    "context"
+    "log"
+    "os"
+    "os/signal"
+    "syscall"
+    "time"
+
+    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+)
+
+func main() {
+    app := fuego.New(
+        fuego.WithAppDir("app"),
+        fuego.WithStaticDir("static"),
+    )
+
+    // Global middleware
+    app.Use(fuego.Logger())
+    app.Use(fuego.Recover())
+    app.Use(fuego.RequestID())
+    app.Use(fuego.CORS())
+
+    // Serve static files
+    app.Static("/static", "static")
+
+    // API routes
+    app.Group("/api", func(api *fuego.RouteGroup) {
+        api.Get("/health", func(c *fuego.Context) error {
+            return c.JSON(200, map[string]string{"status": "ok"})
+        })
+    })
+
+    // Graceful shutdown
+    go func() {
+        sigChan := make(chan os.Signal, 1)
+        signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+        <-sigChan
+
+        ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+        defer cancel()
+
+        if err := app.Shutdown(ctx); err != nil {
+            log.Fatal("Shutdown error:", err)
+        }
+    }()
+
+    // Start server
+    log.Println("Starting server on :3000")
+    if err := app.Listen(":3000"); err != nil {
+        log.Fatal(err)
+    }
+}
+```
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Context" icon="brackets-curly" href="/docs/api/context">
+    Request handling and response methods
+  </Card>
+  <Card title="Middleware" icon="layer-group" href="/docs/api/middleware">
+    Built-in middleware reference
+  </Card>
+  <Card title="Config" icon="gear" href="/docs/api/config">
+    Configuration options
+  </Card>
+  <Card title="File-based Routing" icon="folder" href="/docs/routing/file-based">
+    Automatic route discovery
+  </Card>
+</CardGroup>

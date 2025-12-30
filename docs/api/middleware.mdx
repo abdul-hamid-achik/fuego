@@ -1,0 +1,548 @@
+---
+title: Middleware
+description: 'Built-in middleware functions and custom middleware patterns'
+---
+
+Middleware in Fuego wraps handlers to add cross-cutting functionality like logging, authentication, and error recovery.
+
+## Middleware Signature
+
+```go
+type MiddlewareFunc func(next HandlerFunc) HandlerFunc
+```
+
+Middleware receives the next handler and returns a new handler that wraps it:
+
+```go
+func MyMiddleware() fuego.MiddlewareFunc {
+    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
+        return func(c *fuego.Context) error {
+            // Before handler
+            start := time.Now()
+            
+            // Call next handler
+            err := next(c)
+            
+            // After handler
+            duration := time.Since(start)
+            log.Printf("Request took %v", duration)
+            
+            return err
+        }
+    }
+}
+```
+
+---
+
+## Built-in Middleware
+
+<AccordionGroup>
+  <Accordion title="Logger" icon="file-lines" defaultOpen>
+    Request/response logging middleware.
+
+    ### Logger()
+
+    ```go
+    app.Use(fuego.Logger())
+    ```
+
+    Output:
+    ```
+    [12:34:56] GET /api/users 200 in 45ms (1.2KB)
+    [12:34:57] POST /api/tasks 201 in 123ms (256B)
+    ```
+
+    ### LoggerWithConfig(config)
+
+    ```go
+    app.Use(fuego.LoggerWithConfig(fuego.LoggerConfig{
+        Format:     "${time} ${method} ${path} ${status} ${latency}",
+        TimeFormat: "15:04:05",
+        Output:     os.Stdout,
+    }))
+    ```
+
+    <Expandable title="LoggerConfig Options">
+      | Field | Type | Default | Description |
+      |-------|------|---------|-------------|
+      | `Format` | `string` | `"${time} ${method} ${path} ${status} ${latency}"` | Log format template |
+      | `TimeFormat` | `string` | `"15:04:05"` | Time format (Go time layout) |
+      | `Output` | `io.Writer` | `os.Stdout` | Log output destination |
+      | `Skip` | `func(*Context) bool` | `nil` | Function to skip logging |
+    </Expandable>
+
+    **Format Variables:**
+    - `${time}` - Request timestamp
+    - `${method}` - HTTP method
+    - `${path}` - Request path
+    - `${status}` - Response status code
+    - `${latency}` - Request duration
+    - `${ip}` - Client IP address
+    - `${user_agent}` - User-Agent header
+    - `${error}` - Error message (if any)
+  </Accordion>
+
+  <Accordion title="Recover" icon="shield">
+    Panic recovery middleware. Catches panics and returns a 500 error.
+
+    ### Recover()
+
+    ```go
+    app.Use(fuego.Recover())
+    ```
+
+    When a panic occurs:
+    ```json
+    {"error": "internal_server_error", "message": "Internal Server Error"}
+    ```
+
+    ### RecoverWithConfig(config)
+
+    ```go
+    app.Use(fuego.RecoverWithConfig(fuego.RecoverConfig{
+        EnableStackTrace: true,
+        LogLevel:         fuego.LogLevelError,
+        PanicHandler: func(c *fuego.Context, err any) {
+            // Custom panic handling
+            log.Printf("PANIC: %v", err)
+            c.JSON(500, map[string]string{"error": "something went wrong"})
+        },
+    }))
+    ```
+
+    <Expandable title="RecoverConfig Options">
+      | Field | Type | Default | Description |
+      |-------|------|---------|-------------|
+      | `EnableStackTrace` | `bool` | `false` | Include stack trace in logs |
+      | `LogLevel` | `LogLevel` | `LogLevelError` | Log level for panic messages |
+      | `PanicHandler` | `func(*Context, any)` | `nil` | Custom panic handler |
+    </Expandable>
+
+    <Warning>
+    Always add `Recover()` middleware in production to prevent the server from crashing on panics.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="RequestID" icon="fingerprint">
+    Add unique request IDs to each request.
+
+    ### RequestID()
+
+    ```go
+    app.Use(fuego.RequestID())
+    ```
+
+    Adds `X-Request-ID` header to responses. Access in handlers:
+
+    ```go
+    func handler(c *fuego.Context) error {
+        requestID := c.Header("X-Request-ID")
+        log.Printf("[%s] Processing request", requestID)
+        return c.JSON(200, data)
+    }
+    ```
+
+    ### RequestIDWithConfig(config)
+
+    ```go
+    app.Use(fuego.RequestIDWithConfig(fuego.RequestIDConfig{
+        Header:    "X-Correlation-ID",
+        Generator: func() string {
+            return uuid.New().String()
+        },
+    }))
+    ```
+
+    <Expandable title="RequestIDConfig Options">
+      | Field | Type | Default | Description |
+      |-------|------|---------|-------------|
+      | `Header` | `string` | `"X-Request-ID"` | Header name for request ID |
+      | `Generator` | `func() string` | `nil` | Custom ID generator function |
+    </Expandable>
+  </Accordion>
+
+  <Accordion title="CORS" icon="globe">
+    Cross-Origin Resource Sharing middleware.
+
+    ### CORS()
+
+    ```go
+    app.Use(fuego.CORS())
+    ```
+
+    Uses default configuration allowing common origins and methods.
+
+    ### CORSWithConfig(config)
+
+    ```go
+    app.Use(fuego.CORSWithConfig(fuego.CORSConfig{
+        AllowOrigins:     []string{"https://example.com", "https://app.example.com"},
+        AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+        AllowHeaders:     []string{"Authorization", "Content-Type"},
+        AllowCredentials: true,
+        MaxAge:           86400, // 24 hours
+    }))
+    ```
+
+    ### DefaultCORSConfig()
+
+    ```go
+    config := fuego.DefaultCORSConfig()
+    config.AllowOrigins = []string{"https://myapp.com"}
+    app.Use(fuego.CORSWithConfig(config))
+    ```
+
+    <Expandable title="CORSConfig Options">
+      | Field | Type | Default | Description |
+      |-------|------|---------|-------------|
+      | `AllowOrigins` | `[]string` | `["*"]` | Allowed origins |
+      | `AllowMethods` | `[]string` | `["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"]` | Allowed methods |
+      | `AllowHeaders` | `[]string` | `["Origin", "Content-Type", "Accept", "Authorization"]` | Allowed headers |
+      | `ExposeHeaders` | `[]string` | `[]` | Headers exposed to browser |
+      | `AllowCredentials` | `bool` | `false` | Allow credentials (cookies) |
+      | `MaxAge` | `int` | `0` | Preflight cache duration (seconds) |
+    </Expandable>
+
+    <Tip>
+    For development, use `AllowOrigins: []string{"*"}`. In production, specify exact origins.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Timeout" icon="clock">
+    Request timeout middleware.
+
+    ### Timeout(duration)
+
+    ```go
+    app.Use(fuego.Timeout(30 * time.Second))
+    ```
+
+    If the handler doesn't complete within the timeout:
+    ```json
+    {"error": "request_timeout", "message": "Request Timeout"}
+    ```
+
+    <Warning>
+    Timeout middleware should be added early in the chain to cover all subsequent handlers.
+    </Warning>
+
+    **Example with context:**
+
+    ```go
+    func handler(c *fuego.Context) error {
+        ctx := c.Request().Context()
+        
+        select {
+        case result := <-doSlowOperation(ctx):
+            return c.JSON(200, result)
+        case <-ctx.Done():
+            return fuego.InternalServerError("operation cancelled")
+        }
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="BasicAuth" icon="lock">
+    HTTP Basic Authentication middleware.
+
+    ### BasicAuth(validator)
+
+    ```go
+    app.Use(fuego.BasicAuth(func(username, password string) bool {
+        return username == "admin" && password == "secret"
+    }))
+    ```
+
+    ### BasicAuthWithConfig(config)
+
+    ```go
+    app.Use(fuego.BasicAuthWithConfig(fuego.BasicAuthConfig{
+        Validator: func(username, password string) bool {
+            user, err := db.FindUser(username)
+            if err != nil {
+                return false
+            }
+            return bcrypt.CompareHashAndPassword(user.Password, []byte(password)) == nil
+        },
+        Realm: "Restricted Area",
+    }))
+    ```
+
+    <Expandable title="BasicAuthConfig Options">
+      | Field | Type | Default | Description |
+      |-------|------|---------|-------------|
+      | `Validator` | `func(string, string) bool` | required | Username/password validator |
+      | `Realm` | `string` | `"Restricted"` | Authentication realm |
+    </Expandable>
+
+    **Response when unauthorized:**
+    ```
+    HTTP/1.1 401 Unauthorized
+    WWW-Authenticate: Basic realm="Restricted Area"
+    ```
+  </Accordion>
+
+  <Accordion title="Compress" icon="compress">
+    Response compression middleware using gzip.
+
+    ### Compress()
+
+    ```go
+    app.Use(fuego.Compress())
+    ```
+
+    Automatically compresses responses when:
+    - Client sends `Accept-Encoding: gzip`
+    - Response is larger than 1KB
+    - Content-Type is compressible (text, JSON, etc.)
+
+    <Info>
+    Compression adds CPU overhead. For high-traffic APIs, consider using a reverse proxy (nginx, Cloudflare) for compression instead.
+    </Info>
+  </Accordion>
+
+  <Accordion title="RateLimiter" icon="gauge">
+    Rate limiting middleware.
+
+    ### RateLimiter(max, window)
+
+    ```go
+    // 100 requests per minute per IP
+    app.Use(fuego.RateLimiter(100, time.Minute))
+    ```
+
+    When rate limit is exceeded:
+    ```json
+    {"error": "too_many_requests", "message": "Rate limit exceeded"}
+    ```
+
+    Response headers:
+    ```
+    X-RateLimit-Limit: 100
+    X-RateLimit-Remaining: 0
+    X-RateLimit-Reset: 1640995200
+    ```
+
+    <Expandable title="RateLimiterConfig Options">
+      | Field | Type | Default | Description |
+      |-------|------|---------|-------------|
+      | `Max` | `int` | required | Maximum requests per window |
+      | `Window` | `time.Duration` | required | Time window |
+      | `KeyFunc` | `func(*Context) string` | Client IP | Function to identify client |
+    </Expandable>
+
+    **Custom key function:**
+
+    ```go
+    app.Use(fuego.RateLimiterWithConfig(fuego.RateLimiterConfig{
+        Max:    1000,
+        Window: time.Hour,
+        KeyFunc: func(c *fuego.Context) string {
+            // Rate limit by API key instead of IP
+            return c.Header("X-API-Key")
+        },
+    }))
+    ```
+  </Accordion>
+
+  <Accordion title="SecureHeaders" icon="shield-check">
+    Add security headers to responses.
+
+    ### SecureHeaders()
+
+    ```go
+    app.Use(fuego.SecureHeaders())
+    ```
+
+    **Headers added:**
+
+    | Header | Value |
+    |--------|-------|
+    | `X-Content-Type-Options` | `nosniff` |
+    | `X-Frame-Options` | `DENY` |
+    | `X-XSS-Protection` | `1; mode=block` |
+    | `Referrer-Policy` | `strict-origin-when-cross-origin` |
+    | `Content-Security-Policy` | `default-src 'self'` |
+
+    <Tip>
+    Always use `SecureHeaders()` in production. Customize CSP for your specific needs.
+    </Tip>
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Creating Custom Middleware
+
+### Basic Pattern
+
+```go
+func MyMiddleware() fuego.MiddlewareFunc {
+    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
+        return func(c *fuego.Context) error {
+            // Pre-processing
+            log.Println("Before handler")
+            
+            // Call next handler
+            err := next(c)
+            
+            // Post-processing
+            log.Println("After handler")
+            
+            return err
+        }
+    }
+}
+```
+
+### With Configuration
+
+```go
+type AuthConfig struct {
+    TokenHeader string
+    Skipper     func(*fuego.Context) bool
+}
+
+func Auth(config AuthConfig) fuego.MiddlewareFunc {
+    if config.TokenHeader == "" {
+        config.TokenHeader = "Authorization"
+    }
+    
+    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
+        return func(c *fuego.Context) error {
+            // Skip if configured
+            if config.Skipper != nil && config.Skipper(c) {
+                return next(c)
+            }
+            
+            token := c.Header(config.TokenHeader)
+            if token == "" {
+                return fuego.Unauthorized("missing token")
+            }
+            
+            user, err := validateToken(token)
+            if err != nil {
+                return fuego.Unauthorized("invalid token")
+            }
+            
+            c.Set("user", user)
+            return next(c)
+        }
+    }
+}
+```
+
+### Early Return (Short-Circuit)
+
+```go
+func MaintenanceMode(enabled bool) fuego.MiddlewareFunc {
+    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
+        return func(c *fuego.Context) error {
+            if enabled {
+                // Don't call next - return immediately
+                return c.JSON(503, map[string]string{
+                    "error": "Service temporarily unavailable",
+                })
+            }
+            return next(c)
+        }
+    }
+}
+```
+
+### Modifying Response
+
+```go
+func AddHeaders() fuego.MiddlewareFunc {
+    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
+        return func(c *fuego.Context) error {
+            // Set headers before handler
+            c.SetHeader("X-Powered-By", "Fuego")
+            
+            // Call handler
+            err := next(c)
+            
+            // Set headers after handler
+            c.SetHeader("X-Response-Time", time.Since(start).String())
+            
+            return err
+        }
+    }
+}
+```
+
+---
+
+## Middleware Order
+
+Middleware executes in the order it's added:
+
+```go
+app.Use(fuego.Logger())      // 1st - logs all requests
+app.Use(fuego.Recover())     // 2nd - catches panics
+app.Use(fuego.RequestID())   // 3rd - adds request ID
+app.Use(fuego.CORS())        // 4th - handles CORS
+app.Use(authMiddleware)      // 5th - authentication
+```
+
+**Execution flow:**
+```
+Request → Logger → Recover → RequestID → CORS → Auth → Handler
+                                                         ↓
+Response ← Logger ← Recover ← RequestID ← CORS ← Auth ← Handler
+```
+
+<Tip>
+**Recommended order:**
+1. `Logger()` - First to log all requests
+2. `Recover()` - Second to catch all panics
+3. `RequestID()` - Third for request correlation
+4. `Timeout()` - Fourth to limit request duration
+5. `CORS()` - Fifth for cross-origin requests
+6. `SecureHeaders()` - Add security headers
+7. `Compress()` - Compress responses
+8. Business middleware (auth, rate limiting, etc.)
+</Tip>
+
+---
+
+## Route-Specific Middleware
+
+Apply middleware to specific routes using groups:
+
+```go
+app.Use(fuego.Logger()) // Global
+
+app.Group("/api", func(api *fuego.RouteGroup) {
+    api.Use(fuego.RateLimiter(100, time.Minute))
+    
+    api.Get("/public", publicHandler) // Has rate limiting
+    
+    api.Group("/admin", func(admin *fuego.RouteGroup) {
+        admin.Use(adminAuthMiddleware)
+        admin.Get("/users", listUsers) // Has rate limiting + admin auth
+    })
+})
+
+app.Get("/health", healthCheck) // Only has Logger
+```
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Context" icon="brackets-curly" href="/docs/api/context">
+    Request handling methods
+  </Card>
+  <Card title="Proxy" icon="shield" href="/docs/api/proxy">
+    Request interception
+  </Card>
+  <Card title="Errors" icon="circle-exclamation" href="/docs/api/errors">
+    Error handling
+  </Card>
+  <Card title="Authentication Guide" icon="lock" href="/docs/guides/authentication">
+    Building auth middleware
+  </Card>
+</CardGroup>
