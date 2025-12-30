@@ -1,0 +1,103 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "Fuego",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#F97316",
+    "light": "#FB923C",
+    "dark": "#EA580C",
+    "anchors": {
+      "from": "#F97316",
+      "to": "#DC2626"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/abdul-hamid-achik/fuego"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Get Started",
+    "url": "/getting-started/quickstart"
+  },
+  "tabs": [
+    {
+      "name": "Documentation",
+      "url": "/"
+    },
+    {
+      "name": "API Reference",
+      "url": "/api"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/abdul-hamid-achik/fuego"
+    },
+    {
+      "name": "Community",
+      "icon": "discord",
+      "url": "https://github.com/abdul-hamid-achik/fuego/discussions"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "introduction",
+        "getting-started/quickstart",
+        "getting-started/familiar-patterns"
+      ]
+    },
+    {
+      "group": "Core Concepts",
+      "pages": [
+        "routing/file-based",
+        "middleware/overview",
+        "middleware/proxy"
+      ]
+    },
+    {
+      "group": "Guides",
+      "pages": [
+        "guides/deployment"
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        "api/context"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/abdul-hamid-achik/fuego"
+  },
+  "feedback": {
+    "thumbsRating": true,
+    "suggestEdit": true,
+    "raiseIssue": true
+  },
+  "analytics": {
+    "posthog": {
+      "apiKey": ""
+    }
+  },
+  "seo": {
+    "indexHiddenPages": false
+  },
+  "openapi": [],
+  "api": {
+    "baseUrl": "http://localhost:3000",
+    "playground": {
+      "mode": "simple"
+    }
+  }
+}

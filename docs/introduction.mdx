@@ -1,0 +1,177 @@
+---
+title: Introduction
+description: 'File-based routing for Go. Fast to write. Faster to run.'
+---
+
+<img
+  className="block dark:hidden"
+  src="/images/hero-light.svg"
+  alt="Fuego Hero Light"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/hero-dark.svg"
+  alt="Fuego Hero Dark"
+/>
+
+## What is Fuego?
+
+Fuego is a file-based routing framework for Go, inspired by Next.js App Router. Your file structure *is* your router - no manual route registration required.
+
+<CardGroup cols={2}>
+  <Card
+    title="Quick Start"
+    icon="rocket"
+    href="/getting-started/quickstart"
+  >
+    Get up and running in under 5 minutes
+  </Card>
+  <Card
+    title="File-Based Routing"
+    icon="folder-tree"
+    href="/routing/file-based"
+  >
+    Learn how your files become routes
+  </Card>
+  <Card
+    title="Middleware"
+    icon="layer-group"
+    href="/middleware/overview"
+  >
+    Add cross-cutting concerns with ease
+  </Card>
+  <Card
+    title="Context API"
+    icon="code"
+    href="/api/context"
+  >
+    Complete API reference for handlers
+  </Card>
+</CardGroup>
+
+## Why Fuego?
+
+Traditional Go routing requires manual registration:
+
+```go
+// The old way - manual registration
+r.HandleFunc("/api/users", usersHandler)
+r.HandleFunc("/api/users/{id}", userHandler)
+r.HandleFunc("/api/posts", postsHandler)
+// ...repeat for every route
+```
+
+With Fuego, your file structure is your router:
+
+```
+app/api/users/route.go      → GET/POST /api/users
+app/api/users/[id]/route.go → GET/PUT/DELETE /api/users/:id
+app/api/posts/route.go      → GET/POST /api/posts
+```
+
+**No registration. No configuration. Just files.**
+
+## Features
+
+<AccordionGroup>
+  <Accordion title="File System Routing" icon="folder">
+    Your directory structure defines your routes. Create a file, get a route.
+    ```
+    app/api/users/route.go → /api/users
+    app/api/users/[id]/route.go → /api/users/:id
+    ```
+  </Accordion>
+  <Accordion title="Zero-Config Start" icon="bolt">
+    A working API in 5 lines of code. Sensible defaults, full control when needed.
+  </Accordion>
+  <Accordion title="Type-Safe Templates" icon="code">
+    First-class templ support with compile-time HTML validation.
+  </Accordion>
+  <Accordion title="HTMX-Ready" icon="browser">
+    Build interactive UIs without client-side JavaScript frameworks.
+  </Accordion>
+  <Accordion title="Standalone Tailwind" icon="paintbrush">
+    Built-in Tailwind CSS v4 binary. No Node.js required.
+  </Accordion>
+  <Accordion title="Request Interception" icon="shield">
+    Proxy layer for auth checks, rewrites, and early responses.
+  </Accordion>
+  <Accordion title="Hot Reload" icon="rotate">
+    Sub-second rebuilds during development.
+  </Accordion>
+  <Accordion title="Production Ready" icon="server">
+    Single binary deployment, minimal dependencies.
+  </Accordion>
+</AccordionGroup>
+
+## Installation
+
+<CodeGroup>
+
+```bash Homebrew
+brew install abdul-hamid-achik/tap/fuego-cli
+```
+
+```bash Go Install
+go install github.com/abdul-hamid-achik/fuego/cmd/fuego@latest
+```
+
+</CodeGroup>
+
+## Quick Example
+
+```go
+// app/api/users/route.go
+package users
+
+import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+
+// GET /api/users
+func Get(c *fuego.Context) error {
+    return c.JSON(200, map[string]any{
+        "users": []string{"alice", "bob"},
+    })
+}
+
+// POST /api/users
+func Post(c *fuego.Context) error {
+    var input struct {
+        Name string `json:"name"`
+    }
+    if err := c.Bind(&input); err != nil {
+        return fuego.BadRequest("invalid input")
+    }
+    return c.JSON(201, map[string]string{"created": input.Name})
+}
+```
+
+## Request Logging
+
+Fuego includes a built-in request logger that captures ALL requests:
+
+```
+[12:34:56] GET /api/users 200 in 45ms (1.2KB)
+[12:34:57] POST /api/tasks 201 in 123ms (256B)
+[12:34:58] GET /v1/users → /api/users 200 in 52ms [rewrite]
+```
+
+<Info>
+The logger is enabled by default and shows color-coded HTTP methods, status codes, response times, and proxy actions.
+</Info>
+
+## Coming From Other Frameworks?
+
+If you've used Next.js, Nuxt, SvelteKit, or similar frameworks, Fuego's patterns will feel familiar:
+
+| Pattern | File | Route |
+|---------|------|-------|
+| Static | `app/api/users/route.go` | `/api/users` |
+| Dynamic | `app/api/users/[id]/route.go` | `/api/users/:id` |
+| Catch-all | `app/docs/[...slug]/route.go` | `/docs/*` |
+| Middleware | `app/api/middleware.go` | Applies to `/api/*` |
+| Pages | `app/dashboard/page.templ` | `/dashboard` |
+| Layouts | `app/layout.templ` | Wraps child pages |
+
+<Card title="Familiar Patterns Guide" icon="book" href="/getting-started/familiar-patterns">
+  Learn how Fuego compares to frameworks you already know
+</Card>
