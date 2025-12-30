@@ -15,6 +15,23 @@ import (
 // ---------- Logger Middleware ----------
 
 // Logger returns a middleware that logs HTTP requests.
+//
+// Note: Fuego now includes an app-level logger that captures ALL requests,
+// including those handled by the proxy layer. The app-level logger is enabled
+// by default. This middleware is provided for backward compatibility and for
+// cases where you need fine-grained middleware-level logging control.
+//
+// For most use cases, the app-level logger is preferred:
+//
+//	app := fuego.New() // Logger enabled by default
+//	app.SetLogger(fuego.RequestLoggerConfig{...}) // Customize
+//	app.DisableLogger() // Disable if using middleware instead
+//
+// To use this middleware instead of app-level logging:
+//
+//	app := fuego.New()
+//	app.DisableLogger() // Disable app-level logger
+//	app.Use(fuego.Logger()) // Use middleware logger
 func Logger() MiddlewareFunc {
 	return LoggerWithConfig(LoggerConfig{})
 }

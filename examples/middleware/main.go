@@ -9,8 +9,16 @@ import (
 func main() {
 	app := fuego.New()
 
+	// App-level logger is enabled by default!
+	// It captures ALL requests including proxy actions.
+	// Customize logging:
+	app.SetLogger(fuego.RequestLoggerConfig{
+		ShowIP:     true, // Show client IP in logs
+		SkipStatic: true, // Don't log static file requests
+		Level:      fuego.LogLevelInfo,
+	})
+
 	// Global middleware - applies to all routes
-	app.Use(fuego.Logger())
 	app.Use(fuego.Recover())
 	app.Use(fuego.RequestID())
 	app.Use(fuego.SecureHeaders())

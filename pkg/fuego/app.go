@@ -31,15 +31,23 @@ type App struct {
 
 	// server is the HTTP server (set during Listen)
 	server *http.Server
+
+	// logger is the app-level request logger (captures all requests including proxy)
+	logger *RequestLogger
+
+	// loggerEnabled indicates if the app-level logger is enabled
+	loggerEnabled bool
 }
 
 // New creates a new Fuego application with the given options.
 func New(opts ...Option) *App {
 	app := &App{
-		router:      chi.NewRouter(),
-		config:      DefaultConfig(),
-		middlewares: make([]MiddlewareFunc, 0),
-		routeTree:   NewRouteTree(),
+		router:        chi.NewRouter(),
+		config:        DefaultConfig(),
+		middlewares:   make([]MiddlewareFunc, 0),
+		routeTree:     NewRouteTree(),
+		logger:        NewRequestLogger(DefaultRequestLoggerConfig()),
+		loggerEnabled: true, // Enabled by default
 	}
 
 	// Apply options
@@ -51,6 +59,35 @@ func New(opts ...Option) *App {
 	app.scanner = NewScanner(app.config.AppDir)
 
 	return app
+}
+
+// SetLogger configures the app-level request logger.
+// The app-level logger captures ALL requests, including those handled by the proxy layer.
+//
+// Example:
+//
+//	app.SetLogger(fuego.RequestLoggerConfig{
+//	    ShowIP:     true,
+//	    ShowSize:   true,
+//	    SkipStatic: true,
+//	})
+func (a *App) SetLogger(config RequestLoggerConfig) {
+	a.logger = NewRequestLogger(config)
+	a.loggerEnabled = true
+}
+
+// DisableLogger disables the app-level request logger.
+// Use this if you prefer to use only middleware-level logging.
+func (a *App) DisableLogger() {
+	a.loggerEnabled = false
+}
+
+// EnableLogger enables the app-level request logger with default configuration.
+func (a *App) EnableLogger() {
+	if a.logger == nil {
+		a.logger = NewRequestLogger(DefaultRequestLoggerConfig())
+	}
+	a.loggerEnabled = true
 }
 
 // Use adds global middleware to the application.
@@ -85,21 +122,34 @@ func (a *App) Mount() {
 }
 
 // ServeHTTP implements http.Handler interface.
-// Request flow: Proxy → Router (with middlewares → handlers)
+// Request flow: Logger → Proxy → Router (with middlewares → handlers)
 func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+
+	// Wrap response writer to capture status and size
+	rw := newResponseWriter(w)
+
+	var proxyAction *ProxyAction
+	var proxyHandled bool
+
 	// Execute proxy if configured
 	if a.routeTree.HasProxy() {
-		ctx := NewContext(w, r)
-		continueToRouter, err := executeProxy(ctx, a.routeTree.Proxy(), a.routeTree.ProxyConfiguration())
+		ctx := NewContext(rw, r)
+		result := executeProxy(ctx, a.routeTree.Proxy(), a.routeTree.ProxyConfiguration())
 
-		if err != nil {
+		proxyAction = result.Action
+
+		if result.Error != nil {
 			// Proxy error - return 500
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
+			a.logRequest(r, rw, start, proxyAction, result.Error)
 			return
 		}
 
-		if !continueToRouter {
+		if !result.ContinueToRouter {
 			// Proxy handled the request (redirect or response)
+			proxyHandled = true
+			a.logRequest(r, rw, start, proxyAction, nil)
 			return
 		}
 
@@ -107,7 +157,23 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		r = ctx.Request
 	}
 
-	a.router.ServeHTTP(w, r)
+	// Continue to router
+	a.router.ServeHTTP(rw, r)
+
+	// Log the request (only if not already logged by proxy)
+	if !proxyHandled {
+		a.logRequest(r, rw, start, proxyAction, nil)
+	}
+}
+
+// logRequest logs a request using the app-level logger if enabled.
+func (a *App) logRequest(r *http.Request, rw *responseWriter, start time.Time, proxyAction *ProxyAction, err error) {
+	if !a.loggerEnabled || a.logger == nil {
+		return
+	}
+
+	latency := time.Since(start)
+	a.logger.Log(r, rw.Status(), rw.Size(), latency, proxyAction, err)
 }
 
 // Listen starts the HTTP server and listens for requests.

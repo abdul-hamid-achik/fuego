@@ -282,6 +282,35 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
 }
 ```
 
+## Proxy Logging
+
+The app-level logger automatically captures proxy actions with helpful tags:
+
+```
+[12:34:56] GET /old-page 301 in 2ms [redirect → /new-page]
+[12:34:57] GET /v1/users → /api/users 200 in 45ms [rewrite]
+[12:34:58] GET /api/admin 403 in 1ms [proxy]
+```
+
+### Action Tags
+
+| Tag | Description |
+|-----|-------------|
+| `[proxy]` | Request handled entirely by proxy (early response) |
+| `[rewrite]` | URL was rewritten internally (shows original → new path) |
+| `[redirect → URL]` | Request was redirected to another URL |
+
+### Configuration
+
+To customize proxy logging:
+
+```go
+app.SetLogger(fuego.RequestLoggerConfig{
+    ShowProxyAction: true,  // Show [proxy], [rewrite], [redirect] tags (default: true)
+    Level:           fuego.LogLevelDebug, // See all proxy actions
+})
+```
+
 ## CLI Support
 
 View proxy configuration with the routes command:
@@ -308,5 +337,5 @@ Output:
 1. **Keep it fast** - Proxy runs on every request, so avoid slow operations
 2. **Handle errors gracefully** - Return explicit error responses rather than returning errors
 3. **Use matchers** - Only run proxy on paths that need it
-4. **Log sparingly** - Too much logging can slow down requests
+4. **Use app-level logger** - It captures all proxy actions automatically
 5. **Test thoroughly** - Proxy bugs affect all matching requests

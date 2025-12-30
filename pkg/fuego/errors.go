@@ -79,3 +79,35 @@ func IsHTTPError(err error) (*HTTPError, bool) {
 	}
 	return nil, false
 }
+
+// ---------- Error Helper Functions ----------
+
+// BadRequest creates a 400 Bad Request error with a custom message.
+func BadRequest(message string) *HTTPError {
+	return NewHTTPError(http.StatusBadRequest, message)
+}
+
+// Unauthorized creates a 401 Unauthorized error with a custom message.
+func Unauthorized(message string) *HTTPError {
+	return NewHTTPError(http.StatusUnauthorized, message)
+}
+
+// Forbidden creates a 403 Forbidden error with a custom message.
+func Forbidden(message string) *HTTPError {
+	return NewHTTPError(http.StatusForbidden, message)
+}
+
+// NotFound creates a 404 Not Found error with a custom message.
+func NotFound(message string) *HTTPError {
+	return NewHTTPError(http.StatusNotFound, message)
+}
+
+// Conflict creates a 409 Conflict error with a custom message.
+func Conflict(message string) *HTTPError {
+	return NewHTTPError(http.StatusConflict, message)
+}
+
+// InternalServerError creates a 500 Internal Server Error with a custom message.
+func InternalServerError(message string) *HTTPError {
+	return NewHTTPError(http.StatusInternalServerError, message)
+}

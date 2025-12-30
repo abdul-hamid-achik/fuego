@@ -347,28 +347,40 @@ func isRegexSpecial(ch byte) bool {
 
 // ---------- Proxy Execution ----------
 
+// ProxyExecutionResult holds the result of proxy execution for logging.
+type ProxyExecutionResult struct {
+	ContinueToRouter bool
+	Action           *ProxyAction
+	StatusCode       int
+	Error            error
+}
+
 // executeProxy runs the proxy function and handles the result.
-// Returns true if the request should continue to routing, false if handled.
-func executeProxy(c *Context, proxy ProxyFunc, config *ProxyConfig) (bool, error) {
+// Returns a ProxyExecutionResult containing routing decision and action info for logging.
+func executeProxy(c *Context, proxy ProxyFunc, config *ProxyConfig) ProxyExecutionResult {
 	// Check if proxy should run for this path
 	if config != nil && !config.Matches(c.Path()) {
-		return true, nil
+		return ProxyExecutionResult{ContinueToRouter: true}
 	}
 
 	// Execute proxy
 	result, err := proxy(c)
 	if err != nil {
-		return false, err
+		return ProxyExecutionResult{
+			ContinueToRouter: false,
+			Error:            err,
+			StatusCode:       http.StatusInternalServerError,
+		}
 	}
 
 	// Handle nil result as continue
 	if result == nil {
-		return true, nil
+		return ProxyExecutionResult{ContinueToRouter: true}
 	}
 
 	switch result.action {
 	case proxyActionContinue:
-		return true, nil
+		return ProxyExecutionResult{ContinueToRouter: true}
 
 	case proxyActionRedirect:
 		// Apply any custom headers
@@ -378,13 +390,21 @@ func executeProxy(c *Context, proxy ProxyFunc, config *ProxyConfig) (bool, error
 			}
 		}
 		http.Redirect(c.Response, c.Request, result.url, result.statusCode)
-		return false, nil
+		return ProxyExecutionResult{
+			ContinueToRouter: false,
+			Action:           &ProxyAction{Type: "redirect", Target: result.url},
+			StatusCode:       result.statusCode,
+		}
 
 	case proxyActionRewrite:
 		// Modify the request URL for internal routing
 		c.Request.URL.Path = result.url
 		c.Request.RequestURI = result.url
-		return true, nil
+		return ProxyExecutionResult{
+			ContinueToRouter: true,
+			Action:           &ProxyAction{Type: "rewrite", Target: result.url},
+			StatusCode:       0, // Will be set by handler
+		}
 
 	case proxyActionResponse:
 		// Apply any custom headers
@@ -400,10 +420,14 @@ func executeProxy(c *Context, proxy ProxyFunc, config *ProxyConfig) (bool, error
 		if result.body != nil {
 			_, _ = c.Response.Write(result.body)
 		}
-		return false, nil
+		return ProxyExecutionResult{
+			ContinueToRouter: false,
+			Action:           &ProxyAction{Type: "response", Target: ""},
+			StatusCode:       result.statusCode,
+		}
 	}
 
-	return true, nil
+	return ProxyExecutionResult{ContinueToRouter: true}
 }
 
 // ProxyInfo holds information about a discovered proxy for CLI display.

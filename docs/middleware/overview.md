@@ -28,6 +28,8 @@ func MyMiddleware() fuego.MiddlewareFunc {
 
 ```
 Request
+    → App-Level Logger (captures ALL requests)
+    → Proxy (if configured)
     → Global Middleware (in order added)
         → Path Middleware (inherited from parent)
             → Route Middleware
@@ -44,8 +46,8 @@ Apply to all routes via `app.Use()`:
 
 ```go
 app := fuego.New()
-app.Use(fuego.Logger())
 app.Use(fuego.Recover())
+app.Use(fuego.RequestID())
 ```
 
 ## File-Based Middleware
@@ -80,23 +82,93 @@ func Middleware() fuego.MiddlewareFunc {
 
 ## Built-in Middleware
 
-### Logger
+### Request Logger (App-Level)
 
-Logs requests with method, path, status, and duration:
+Fuego includes an app-level request logger that captures **all** requests, including those handled by the proxy layer. The logger is enabled by default.
 
 ```go
-app.Use(fuego.Logger())
-
-// With config
-app.Use(fuego.LoggerWithConfig(fuego.LoggerConfig{
-    SkipPaths: []string{"/health", "/metrics"},
-}))
+app := fuego.New() // Logger enabled by default!
 ```
 
 Output:
 ```
-2024/01/15 10:30:45 200 GET     /api/users 1.234ms <nil>
+[12:34:56] GET /api/users 200 in 45ms (1.2KB)
+[12:34:57] POST /api/tasks 201 in 123ms (256B)
+[12:34:58] GET /v1/users → /api/users 200 in 52ms [rewrite]
+[12:34:59] GET /api/admin 403 in 1ms [proxy]
 ```
+
+#### Configuration
+
+```go
+app.SetLogger(fuego.RequestLoggerConfig{
+    ShowIP:        true,   // Show client IP
+    ShowUserAgent: true,   // Show user agent
+    ShowSize:      true,   // Show response size (default: true)
+    SkipStatic:    true,   // Don't log static files
+    SkipPaths:     []string{"/health", "/metrics"},
+    Level:         fuego.LogLevelInfo, // debug, info, warn, error
+    TimeUnit:      "auto", // "ms" (default), "us", or "auto"
+})
+```
+
+Detailed output:
+```
+[12:34:56] GET /api/users 200 in 45ms (1.2KB) [192.168.1.100] [Mozilla/5.0...]
+```
+
+#### Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `Compact` | `bool` | `true` | Use compact Next.js-style format |
+| `ShowTimestamp` | `bool` | `true` | Show `[HH:MM:SS]` timestamp |
+| `ShowIP` | `bool` | `false` | Show client IP address |
+| `ShowUserAgent` | `bool` | `false` | Show user agent (truncated) |
+| `ShowSize` | `bool` | `true` | Show response size |
+| `ShowErrors` | `bool` | `true` | Show error details inline |
+| `ShowProxyAction` | `bool` | `true` | Show `[proxy]`, `[rewrite]`, `[redirect]` tags |
+| `TimeUnit` | `string` | `"ms"` | Time unit: `"ms"`, `"us"`, or `"auto"` |
+| `Level` | `LogLevel` | `LogLevelInfo` | Log level filtering |
+| `SkipPaths` | `[]string` | `[]` | Paths to skip entirely |
+| `SkipStatic` | `bool` | `false` | Skip static file requests |
+| `StaticPaths` | `[]string` | `["/static"]` | Paths considered static |
+| `DisableColors` | `bool` | `false` | Disable color output |
+
+#### Log Levels
+
+| Level | What's Logged |
+|-------|---------------|
+| `LogLevelDebug` | Everything + internal details |
+| `LogLevelInfo` | All requests (default) |
+| `LogLevelWarn` | 4xx + 5xx only |
+| `LogLevelError` | 5xx only |
+| `LogLevelOff` | Nothing |
+
+#### Environment Variables
+
+- `FUEGO_LOG_LEVEL` - Set log level (`debug`, `info`, `warn`, `error`, `off`)
+- `FUEGO_DEV=true` - Automatically sets debug level
+- `GO_ENV=production` - Automatically sets warn level
+
+#### Disable/Enable Logger
+
+```go
+app.DisableLogger() // Disable logging
+app.EnableLogger()  // Re-enable with default config
+```
+
+### Middleware-Level Logger (Legacy)
+
+For backward compatibility or fine-grained control, you can use the middleware logger:
+
+```go
+app := fuego.New()
+app.DisableLogger() // Disable app-level logger
+app.Use(fuego.Logger()) // Use middleware logger instead
+```
+
+Note: The middleware logger does NOT capture requests handled by the proxy layer.
 
 ### Recover
 
@@ -147,9 +219,8 @@ app.Use(fuego.Timeout(30 * time.Second))
 Simple username/password authentication:
 
 ```go
-app.Use(fuego.BasicAuth(map[string]string{
-    "admin": "secret",
-    "user": "password",
+app.Use(fuego.BasicAuth(func(user, pass string) bool {
+    return user == "admin" && pass == "secret"
 }))
 ```
 
@@ -163,8 +234,9 @@ app.Use(fuego.SecureHeaders())
 
 Adds:
 - `X-Content-Type-Options: nosniff`
-- `X-Frame-Options: DENY`
+- `X-Frame-Options: SAMEORIGIN`
 - `X-XSS-Protection: 1; mode=block`
+- `Referrer-Policy: strict-origin-when-cross-origin`
 
 ### RateLimiter
 
@@ -215,8 +287,9 @@ See [Proxy Documentation](./proxy.md) for pre-routing manipulation.
 
 ## Best Practices
 
-1. **Order matters** - Add logging/recover first, auth after
+1. **Order matters** - Add recover first, then other middleware
 2. **Keep it focused** - Each middleware should do one thing
 3. **Handle errors** - Return proper errors, don't panic
 4. **Use context** - Store shared data with `c.Set()`/`c.Get()`
 5. **Be careful with state** - Middleware runs concurrently
+6. **Use app-level logger** - It captures all requests including proxy actions

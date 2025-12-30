@@ -290,14 +290,61 @@ func Get(c *fuego.Context) error {
 | `maintenance` | Maintenance mode |
 | `redirect-www` | WWW redirect |
 
+## Request Logging
+
+Fuego includes an app-level request logger that is **enabled by default** and captures ALL requests, including those handled by the proxy layer.
+
+### Default Output
+
+```
+[12:34:56] GET /api/users 200 in 45ms (1.2KB)
+[12:34:57] POST /api/tasks 201 in 123ms (256B)
+[12:34:58] GET /v1/users → /api/users 200 in 52ms [rewrite]
+[12:34:59] GET /api/admin 403 in 1ms [proxy]
+```
+
+### Configuration
+
+```go
+app := fuego.New() // Logger enabled by default!
+
+// Customize logging
+app.SetLogger(fuego.RequestLoggerConfig{
+    ShowIP:        true,   // Show client IP
+    ShowUserAgent: true,   // Show user agent
+    SkipStatic:    true,   // Don't log static files
+    SkipPaths:     []string{"/health", "/metrics"},
+    Level:         fuego.LogLevelInfo, // debug, info, warn, error
+})
+
+// Disable logging
+app.DisableLogger()
+```
+
+### Environment Variables
+
+- `FUEGO_LOG_LEVEL` - Set log level: `debug`, `info`, `warn`, `error`, `off`
+- `FUEGO_DEV=true` - Auto-set debug level
+- `GO_ENV=production` - Auto-set warn level
+
+### Log Levels
+
+| Level | What's Logged |
+|-------|---------------|
+| `debug` | Everything |
+| `info` | All requests (default) |
+| `warn` | 4xx + 5xx only |
+| `error` | 5xx only |
+
 ## Best Practices
 
 1. **Use meaningful package names** - The package name should reflect the resource
 2. **One route.go per endpoint** - Keep handlers focused
-3. **Middleware for cross-cutting concerns** - Auth, logging, timing
+3. **Middleware for cross-cutting concerns** - Auth, timing
 4. **Use proxy for global request handling** - Rate limiting, maintenance mode
 5. **Always return errors** - Don't silently fail
 6. **Use JSON output** - Add `--json` flag for machine-readable output
+7. **Use app-level logger** - It captures all requests including proxy actions
 
 ## Code Quality Requirements
 

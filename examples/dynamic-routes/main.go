@@ -9,8 +9,10 @@ import (
 func main() {
 	app := fuego.New()
 
+	// App-level logger is enabled by default!
+	// No need to call app.Use(fuego.Logger())
+
 	// Global middleware
-	app.Use(fuego.Logger())
 	app.Use(fuego.Recover())
 
 	// Start the server

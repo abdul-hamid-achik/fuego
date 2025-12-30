@@ -9,8 +9,11 @@ import (
 func main() {
 	app := fuego.New()
 
+	// App-level logger is enabled by default and captures ALL requests,
+	// including those handled by the proxy layer.
+	// Customize with: app.SetLogger(fuego.RequestLoggerConfig{...})
+
 	// Add global middleware
-	app.Use(fuego.Logger())
 	app.Use(fuego.Recover())
 	app.Use(fuego.RequestID())
 

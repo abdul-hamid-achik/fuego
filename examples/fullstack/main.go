@@ -10,6 +10,12 @@ func main() {
 	// Create a new Fuego app
 	app := fuego.New()
 
+	// App-level logger is enabled by default!
+	// It captures all requests with timing info.
+
+	// Add recover middleware for graceful error handling
+	app.Use(fuego.Recover())
+
 	// Routes are automatically scanned from the app/ directory
 	// Alternatively, use: fuego build --generate to create RegisterRoutes()
 

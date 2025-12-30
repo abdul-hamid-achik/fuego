@@ -43,12 +43,23 @@ app/api/posts/route.go      → GET/POST /api/posts
 - **Hot reload** — Sub-second rebuilds during development.
 - **Production ready** — Single binary deployment, minimal dependencies.
 
+## Installation
+
+### Using Homebrew (macOS/Linux)
+
+```bash
+brew install abdul-hamid-achik/tap/fuego-cli
+```
+
+### Using Go
+
+```bash
+go install github.com/abdul-hamid-achik/fuego/cmd/fuego@latest
+```
+
 ## Quick Start
 
 ```bash
-# Install Fuego CLI
-go install github.com/abdul-hamid-achik/fuego/cmd/fuego@latest
-
 # Create a new project
 fuego new myapp
 
@@ -215,8 +226,9 @@ func Middleware() fuego.MiddlewareFunc {
 ```go
 app := fuego.New()
 
-// Logging
-app.Use(fuego.Logger())
+// Request logging is enabled by default!
+// Output: [12:34:56] GET /api/users 200 in 45ms (1.2KB)
+// Customize with: app.SetLogger(fuego.RequestLoggerConfig{...})
 
 // Panic recovery
 app.Use(fuego.Recover())
@@ -237,8 +249,8 @@ app.Use(fuego.RateLimiter(100, time.Minute))
 app.Use(fuego.Timeout(30 * time.Second))
 
 // Basic auth
-app.Use(fuego.BasicAuth(map[string]string{
-    "admin": "secret",
+app.Use(fuego.BasicAuth(func(user, pass string) bool {
+    return user == "admin" && pass == "secret"
 }))
 
 // Security headers

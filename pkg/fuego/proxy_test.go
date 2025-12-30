@@ -262,13 +262,13 @@ func TestExecuteProxyContinue(t *testing.T) {
 		return Continue(), nil
 	}
 
-	continueRouting, err := executeProxy(ctx, proxy, nil)
+	result := executeProxy(ctx, proxy, nil)
 
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if result.Error != nil {
+		t.Fatalf("unexpected error: %v", result.Error)
 	}
-	if !continueRouting {
-		t.Error("expected continueRouting to be true")
+	if !result.ContinueToRouter {
+		t.Error("expected ContinueToRouter to be true")
 	}
 }
 
@@ -281,13 +281,13 @@ func TestExecuteProxyNilResult(t *testing.T) {
 		return nil, nil
 	}
 
-	continueRouting, err := executeProxy(ctx, proxy, nil)
+	result := executeProxy(ctx, proxy, nil)
 
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if result.Error != nil {
+		t.Fatalf("unexpected error: %v", result.Error)
 	}
-	if !continueRouting {
-		t.Error("expected continueRouting to be true for nil result")
+	if !result.ContinueToRouter {
+		t.Error("expected ContinueToRouter to be true for nil result")
 	}
 }
 
@@ -300,13 +300,13 @@ func TestExecuteProxyRedirect(t *testing.T) {
 		return Redirect("/new-page", 301), nil
 	}
 
-	continueRouting, err := executeProxy(ctx, proxy, nil)
+	result := executeProxy(ctx, proxy, nil)
 
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if result.Error != nil {
+		t.Fatalf("unexpected error: %v", result.Error)
 	}
-	if continueRouting {
-		t.Error("expected continueRouting to be false after redirect")
+	if result.ContinueToRouter {
+		t.Error("expected ContinueToRouter to be false after redirect")
 	}
 	if w.Code != 301 {
 		t.Errorf("expected status 301, got %d", w.Code)
@@ -325,13 +325,13 @@ func TestExecuteProxyRewrite(t *testing.T) {
 		return Rewrite("/new-path"), nil
 	}
 
-	continueRouting, err := executeProxy(ctx, proxy, nil)
+	result := executeProxy(ctx, proxy, nil)
 
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if result.Error != nil {
+		t.Fatalf("unexpected error: %v", result.Error)
 	}
-	if !continueRouting {
-		t.Error("expected continueRouting to be true after rewrite")
+	if !result.ContinueToRouter {
+		t.Error("expected ContinueToRouter to be true after rewrite")
 	}
 	if ctx.Request.URL.Path != "/new-path" {
 		t.Errorf("expected request path to be rewritten to %q, got %q", "/new-path", ctx.Request.URL.Path)
@@ -347,13 +347,13 @@ func TestExecuteProxyResponse(t *testing.T) {
 		return ResponseJSON(403, `{"error":"forbidden"}`), nil
 	}
 
-	continueRouting, err := executeProxy(ctx, proxy, nil)
+	result := executeProxy(ctx, proxy, nil)
 
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if result.Error != nil {
+		t.Fatalf("unexpected error: %v", result.Error)
 	}
-	if continueRouting {
-		t.Error("expected continueRouting to be false after response")
+	if result.ContinueToRouter {
+		t.Error("expected ContinueToRouter to be false after response")
 	}
 	if w.Code != 403 {
 		t.Errorf("expected status 403, got %d", w.Code)
@@ -375,7 +375,7 @@ func TestExecuteProxyWithHeaders(t *testing.T) {
 		return ResponseJSON(200, `{}`).WithHeader("X-Custom", "value"), nil
 	}
 
-	_, _ = executeProxy(ctx, proxy, nil)
+	_ = executeProxy(ctx, proxy, nil)
 
 	if w.Header().Get("X-Custom") != "value" {
 		t.Errorf("expected X-Custom header to be %q, got %q", "value", w.Header().Get("X-Custom"))
@@ -399,7 +399,7 @@ func TestExecuteProxyWithMatcher(t *testing.T) {
 		return Continue(), nil
 	}
 
-	_, _ = executeProxy(ctx, proxy, config)
+	_ = executeProxy(ctx, proxy, config)
 
 	if !proxyCalled {
 		t.Error("proxy should have been called for matching path")
@@ -411,7 +411,7 @@ func TestExecuteProxyWithMatcher(t *testing.T) {
 	ctx = NewContext(w, r)
 
 	proxyCalled = false
-	_, _ = executeProxy(ctx, proxy, config)
+	_ = executeProxy(ctx, proxy, config)
 
 	if proxyCalled {
 		t.Error("proxy should not have been called for non-matching path")
@@ -581,13 +581,13 @@ func TestExecuteProxyError(t *testing.T) {
 		return nil, NewHTTPError(500, "proxy failed")
 	}
 
-	continueRouting, err := executeProxy(ctx, proxy, nil)
+	result := executeProxy(ctx, proxy, nil)
 
-	if err == nil {
+	if result.Error == nil {
 		t.Error("expected error from proxy")
 	}
-	if continueRouting {
-		t.Error("expected continueRouting to be false when proxy returns error")
+	if result.ContinueToRouter {
+		t.Error("expected ContinueToRouter to be false when proxy returns error")
 	}
 }
 
@@ -602,7 +602,7 @@ func TestExecuteProxyRedirectWithMultipleHeaders(t *testing.T) {
 			WithHeader("X-Header-2", "value2"), nil
 	}
 
-	_, _ = executeProxy(ctx, proxy, nil)
+	_ = executeProxy(ctx, proxy, nil)
 
 	if w.Header().Get("X-Header-1") != "value1" {
 		t.Errorf("expected X-Header-1 = value1, got %q", w.Header().Get("X-Header-1"))
