@@ -236,23 +236,48 @@ Route groups are great for organizing code and applying shared middleware withou
 
 ## Private Folders
 
-Folders starting with `_` are ignored:
+Following Next.js conventions, certain folders prefixed with `_` are private (not routable):
 
 <FileTree>
   <Folder name="app" defaultOpen>
-    <Folder name="_components">
-      <File name="button.go" />
+    <Folder name="api" defaultOpen>
+      <Folder name="users">
+        <Folder name="[id]">
+          <File name="route.go" />
+        </Folder>
+        <File name="route.go" />
+      </Folder>
+      <Folder name="_utils">
+        <File name="auth.go" />
+      </Folder>
     </Folder>
-    <Folder name="_utils">
-      <File name="helpers.go" />
+    <Folder name="dashboard">
+      <Folder name="_components">
+        <File name="Sidebar.templ" />
+      </Folder>
+      <File name="page.templ" />
     </Folder>
-    <Folder name="api">
-      <File name="route.go" />
+    <Folder name="_lib">
+      <File name="database.go" />
     </Folder>
   </Folder>
 </FileTree>
 
-The `_components` and `_utils` folders are ignored by the router.
+**Private folder prefixes:**
+- `_components/` - UI components
+- `_lib/` - Utility libraries
+- `_utils/` - Helper functions
+- `_helpers/` - Additional helpers
+- `_private/` - Private implementation details
+- `_shared/` - Shared code
+
+<Tip>
+For better organization, consider keeping private code outside the `app/` directory entirely, following Next.js best practices.
+</Tip>
+
+<Warning>
+Fuego automatically creates symlinks for `[bracket]` directories to enable valid Go imports (e.g., `_id` → `[id]`). These symlinks are managed automatically and should not be committed to version control.
+</Warning>
 
 ## Route Priority
 

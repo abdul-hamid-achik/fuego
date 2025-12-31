@@ -50,7 +50,7 @@ func DefaultConfig() *Config {
 		Dev: DevConfig{
 			HotReload:       true,
 			WatchExtensions: []string{".go", ".templ"},
-			ExcludeDirs:     []string{"node_modules", ".git", "_*"},
+			ExcludeDirs:     []string{"node_modules", ".git"},
 		},
 		Middleware: MiddlewareConfig{
 			Logger:  true,

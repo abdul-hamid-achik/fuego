@@ -323,6 +323,34 @@ func Get(c *fuego.Context) error {
 | Catch-all `[...param]` | `docs/[...slug]/route.go` | `/api/docs/a/b/c` |
 | Optional `[[...param]]` | `shop/[[...cat]]/route.go` | `/api/shop` and `/api/shop/a/b` |
 | Group `(name)` | `(admin)/settings/route.go` | `/api/settings` |
+| Private folder | `_components/button.go` | Not routable |
+
+## Private Folders (Not Routable)
+
+Following Next.js conventions, certain folders prefixed with `_` are private and not routable:
+
+- `_components/` - UI components
+- `_lib/` - Utility libraries
+- `_utils/` - Helper functions
+- `_helpers/` - Additional helpers
+- `_private/` - Private implementation details
+- `_shared/` - Shared code
+
+**Example:**
+```
+app/
+├── api/
+│   ├── users/
+│   │   ├── [id]/
+│   │   │   └── route.go      # /api/users/:id (routable)
+│   │   └── route.go          # /api/users (routable)
+│   └── _utils/
+│       └── auth.go           # NOT routable (private)
+└── _components/
+    └── Button.templ          # NOT routable (private)
+```
+
+**Note:** Fuego automatically creates symlinks for `[bracket]` directories to enable valid Go imports (e.g., `_id` → `[id]`). These symlinks are managed automatically and should be added to `.gitignore`.
 
 ## Middleware Templates
 

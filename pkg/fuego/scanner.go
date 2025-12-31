@@ -46,10 +46,47 @@ var (
 
 	// (group) - route group (doesn't affect URL)
 	routeGroupRe = regexp.MustCompile(`^\([^)]+\)$`)
-
-	// _folder - private folder (not routable)
-	privateFolderRe = regexp.MustCompile(`^_`)
 )
+
+// knownPrivateFolders contains folder prefixes that are private (not routable)
+// following Next.js conventions
+var knownPrivateFolders = []string{
+	"_components",
+	"_lib",
+	"_utils",
+	"_helpers",
+	"_private",
+	"_shared",
+}
+
+// isPrivateFolder checks if a directory should be skipped during scanning.
+// Returns true for:
+// - Known private folders (_components, _lib, etc.)
+// - Symlinks pointing to bracket directories (our generated symlinks)
+func isPrivateFolder(name, path string) bool {
+	// Check known private folder prefixes
+	for _, prefix := range knownPrivateFolders {
+		if strings.HasPrefix(name, prefix) {
+			return true
+		}
+	}
+
+	// Check if it's a symlink pointing to a bracket directory
+	// (these are our generated symlinks for Go imports)
+	if strings.HasPrefix(name, "_") {
+		if info, err := os.Lstat(path); err == nil {
+			if info.Mode()&os.ModeSymlink != 0 {
+				if target, err := os.Readlink(path); err == nil {
+					if strings.Contains(target, "[") {
+						return true // Skip - we'll scan the original bracket dir
+					}
+				}
+			}
+		}
+	}
+
+	return false
+}
 
 // HTTP method to function name mapping
 var httpMethods = map[string]string{
@@ -84,7 +121,7 @@ func (s *Scanner) Scan(tree *RouteTree) error {
 		}
 
 		// Skip private folders
-		if info.IsDir() && privateFolderRe.MatchString(info.Name()) {
+		if info.IsDir() && isPrivateFolder(info.Name(), path) {
 			return filepath.SkipDir
 		}
 
@@ -423,7 +460,7 @@ func (s *Scanner) ScanRouteInfo() ([]RouteInfo, error) {
 			return nil
 		}
 
-		if info.IsDir() && privateFolderRe.MatchString(info.Name()) {
+		if info.IsDir() && isPrivateFolder(info.Name(), path) {
 			return filepath.SkipDir
 		}
 
@@ -485,7 +522,7 @@ func (s *Scanner) ScanMiddlewareInfo() ([]MiddlewareInfo, error) {
 			return nil
 		}
 
-		if info.IsDir() && privateFolderRe.MatchString(info.Name()) {
+		if info.IsDir() && isPrivateFolder(info.Name(), path) {
 			return filepath.SkipDir
 		}
 
@@ -714,7 +751,7 @@ func (s *Scanner) ScanPageInfo() ([]PageInfo, error) {
 			return nil
 		}
 
-		if info.IsDir() && privateFolderRe.MatchString(info.Name()) {
+		if info.IsDir() && isPrivateFolder(info.Name(), path) {
 			return filepath.SkipDir
 		}
 
@@ -767,7 +804,7 @@ func (s *Scanner) ScanLayoutInfo() ([]LayoutInfo, error) {
 			return nil
 		}
 
-		if info.IsDir() && privateFolderRe.MatchString(info.Name()) {
+		if info.IsDir() && isPrivateFolder(info.Name(), path) {
 			return filepath.SkipDir
 		}
 

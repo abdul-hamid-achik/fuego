@@ -356,7 +356,7 @@ static_path: "/static"
 dev:
   hot_reload: true
   watch_extensions: [".go", ".templ", ".css"]
-  exclude_dirs: ["node_modules", ".git", "_*"]
+  exclude_dirs: ["node_modules", ".git"]
 
 # Middleware
 middleware:

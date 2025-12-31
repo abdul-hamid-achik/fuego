@@ -56,6 +56,42 @@ var (
 	optionalCatchAllRe = regexp.MustCompile(`^\[\[\.\.\.([^\]]+)\]\]$`)
 )
 
+// knownPrivateFolders contains folder prefixes that are private (not routable)
+// following Next.js conventions
+var knownPrivateFolders = []string{
+	"_components",
+	"_lib",
+	"_utils",
+	"_helpers",
+	"_private",
+	"_shared",
+}
+
+// isGeneratorPrivateFolder checks if a directory should be skipped during generation
+func isGeneratorPrivateFolder(name, path string) bool {
+	// Check known private folder prefixes
+	for _, prefix := range knownPrivateFolders {
+		if strings.HasPrefix(name, prefix) {
+			return true
+		}
+	}
+
+	// Skip symlinks pointing to bracket directories (our generated symlinks)
+	if strings.HasPrefix(name, "_") {
+		if info, err := os.Lstat(path); err == nil {
+			if info.Mode()&os.ModeSymlink != 0 {
+				if target, err := os.Readlink(path); err == nil {
+					if strings.Contains(target, "[") {
+						return true
+					}
+				}
+			}
+		}
+	}
+
+	return false
+}
+
 // ParamInfo holds information about a route parameter
 type ParamInfo struct {
 	Name       string
@@ -722,6 +758,15 @@ func ScanAndGenerateRoutes(appDir, outputPath string) (*Result, error) {
 		appDir = "app"
 	}
 
+	// Create symlinks for bracket directories (needed for Go imports)
+	if _, err := os.Stat(appDir); err == nil {
+		_, _, err := CreateDynamicDirSymlinks(appDir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create dynamic dir symlinks: %w", err)
+		}
+		// Note: We don't call cleanup() - symlinks need to persist for Go compilation
+	}
+
 	cfg := RoutesGenConfig{
 		ModuleName: moduleName,
 		AppDir:     appDir,
@@ -762,14 +807,8 @@ func ScanAndGenerateRoutes(appDir, outputPath string) (*Result, error) {
 			return nil
 		}
 
-		// Skip private folders, but NOT our generated symlinks
-		if info.IsDir() && strings.HasPrefix(info.Name(), "_") {
-			// Check if this is a symlink (our generated ones)
-			if info.Mode()&os.ModeSymlink != 0 {
-				// Skip symlinks - we'll scan through the original bracket dirs
-				return filepath.SkipDir
-			}
-			// Skip regular private folders like _components, _utils
+		// Skip private folders and symlinks
+		if info.IsDir() && isGeneratorPrivateFolder(info.Name(), path) {
 			return filepath.SkipDir
 		}
 
@@ -1275,6 +1314,11 @@ func scanRouteFile(fset *token.FileSet, filePath, appDir, moduleName string) ([]
 		return nil, err
 	}
 	importPath := moduleName + "/" + filepath.ToSlash(relDir)
+	// Use sanitized import path if directory contains brackets
+	if strings.Contains(relDir, "[") {
+		sanitizedRelDir := sanitizePathForImport(relDir)
+		importPath = moduleName + "/" + filepath.ToSlash(sanitizedRelDir)
+	}
 	pattern := dirToPattern(filepath.Dir(filePath), appDir)
 	pkgName := file.Name.Name
 
@@ -1321,6 +1365,11 @@ func scanMiddlewareFile(fset *token.FileSet, filePath, appDir, moduleName string
 		return nil, err
 	}
 	importPath := moduleName + "/" + filepath.ToSlash(relDir)
+	// Use sanitized import path if directory contains brackets
+	if strings.Contains(relDir, "[") {
+		sanitizedRelDir := sanitizePathForImport(relDir)
+		importPath = moduleName + "/" + filepath.ToSlash(sanitizedRelDir)
+	}
 	pathPrefix := dirToPattern(filepath.Dir(filePath), appDir)
 	pkgName := file.Name.Name
 
