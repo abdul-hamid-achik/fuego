@@ -54,7 +54,11 @@ var (
 	dynamicSegmentRe   = regexp.MustCompile(`^\[([^\.\]]+)\]$`)
 	catchAllSegmentRe  = regexp.MustCompile(`^\[\.\.\.([^\]]+)\]$`)
 	optionalCatchAllRe = regexp.MustCompile(`^\[\[\.\.\.([^\]]+)\]\]$`)
+	routeGroupRe       = regexp.MustCompile(`^\(([^)]+)\)$`)
 )
+
+// fuegoImportsDir is the directory where import symlinks are created
+const fuegoImportsDir = ".fuego/imports"
 
 // knownPrivateFolders contains folder prefixes that are private (not routable)
 // following Next.js conventions
@@ -76,17 +80,9 @@ func isGeneratorPrivateFolder(name, path string) bool {
 		}
 	}
 
-	// Skip symlinks pointing to bracket directories (our generated symlinks)
-	if strings.HasPrefix(name, "_") {
-		if info, err := os.Lstat(path); err == nil {
-			if info.Mode()&os.ModeSymlink != 0 {
-				if target, err := os.Readlink(path); err == nil {
-					if strings.Contains(target, "[") {
-						return true
-					}
-				}
-			}
-		}
+	// Skip .fuego directory
+	if name == ".fuego" {
+		return true
 	}
 
 	return false
@@ -758,15 +754,6 @@ func ScanAndGenerateRoutes(appDir, outputPath string) (*Result, error) {
 		appDir = "app"
 	}
 
-	// Create symlinks for bracket directories (needed for Go imports)
-	if _, err := os.Stat(appDir); err == nil {
-		_, _, err := CreateDynamicDirSymlinks(appDir)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create dynamic dir symlinks: %w", err)
-		}
-		// Note: We don't call cleanup() - symlinks need to persist for Go compilation
-	}
-
 	cfg := RoutesGenConfig{
 		ModuleName: moduleName,
 		AppDir:     appDir,
@@ -778,16 +765,13 @@ func ScanAndGenerateRoutes(appDir, outputPath string) (*Result, error) {
 		return GenerateRoutesFile(cfg)
 	}
 
-	// Create symlinks for bracket directories before scanning
-	// This is necessary because Go import paths cannot contain brackets
-	symlinks, cleanup, err := CreateDynamicDirSymlinks(appDir)
+	// Create import symlinks in .fuego/imports/ for directories with special characters
+	// This is necessary because Go import paths cannot contain brackets or parentheses
+	_, err = CreateImportSymlinks(appDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create symlinks for dynamic directories: %w", err)
+		return nil, fmt.Errorf("failed to create import symlinks: %w", err)
 	}
-	// Note: We don't call cleanup() here because the symlinks are needed for compilation
-	// They will be cleaned up by CleanupDynamicDirSymlinks() when the server stops
-	_ = symlinks // Symlinks are used implicitly through the sanitized import paths
-	_ = cleanup  // Cleanup is available but not called during generation
+	// Note: We don't clean up symlinks - they need to persist for Go compilation
 
 	fset := token.NewFileSet()
 
@@ -917,16 +901,12 @@ func scanPageFile(filePath, appDir, moduleName string) (*PageRegistration, error
 	// Extract URL parameters from the path (e.g., [slug] -> "slug")
 	urlParams := extractURLParams(dir, appDir)
 
-	// Check if the path contains brackets (needs symlink)
-	importPath := moduleName + "/" + filepath.ToSlash(relDir)
-	useSymlink := strings.Contains(relDir, "[")
+	// Get import path (uses .fuego/imports/ if sanitization is needed)
+	importPath := getImportPath(moduleName, relDir)
+	useSymlink := needsImportSanitization(relDir)
 	var symlinkPath string
-
 	if useSymlink {
-		// Create sanitized import path for symlink
-		sanitizedRelDir := sanitizePathForImport(relDir)
-		importPath = moduleName + "/" + filepath.ToSlash(sanitizedRelDir)
-		symlinkPath = sanitizedRelDir
+		symlinkPath = fuegoImportsDir + "/" + sanitizePathForImport(relDir)
 	}
 
 	pattern := pagePathToPattern(dir, appDir)
@@ -1099,14 +1079,21 @@ func validatePageParams(page *PageRegistration) []GenerationWarning {
 	return warnings
 }
 
-// sanitizePathForImport converts bracket directories to valid Go import path segments
+// sanitizePathForImport converts bracket directories and route groups to valid Go import path segments
 // e.g., "app/posts/[slug]" -> "app/posts/_slug"
 // e.g., "app/docs/[...path]" -> "app/docs/_catchall_path"
+// e.g., "app/(dashboard)/settings" -> "app/_group_dashboard/settings"
 func sanitizePathForImport(path string) string {
 	segments := strings.Split(path, string(filepath.Separator))
 	var sanitized []string
 
 	for _, seg := range segments {
+		// Handle (group) -> _group_groupname
+		if matches := routeGroupRe.FindStringSubmatch(seg); len(matches) > 1 {
+			sanitized = append(sanitized, "_group_"+matches[1])
+			continue
+		}
+
 		// Handle [[...param]] -> _opt_catchall_param
 		if matches := optionalCatchAllRe.FindStringSubmatch(seg); len(matches) > 1 {
 			sanitized = append(sanitized, "_opt_catchall_"+matches[1])
@@ -1131,6 +1118,11 @@ func sanitizePathForImport(path string) string {
 	return strings.Join(sanitized, string(filepath.Separator))
 }
 
+// needsImportSanitization checks if a path contains characters that are invalid in Go imports
+func needsImportSanitization(path string) bool {
+	return strings.Contains(path, "[") || strings.Contains(path, "(")
+}
+
 // scanLayoutFile scans a layout.templ file and returns registration info
 func scanLayoutFile(filePath, appDir, moduleName string) (*LayoutRegistration, error) {
 	// Validate the layout has a valid Layout() function with children
@@ -1152,7 +1144,8 @@ func scanLayoutFile(filePath, appDir, moduleName string) (*LayoutRegistration, e
 	if err != nil {
 		return nil, err
 	}
-	importPath := moduleName + "/" + filepath.ToSlash(relDir)
+	// Get import path (uses .fuego/imports/ if sanitization is needed)
+	importPath := getImportPath(moduleName, relDir)
 	pathPrefix := layoutPathToPrefix(filepath.Dir(filePath), appDir)
 	pkgName := packageNameFromDir(filepath.Dir(filePath))
 
@@ -1313,12 +1306,8 @@ func scanRouteFile(fset *token.FileSet, filePath, appDir, moduleName string) ([]
 	if err != nil {
 		return nil, err
 	}
-	importPath := moduleName + "/" + filepath.ToSlash(relDir)
-	// Use sanitized import path if directory contains brackets
-	if strings.Contains(relDir, "[") {
-		sanitizedRelDir := sanitizePathForImport(relDir)
-		importPath = moduleName + "/" + filepath.ToSlash(sanitizedRelDir)
-	}
+	// Get import path (uses .fuego/imports/ if sanitization is needed)
+	importPath := getImportPath(moduleName, relDir)
 	pattern := dirToPattern(filepath.Dir(filePath), appDir)
 	pkgName := file.Name.Name
 
@@ -1364,12 +1353,8 @@ func scanMiddlewareFile(fset *token.FileSet, filePath, appDir, moduleName string
 	if err != nil {
 		return nil, err
 	}
-	importPath := moduleName + "/" + filepath.ToSlash(relDir)
-	// Use sanitized import path if directory contains brackets
-	if strings.Contains(relDir, "[") {
-		sanitizedRelDir := sanitizePathForImport(relDir)
-		importPath = moduleName + "/" + filepath.ToSlash(sanitizedRelDir)
-	}
+	// Get import path (uses .fuego/imports/ if sanitization is needed)
+	importPath := getImportPath(moduleName, relDir)
 	pathPrefix := dirToPattern(filepath.Dir(filePath), appDir)
 	pkgName := file.Name.Name
 
@@ -1645,20 +1630,31 @@ func isValidProxySignature(fn *ast.FuncDecl) bool {
 	return false
 }
 
-// SymlinkMapping represents a mapping from a bracket directory to its symlink.
-type SymlinkMapping struct {
-	Original    string // Original path with brackets (e.g., "app/posts/[slug]")
-	Sanitized   string // Sanitized path for symlink (e.g., "app/posts/_slug")
-	SymlinkPath string // Full path to the symlink
+// ImportMapping represents a mapping from an original directory to its import symlink.
+type ImportMapping struct {
+	Original    string // Original path (e.g., "app/posts/[slug]" or "app/(dashboard)")
+	Sanitized   string // Sanitized path for import (e.g., "app/posts/_slug")
+	SymlinkPath string // Full path to the symlink in .fuego/imports/
 }
 
-// CreateDynamicDirSymlinks creates symlinks for directories with bracket notation.
-// This is necessary because Go's import paths cannot contain brackets.
-// Returns the list of created symlinks and a cleanup function.
-func CreateDynamicDirSymlinks(appDir string) ([]SymlinkMapping, func(), error) {
-	var mappings []SymlinkMapping
+// CreateImportSymlinks creates symlinks in .fuego/imports/ for directories that need sanitization.
+// This includes bracket directories ([param], [...param], [[...param]]) and route groups ((name)).
+// Uses flat mapping: .fuego/imports/<sanitized-path>/ -> ../../<original-path>/
+// Returns the list of created symlinks.
+func CreateImportSymlinks(appDir string) ([]ImportMapping, error) {
+	var mappings []ImportMapping
 
-	// First, collect all bracket directories
+	// Get the base directory (parent of appDir, or current dir if appDir is relative)
+	baseDir := filepath.Dir(appDir)
+	if baseDir == "." || baseDir == "" {
+		baseDir = "."
+	}
+
+	// Determine the .fuego/imports directory location (relative to baseDir)
+	importsDir := filepath.Join(baseDir, fuegoImportsDir)
+
+	// First pass: check if any directories need symlinks
+	needsAnySymlinks := false
 	err := filepath.Walk(appDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -1668,105 +1664,202 @@ func CreateDynamicDirSymlinks(appDir string) ([]SymlinkMapping, func(), error) {
 			return nil
 		}
 
-		// Skip hidden and private directories
-		if strings.HasPrefix(info.Name(), ".") || strings.HasPrefix(info.Name(), "_") {
+		// Skip hidden directories
+		if strings.HasPrefix(info.Name(), ".") {
 			return filepath.SkipDir
 		}
 
-		// Check if this directory contains brackets
+		// Skip private folders
+		for _, prefix := range knownPrivateFolders {
+			if strings.HasPrefix(info.Name(), prefix) {
+				return filepath.SkipDir
+			}
+		}
+
+		// Check if this directory needs sanitization
 		dirName := info.Name()
-		if !strings.Contains(dirName, "[") {
+		if strings.Contains(dirName, "[") || (strings.HasPrefix(dirName, "(") && strings.HasSuffix(dirName, ")")) {
+			needsAnySymlinks = true
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan for directories needing symlinks: %w", err)
+	}
+
+	if !needsAnySymlinks {
+		return nil, nil // No symlinks needed
+	}
+
+	// Create .fuego/imports directory
+	if err := os.MkdirAll(importsDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create %s directory: %w", importsDir, err)
+	}
+
+	// Second pass: create symlinks for directories containing relevant files
+	err = filepath.Walk(appDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Only process Go and templ files
+		if info.IsDir() {
+			// Skip hidden and private directories
+			if strings.HasPrefix(info.Name(), ".") {
+				return filepath.SkipDir
+			}
+			for _, prefix := range knownPrivateFolders {
+				if strings.HasPrefix(info.Name(), prefix) {
+					return filepath.SkipDir
+				}
+			}
 			return nil
 		}
 
-		// Create the sanitized directory name
-		sanitizedName := sanitizeDirName(dirName)
-		sanitizedPath := filepath.Join(filepath.Dir(path), sanitizedName)
+		// Check if this is a relevant file
+		name := info.Name()
+		isRelevant := name == "route.go" || name == "middleware.go" || name == "proxy.go" ||
+			name == "page.templ" || name == "layout.templ"
+		if !isRelevant {
+			return nil
+		}
 
-		// Check if symlink already exists
-		if existingInfo, err := os.Lstat(sanitizedPath); err == nil {
-			// If it's a symlink, check if it points to the right place
+		// Get the directory containing this file
+		dir := filepath.Dir(path)
+
+		// Get path relative to baseDir
+		relDir, err := filepath.Rel(baseDir, dir)
+		if err != nil {
+			return fmt.Errorf("failed to get relative path for %s: %w", dir, err)
+		}
+
+		// Check if this path needs sanitization
+		if !needsImportSanitization(relDir) {
+			return nil
+		}
+
+		// Create the sanitized path
+		sanitizedRelDir := sanitizePathForImport(relDir)
+
+		// Create the symlink in .fuego/imports/
+		symlinkPath := filepath.Join(importsDir, sanitizedRelDir)
+
+		// Check if symlink already exists and is correct
+		if existingInfo, err := os.Lstat(symlinkPath); err == nil {
 			if existingInfo.Mode()&os.ModeSymlink != 0 {
-				target, err := os.Readlink(sanitizedPath)
-				if err == nil && target == dirName {
-					// Symlink exists and is correct
-					mappings = append(mappings, SymlinkMapping{
-						Original:    path,
-						Sanitized:   sanitizedPath,
-						SymlinkPath: sanitizedPath,
-					})
-					return nil
+				// Symlink exists, check if it points to the right place
+				target, err := os.Readlink(symlinkPath)
+				if err == nil {
+					// Calculate expected relative target
+					expectedTarget, _ := filepath.Rel(filepath.Dir(symlinkPath), dir)
+					if target == expectedTarget {
+						// Symlink is correct, skip
+						mappings = append(mappings, ImportMapping{
+							Original:    dir,
+							Sanitized:   sanitizedRelDir,
+							SymlinkPath: symlinkPath,
+						})
+						return nil
+					}
 				}
 			}
 			// Remove existing file/symlink that doesn't match
-			if err := os.Remove(sanitizedPath); err != nil {
-				return fmt.Errorf("failed to remove existing file %s: %w", sanitizedPath, err)
+			if err := os.RemoveAll(symlinkPath); err != nil {
+				return fmt.Errorf("failed to remove existing path %s: %w", symlinkPath, err)
 			}
 		}
 
-		// Create relative symlink (dirName, not the full path)
-		if err := os.Symlink(dirName, sanitizedPath); err != nil {
-			return fmt.Errorf("failed to create symlink %s -> %s: %w", sanitizedPath, dirName, err)
+		// Create parent directories for the symlink
+		if err := os.MkdirAll(filepath.Dir(symlinkPath), 0755); err != nil {
+			return fmt.Errorf("failed to create symlink parent directory: %w", err)
 		}
 
-		mappings = append(mappings, SymlinkMapping{
-			Original:    path,
-			Sanitized:   sanitizedPath,
-			SymlinkPath: sanitizedPath,
+		// Calculate relative path from symlink location to original directory
+		relTarget, err := filepath.Rel(filepath.Dir(symlinkPath), dir)
+		if err != nil {
+			return fmt.Errorf("failed to calculate relative path: %w", err)
+		}
+
+		// Create the symlink
+		if err := os.Symlink(relTarget, symlinkPath); err != nil {
+			return fmt.Errorf("failed to create symlink %s -> %s: %w", symlinkPath, relTarget, err)
+		}
+
+		mappings = append(mappings, ImportMapping{
+			Original:    dir,
+			Sanitized:   sanitizedRelDir,
+			SymlinkPath: symlinkPath,
 		})
 
 		return nil
 	})
 
 	if err != nil {
-		// Cleanup any symlinks we created on error
-		for _, m := range mappings {
-			_ = os.Remove(m.SymlinkPath)
-		}
-		return nil, nil, err
+		// Cleanup on error
+		_ = os.RemoveAll(importsDir)
+		return nil, err
 	}
 
-	// Return cleanup function
+	return mappings, nil
+}
+
+// CleanupImportSymlinks removes the .fuego directory and all its contents.
+// If baseDir is empty, it uses the current directory.
+func CleanupImportSymlinks(baseDir string) error {
+	if baseDir == "" {
+		baseDir = "."
+	}
+	return os.RemoveAll(filepath.Join(baseDir, ".fuego"))
+}
+
+// getImportPath returns the import path for a directory, using .fuego/imports/ if sanitization is needed.
+func getImportPath(moduleName, relDir string) string {
+	if needsImportSanitization(relDir) {
+		sanitizedRelDir := sanitizePathForImport(relDir)
+		return moduleName + "/" + fuegoImportsDir + "/" + filepath.ToSlash(sanitizedRelDir)
+	}
+	return moduleName + "/" + filepath.ToSlash(relDir)
+}
+
+// Deprecated: CreateDynamicDirSymlinks is deprecated, use CreateImportSymlinks instead.
+// This function is kept for backward compatibility but now delegates to CreateImportSymlinks.
+func CreateDynamicDirSymlinks(appDir string) ([]ImportMapping, func(), error) {
+	mappings, err := CreateImportSymlinks(appDir)
+	baseDir := filepath.Dir(appDir)
+	if baseDir == "." || baseDir == "" {
+		baseDir = "."
+	}
 	cleanup := func() {
-		for _, m := range mappings {
-			_ = os.Remove(m.SymlinkPath)
-		}
+		_ = CleanupImportSymlinks(baseDir)
 	}
-
-	return mappings, cleanup, nil
+	return mappings, cleanup, err
 }
 
-// CleanupDynamicDirSymlinks removes all symlinks created for bracket directories.
+// Deprecated: CleanupDynamicDirSymlinks is deprecated, use CleanupImportSymlinks instead.
 func CleanupDynamicDirSymlinks(appDir string) error {
-	return filepath.Walk(appDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return nil // Ignore errors, best effort cleanup
-		}
-
-		// Check if it's a symlink
-		if info.Mode()&os.ModeSymlink == 0 {
-			return nil
-		}
-
-		// Check if the name matches our sanitization pattern
-		name := info.Name()
-		if strings.HasPrefix(name, "_") && !strings.HasPrefix(name, "_components") && !strings.HasPrefix(name, "_utils") {
-			// Check if target is a bracket directory
-			target, err := os.Readlink(path)
-			if err == nil && strings.Contains(target, "[") {
-				_ = os.Remove(path)
-			}
-		}
-
-		return nil
-	})
+	baseDir := filepath.Dir(appDir)
+	if baseDir == "." || baseDir == "" {
+		baseDir = "."
+	}
+	return CleanupImportSymlinks(baseDir)
 }
 
-// sanitizeDirName converts a bracket directory name to a valid Go identifier.
+// SymlinkMapping is deprecated, use ImportMapping instead.
+type SymlinkMapping = ImportMapping
+
+// sanitizeDirName converts a bracket directory or route group name to a valid Go identifier.
 // e.g., "[slug]" -> "_slug"
 // e.g., "[...path]" -> "_catchall_path"
 // e.g., "[[...slug]]" -> "_opt_catchall_slug"
+// e.g., "(dashboard)" -> "_group_dashboard"
 func sanitizeDirName(name string) string {
+	// Handle (group) -> _group_groupname
+	if matches := routeGroupRe.FindStringSubmatch(name); len(matches) > 1 {
+		return "_group_" + matches[1]
+	}
+
 	// Handle [[...param]] -> _opt_catchall_param
 	if matches := optionalCatchAllRe.FindStringSubmatch(name); len(matches) > 1 {
 		return "_opt_catchall_" + matches[1]

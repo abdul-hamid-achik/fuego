@@ -397,6 +397,9 @@ go.work
 *_templ.go
 fuego_routes.go
 
+# Fuego build directory (import symlinks, cache, etc.)
+.fuego/
+
 # Tailwind CSS output
 static/css/output.css
 

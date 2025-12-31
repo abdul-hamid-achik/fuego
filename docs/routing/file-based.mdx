@@ -276,7 +276,7 @@ For better organization, consider keeping private code outside the `app/` direct
 </Tip>
 
 <Warning>
-Fuego automatically creates symlinks for `[bracket]` directories to enable valid Go imports (e.g., `_id` → `[id]`). These symlinks are managed automatically and should not be committed to version control.
+Fuego automatically creates symlinks in a `.fuego/imports/` directory for `[bracket]` directories and `(route groups)` to enable valid Go imports. These symlinks are managed automatically and the `.fuego/` directory should be added to `.gitignore`.
 </Warning>
 
 ## Route Priority

@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.7] - 2025-12-31
+
+### Fixed
+
+- **Route Groups Import Path Bug**
+  - Fixed invalid Go import paths for route groups like `(dashboard)` and `(auth)`
+  - Directories with parentheses `(name)` now generate symlinks in `.fuego/imports/` for valid imports
+  - Previously, `fuego build` would generate imports like `github.com/.../app/(dashboard)` which is invalid Go syntax
+  - Now correctly generates `github.com/.../.fuego/imports/app/_group_dashboard` using symlinks
+
+### Added
+
+- **New `.fuego/` Build Directory**
+  - All import symlinks are now created in `.fuego/imports/` (similar to Next.js `.next/` directory)
+  - Cleaner project structure - no symlinks scattered in the `app/` directory
+  - Single directory to add to `.gitignore`
+
+- **Route Group Support in Sanitization**
+  - `(groupname)` directories are now converted to `_group_groupname` for valid Go imports
+  - Works with nested route groups: `app/(auth)/(dashboard)/settings` becomes `app/_group_auth/_group_dashboard/settings`
+  - Full support for complex paths like `app/(dashboard)/apps/[name]/domains/[domain]/verify`
+
+- **New Helper Functions**
+  - `needsImportSanitization()` - Check if a path contains invalid Go import characters
+  - `CreateImportSymlinks()` - New function to create symlinks in `.fuego/imports/`
+  - `CleanupImportSymlinks()` - Clean up the `.fuego/` directory
+
+### Changed
+
+- Symlinks are now created in `.fuego/imports/` instead of next to original directories
+- Updated `.gitignore` template to include `.fuego/` directory
+- Improved documentation for route groups and symlink handling
+
+### Deprecated
+
+- `CreateDynamicDirSymlinks()` - Use `CreateImportSymlinks()` instead (still works for backward compatibility)
+- `CleanupDynamicDirSymlinks()` - Use `CleanupImportSymlinks()` instead
+
 ## [0.9.3] - 2025-12-30
 
 ### Fixed

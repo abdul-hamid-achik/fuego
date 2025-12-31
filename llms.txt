@@ -99,6 +99,9 @@ app/
 | Group | `(name)` | `(admin)/settings/route.go` | `/api/settings` (no /admin) |
 | Private | `_folder` | `_utils/` | Not routed |
 
+**Note:** Fuego creates symlinks in `.fuego/imports/` for directories with `[brackets]` or `(parentheses)` 
+to enable valid Go imports. The `.fuego/` directory should be in `.gitignore`.
+
 ## Handler Signature
 
 ```go

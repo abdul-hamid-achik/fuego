@@ -809,6 +809,26 @@ func TestSanitizePathForImport(t *testing.T) {
 			path: "app/shop/[[...categories]]",
 			want: "app/shop/_opt_catchall_categories",
 		},
+		{
+			name: "route group",
+			path: "app/(dashboard)/settings",
+			want: "app/_group_dashboard/settings",
+		},
+		{
+			name: "route group with dynamic segment",
+			path: "app/(admin)/users/[id]",
+			want: "app/_group_admin/users/_id",
+		},
+		{
+			name: "multiple route groups",
+			path: "app/(marketing)/(blog)/posts",
+			want: "app/_group_marketing/_group_blog/posts",
+		},
+		{
+			name: "complex nested path",
+			path: "app/(dashboard)/apps/[name]/domains/[domain]/verify",
+			want: "app/_group_dashboard/apps/_name/domains/_domain/verify",
+		},
 	}
 
 	for _, tt := range tests {
@@ -831,6 +851,9 @@ func TestSanitizeDirName(t *testing.T) {
 		{"[...slug]", "_catchall_slug"},
 		{"[[...categories]]", "_opt_catchall_categories"},
 		{"posts", "posts"},
+		{"(dashboard)", "_group_dashboard"},
+		{"(auth)", "_group_auth"},
+		{"(marketing-site)", "_group_marketing-site"},
 	}
 
 	for _, tt := range tests {
@@ -838,6 +861,29 @@ func TestSanitizeDirName(t *testing.T) {
 			got := sanitizeDirName(tt.name)
 			if got != tt.want {
 				t.Errorf("sanitizeDirName(%q) = %q, want %q", tt.name, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNeedsImportSanitization(t *testing.T) {
+	tests := []struct {
+		path string
+		want bool
+	}{
+		{"app/posts/details", false},
+		{"app/posts/[slug]", true},
+		{"app/(dashboard)/settings", true},
+		{"app/api/health", false},
+		{"app/(auth)/login", true},
+		{"app/users/[id]/posts", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			got := needsImportSanitization(tt.path)
+			if got != tt.want {
+				t.Errorf("needsImportSanitization(%q) = %v, want %v", tt.path, got, tt.want)
 			}
 		})
 	}
@@ -1091,8 +1137,8 @@ func TestZeroValue(t *testing.T) {
 	}
 }
 
-func TestCreateAndCleanupDynamicDirSymlinks(t *testing.T) {
-	// Create a temporary app directory structure
+func TestCreateAndCleanupImportSymlinks(t *testing.T) {
+	// Create a temporary project directory structure
 	tmpDir := t.TempDir()
 	appDir := filepath.Join(tmpDir, "app")
 
@@ -1114,9 +1160,9 @@ templ Page(slug string) {
 	}
 
 	// Test symlink creation
-	mappings, cleanup, err := CreateDynamicDirSymlinks(appDir)
+	mappings, err := CreateImportSymlinks(appDir)
 	if err != nil {
-		t.Fatalf("CreateDynamicDirSymlinks() error = %v", err)
+		t.Fatalf("CreateImportSymlinks() error = %v", err)
 	}
 
 	if len(mappings) != 1 {
@@ -1124,30 +1170,159 @@ templ Page(slug string) {
 	}
 
 	if len(mappings) > 0 {
-		// Check symlink exists
-		symlinkPath := filepath.Join(appDir, "posts", "_slug")
+		// Check symlink exists in .fuego/imports/
+		symlinkPath := filepath.Join(tmpDir, ".fuego", "imports", "app", "posts", "_slug")
 		info, err := os.Lstat(symlinkPath)
 		if err != nil {
-			t.Errorf("Symlink not created: %v", err)
+			t.Errorf("Symlink not created at %s: %v", symlinkPath, err)
 		} else if info.Mode()&os.ModeSymlink == 0 {
 			t.Error("Expected a symlink, got regular file/dir")
 		}
 
-		// Check symlink target
+		// Check symlink target points to original directory
 		target, err := os.Readlink(symlinkPath)
 		if err != nil {
 			t.Errorf("Failed to read symlink: %v", err)
-		} else if target != "[slug]" {
-			t.Errorf("Symlink target = %q, want %q", target, "[slug]")
+		}
+		// Target should be a relative path to the original directory
+		expectedTarget, _ := filepath.Rel(filepath.Dir(symlinkPath), slugDir)
+		if target != expectedTarget {
+			t.Errorf("Symlink target = %q, want %q", target, expectedTarget)
 		}
 	}
 
 	// Test cleanup
-	cleanup()
-
-	// Check symlink is removed
-	symlinkPath := filepath.Join(appDir, "posts", "_slug")
-	if _, err := os.Lstat(symlinkPath); !os.IsNotExist(err) {
-		t.Error("Symlink was not cleaned up")
+	err = CleanupImportSymlinks(tmpDir)
+	if err != nil {
+		t.Errorf("CleanupImportSymlinks() error = %v", err)
 	}
+
+	// Check .fuego directory is removed
+	fuegoDir := filepath.Join(tmpDir, ".fuego")
+	if _, err := os.Lstat(fuegoDir); !os.IsNotExist(err) {
+		t.Error(".fuego directory was not cleaned up")
+	}
+}
+
+func TestCreateImportSymlinksWithRouteGroups(t *testing.T) {
+	// Create a temporary project directory structure
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+
+	// Create route group directories
+	dashboardDir := filepath.Join(appDir, "(dashboard)", "settings")
+	if err := os.MkdirAll(dashboardDir, 0755); err != nil {
+		t.Fatalf("Failed to create test directory: %v", err)
+	}
+
+	// Create a route.go file in the route group directory
+	routeContent := `package settings
+
+import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+
+func Get(c *fuego.Context) error {
+	return c.JSON(200, map[string]string{"page": "settings"})
+}
+`
+	if err := os.WriteFile(filepath.Join(dashboardDir, "route.go"), []byte(routeContent), 0644); err != nil {
+		t.Fatalf("Failed to write test file: %v", err)
+	}
+
+	// Test symlink creation
+	mappings, err := CreateImportSymlinks(appDir)
+	if err != nil {
+		t.Fatalf("CreateImportSymlinks() error = %v", err)
+	}
+
+	if len(mappings) != 1 {
+		t.Errorf("Expected 1 mapping, got %d", len(mappings))
+	}
+
+	if len(mappings) > 0 {
+		// Check symlink exists in .fuego/imports/
+		symlinkPath := filepath.Join(tmpDir, ".fuego", "imports", "app", "_group_dashboard", "settings")
+		info, err := os.Lstat(symlinkPath)
+		if err != nil {
+			t.Errorf("Symlink not created at %s: %v", symlinkPath, err)
+		} else if info.Mode()&os.ModeSymlink == 0 {
+			t.Error("Expected a symlink, got regular file/dir")
+		}
+
+		// Verify sanitized path in mapping
+		if mappings[0].Sanitized != filepath.Join("app", "_group_dashboard", "settings") {
+			t.Errorf("Sanitized path = %q, want %q", mappings[0].Sanitized, filepath.Join("app", "_group_dashboard", "settings"))
+		}
+	}
+
+	// Cleanup
+	_ = CleanupImportSymlinks(tmpDir)
+}
+
+func TestCreateImportSymlinksWithNestedSpecialDirs(t *testing.T) {
+	// Create a temporary project directory structure
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+
+	// Create nested bracket and route group directories
+	// app/(dashboard)/apps/[name]/domains/[domain]/verify/
+	nestedDir := filepath.Join(appDir, "(dashboard)", "apps", "[name]", "domains", "[domain]", "verify")
+	if err := os.MkdirAll(nestedDir, 0755); err != nil {
+		t.Fatalf("Failed to create test directory: %v", err)
+	}
+
+	// Create a route.go file
+	routeContent := `package verify
+
+import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+
+func Get(c *fuego.Context) error {
+	return c.JSON(200, map[string]string{"status": "verified"})
+}
+`
+	if err := os.WriteFile(filepath.Join(nestedDir, "route.go"), []byte(routeContent), 0644); err != nil {
+		t.Fatalf("Failed to write test file: %v", err)
+	}
+
+	// Test symlink creation
+	mappings, err := CreateImportSymlinks(appDir)
+	if err != nil {
+		t.Fatalf("CreateImportSymlinks() error = %v", err)
+	}
+
+	if len(mappings) != 1 {
+		t.Errorf("Expected 1 mapping, got %d", len(mappings))
+	}
+
+	if len(mappings) > 0 {
+		// Check that the sanitized path is correct
+		expectedSanitized := filepath.Join("app", "_group_dashboard", "apps", "_name", "domains", "_domain", "verify")
+		if mappings[0].Sanitized != expectedSanitized {
+			t.Errorf("Sanitized path = %q, want %q", mappings[0].Sanitized, expectedSanitized)
+		}
+
+		// Check symlink exists
+		symlinkPath := filepath.Join(tmpDir, ".fuego", "imports", expectedSanitized)
+		info, err := os.Lstat(symlinkPath)
+		if err != nil {
+			t.Errorf("Symlink not created at %s: %v", symlinkPath, err)
+		} else if info.Mode()&os.ModeSymlink == 0 {
+			t.Error("Expected a symlink, got regular file/dir")
+		}
+
+		// Verify the symlink actually points to the original directory
+		target, err := os.Readlink(symlinkPath)
+		if err != nil {
+			t.Errorf("Failed to read symlink: %v", err)
+		}
+		resolvedPath := filepath.Join(filepath.Dir(symlinkPath), target)
+		resolvedPath, _ = filepath.EvalSymlinks(resolvedPath)
+		// Also resolve the expected path to handle macOS /private/var symlink
+		expectedPath, _ := filepath.EvalSymlinks(nestedDir)
+		if resolvedPath != expectedPath {
+			t.Errorf("Symlink resolves to %q, want %q", resolvedPath, expectedPath)
+		}
+	}
+
+	// Cleanup
+	_ = CleanupImportSymlinks(tmpDir)
 }

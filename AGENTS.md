@@ -350,7 +350,7 @@ app/
     └── Button.templ          # NOT routable (private)
 ```
 
-**Note:** Fuego automatically creates symlinks for `[bracket]` directories to enable valid Go imports (e.g., `_id` → `[id]`). These symlinks are managed automatically and should be added to `.gitignore`.
+**Note:** Fuego creates symlinks in `.fuego/imports/` for directories with `[brackets]` or `(parentheses)` to enable valid Go imports. The `.fuego/` directory is auto-generated and should be in `.gitignore`.
 
 ## Middleware Templates
 
