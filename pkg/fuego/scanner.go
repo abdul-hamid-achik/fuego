@@ -39,6 +39,7 @@ func (s *Scanner) SetVerbose(v bool) {
 //   - __param     -> catch-all segment (double underscore)
 //   - ___param    -> optional catch-all segment (triple underscore)
 //   - _group_name -> route group (doesn't affect URL)
+//   - _name_      -> route group (trailing underscore, alternative syntax)
 var (
 	// _param - dynamic segment (single underscore + valid identifier, but NOT known private folders)
 	dynamicSegmentRe = regexp.MustCompile(`^_([a-zA-Z][a-zA-Z0-9]*)$`)
@@ -51,6 +52,10 @@ var (
 
 	// _group_name - route group (doesn't affect URL)
 	routeGroupRe = regexp.MustCompile(`^_group_([a-zA-Z][a-zA-Z0-9_]*)$`)
+
+	// _name_ - route group with trailing underscore (alternative syntax, doesn't affect URL)
+	// Examples: _auth_, _dashboard_, _admin_
+	trailingUnderscoreGroupRe = regexp.MustCompile(`^_([a-zA-Z][a-zA-Z0-9]*)_$`)
 )
 
 // knownPrivateFolders contains folder prefixes that are private (not routable)
@@ -263,6 +268,11 @@ func (s *Scanner) pathToRoute(filePath string) string {
 	for _, seg := range segments {
 		// Skip route groups (_group_name) - they don't affect the URL
 		if routeGroupRe.MatchString(seg) {
+			continue
+		}
+
+		// Skip route groups with trailing underscore (_name_) - they don't affect the URL
+		if trailingUnderscoreGroupRe.MatchString(seg) {
 			continue
 		}
 
@@ -859,6 +869,11 @@ func (s *Scanner) pathToPageRoute(filePath string) string {
 			continue
 		}
 
+		// Skip route groups with trailing underscore (_name_) - they don't affect the URL
+		if trailingUnderscoreGroupRe.MatchString(seg) {
+			continue
+		}
+
 		// Skip "api" directory - pages shouldn't be under api
 		if seg == "api" {
 			continue
@@ -922,6 +937,11 @@ func (s *Scanner) pathToLayoutPrefix(filePath string) string {
 			continue
 		}
 
+		// Skip route groups with trailing underscore (_name_) - they don't affect the URL
+		if trailingUnderscoreGroupRe.MatchString(seg) {
+			continue
+		}
+
 		// Skip "api" directory
 		if seg == "api" {
 			continue
@@ -952,7 +972,7 @@ func (s *Scanner) derivePageTitle(filePath string) string {
 	}
 
 	// Skip route groups - use parent directory
-	if routeGroupRe.MatchString(dirName) {
+	if routeGroupRe.MatchString(dirName) || trailingUnderscoreGroupRe.MatchString(dirName) {
 		parent := filepath.Dir(dir)
 		dirName = filepath.Base(parent)
 		if dirName == "app" || dirName == "." {

@@ -385,12 +385,14 @@ Fuego uses an underscore-based convention for dynamic routes that are valid Go p
 | Catch-all | `docs/__slug/route.go` | `/api/docs/*` | `/api/docs/a/b/c` |
 | Optional catch-all | `shop/___cat/route.go` | `/api/shop/*` | `/api/shop` and `/api/shop/a/b` |
 | Route group | `_group_admin/settings/route.go` | `/settings` | Groups routes without URL segment |
+| Route group (alt) | `_auth_/login/route.go` | `/login` | Alternative syntax with trailing underscore |
 
 **Naming Convention:**
 - `_name` - Dynamic segment (single underscore prefix)
 - `__name` - Catch-all segment (double underscore prefix)
 - `___name` - Optional catch-all segment (triple underscore prefix)
 - `_group_name` - Route group (doesn't affect URL)
+- `_name_` - Route group with trailing underscore (alternative syntax, doesn't affect URL)
 
 ## Private Folders (Not Routable)
 

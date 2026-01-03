@@ -85,6 +85,30 @@ func TestScanner_PathToRoute(t *testing.T) {
 			filePath: "app/api/health/route.go",
 			want:     "/api/health",
 		},
+		{
+			name:     "trailing underscore route group",
+			appDir:   "app",
+			filePath: "app/_auth_/login/route.go",
+			want:     "/login",
+		},
+		{
+			name:     "trailing underscore route group at root",
+			appDir:   "app",
+			filePath: "app/_dashboard_/route.go",
+			want:     "/",
+		},
+		{
+			name:     "multiple trailing underscore route groups",
+			appDir:   "app",
+			filePath: "app/_auth_/_protected_/settings/route.go",
+			want:     "/settings",
+		},
+		{
+			name:     "mixed route group styles",
+			appDir:   "app",
+			filePath: "app/_auth_/_group_admin/users/route.go",
+			want:     "/users",
+		},
 	}
 
 	for _, tt := range tests {
@@ -1045,6 +1069,16 @@ func TestScanner_PathToPageRoute(t *testing.T) {
 			want:     "/about",
 		},
 		{
+			name:     "trailing underscore route group",
+			filePath: "app/_auth_/login/page.templ",
+			want:     "/login",
+		},
+		{
+			name:     "trailing underscore route group at root",
+			filePath: "app/_dashboard_/page.templ",
+			want:     "/",
+		},
+		{
 			name:     "skips api directory",
 			filePath: "app/api/users/page.templ",
 			want:     "/users",
@@ -1082,6 +1116,16 @@ func TestScanner_PathToLayoutPrefix(t *testing.T) {
 			name:     "route group layout",
 			filePath: "app/_group_admin/layout.templ",
 			want:     "/",
+		},
+		{
+			name:     "trailing underscore route group layout",
+			filePath: "app/_auth_/layout.templ",
+			want:     "/",
+		},
+		{
+			name:     "trailing underscore route group with nested",
+			filePath: "app/_dashboard_/settings/layout.templ",
+			want:     "/settings",
 		},
 		{
 			name:     "deeply nested",
