@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.8] - 2025-01-02
+
+### Fixed
+
+- **Unused Layout Package Imports** (Bug #1)
+  - Fixed build failures caused by unused layout package imports in generated `fuego_routes.go`
+  - Layout packages were being imported but never used, causing Go compiler errors
+  - Layouts are now correctly handled by templ's `@Layout()` syntax without explicit imports
+
+- **Missing Symlinks for Nested Bracket Directories** (Bug #2)
+  - Fixed symlink creation for deeply nested bracket directories like `[name]/deployments/[id]`
+  - Previously, only top-level bracket directories had symlinks created in `.fuego/imports/`
+  - Now creates proper mirror structure with real directories for intermediate paths and symlinks for leaf directories
+  - Example: `app/api/apps/[name]/deployments/[id]` now properly creates:
+    - `.fuego/imports/app/api/apps/_name/` (real directory)
+    - `.fuego/imports/app/api/apps/_name/deployments/_id` (symlink to leaf directory)
+
+- **Routes Under Bracket Directories Not Discovered** (Bug #3)
+  - Fixed missing routes in directories nested under bracket directories
+  - Routes like `/api/apps/{name}/domains/{domain}/verify` are now properly discovered and generated
+  - Previously failed because nested symlink paths didn't exist
+
+- **Broken Symlinks for Deeply Nested Paths** (Bug #4)
+  - Fixed symlink target calculation for deeply nested bracket directory structures
+  - Symlinks now resolve correctly even with triple-nested structures like `[org]/[user]/[post]`
+  - Improved `mkdirAllNoFollow()` helper to prevent following existing symlinks during directory creation
+
+### Changed
+
+- **Symlink Creation Strategy**
+  - Completely rewrote `CreateImportSymlinks()` function with new algorithm:
+    1. Classify bracket directories as "leaf" (no nested routes) or "intermediate" (has nested routes)
+    2. Create real directories for intermediate paths to avoid symlink traversal issues
+    3. Create symlinks only for leaf directories containing route files
+    4. For intermediate directories with direct route files, create file-level symlinks
+  - This ensures Go import paths work correctly for arbitrarily nested bracket directory structures
+
+### Added
+
+- **New Test Coverage**
+  - `TestNestedBracketDirectorySymlinks` - Tests nested `[name]/[id]` patterns
+  - `TestIntermediateBracketWithDirectRoute` - Tests `[name]/route.go` + `[name]/sub/[id]/route.go`
+  - `TestTripleNestedBrackets` - Tests `[a]/[b]/[c]` patterns
+  - `TestRouteGroupWithNestedBrackets` - Tests `(group)/[name]/[id]` patterns
+  - `TestScanAndGenerateRoutesWithDeeplyNestedBrackets` - End-to-end test for bug report scenario
+
+- **New Helper Functions**
+  - `createSymlinkSafely()` - Creates symlinks with existence checking
+  - `mkdirAllNoFollow()` - Creates directories without following existing symlinks
+
 ## [0.9.7] - 2025-12-31
 
 ### Fixed

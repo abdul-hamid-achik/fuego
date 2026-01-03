@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -1325,4 +1326,367 @@ func Get(c *fuego.Context) error {
 
 	// Cleanup
 	_ = CleanupImportSymlinks(tmpDir)
+}
+
+func TestNestedBracketDirectorySymlinks(t *testing.T) {
+	// Test case for Bug #2: Missing symlinks for nested bracket directories
+	// This test creates the structure: app/api/apps/[name]/deployments/[id]/route.go
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+
+	// Create nested bracket directories
+	nestedDir := filepath.Join(appDir, "api", "apps", "[name]", "deployments", "[id]")
+	if err := os.MkdirAll(nestedDir, 0755); err != nil {
+		t.Fatalf("Failed to create test directory: %v", err)
+	}
+
+	// Create a route.go file
+	routeContent := `package id
+
+import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+
+func Get(c *fuego.Context) error {
+	return c.JSON(200, map[string]string{"id": c.Param("id"), "name": c.Param("name")})
+}
+`
+	if err := os.WriteFile(filepath.Join(nestedDir, "route.go"), []byte(routeContent), 0644); err != nil {
+		t.Fatalf("Failed to write test file: %v", err)
+	}
+
+	// Test symlink creation
+	mappings, err := CreateImportSymlinks(appDir)
+	if err != nil {
+		t.Fatalf("CreateImportSymlinks() error = %v", err)
+	}
+
+	// With the new implementation, we should get at least 1 mapping (the leaf symlink)
+	if len(mappings) == 0 {
+		t.Error("Expected at least 1 mapping, got 0")
+	}
+
+	// Check that the sanitized path for the deepest directory exists
+	expectedSanitized := filepath.Join("app", "api", "apps", "_name", "deployments", "_id")
+	symlinkPath := filepath.Join(tmpDir, ".fuego", "imports", expectedSanitized)
+
+	info, err := os.Lstat(symlinkPath)
+	if err != nil {
+		t.Errorf("Expected symlink at %s, but got error: %v", symlinkPath, err)
+	} else if info.Mode()&os.ModeSymlink == 0 {
+		t.Error("Expected a symlink for leaf directory, got regular file/dir")
+	}
+
+	// Verify intermediate directories are REAL directories, not symlinks
+	intermediatePath := filepath.Join(tmpDir, ".fuego", "imports", "app", "api", "apps", "_name")
+	intermediateInfo, err := os.Lstat(intermediatePath)
+	if err != nil {
+		t.Errorf("Expected intermediate directory at %s, but got error: %v", intermediatePath, err)
+	} else if intermediateInfo.Mode()&os.ModeSymlink != 0 {
+		t.Error("Expected intermediate _name to be a real directory, but it's a symlink")
+	}
+
+	// Cleanup
+	_ = CleanupImportSymlinks(tmpDir)
+}
+
+func TestIntermediateBracketWithDirectRoute(t *testing.T) {
+	// Test case for Bug #3: Routes under bracket directories not discovered
+	// This test creates both:
+	// - app/api/apps/[name]/route.go (direct route in bracket dir)
+	// - app/api/apps/[name]/deployments/[id]/route.go (nested route)
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+
+	// Create the bracket directory with a direct route
+	nameDir := filepath.Join(appDir, "api", "apps", "[name]")
+	if err := os.MkdirAll(nameDir, 0755); err != nil {
+		t.Fatalf("Failed to create test directory: %v", err)
+	}
+
+	nameRouteContent := `package name
+
+import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+
+func Get(c *fuego.Context) error {
+	return c.JSON(200, map[string]string{"name": c.Param("name")})
+}
+`
+	if err := os.WriteFile(filepath.Join(nameDir, "route.go"), []byte(nameRouteContent), 0644); err != nil {
+		t.Fatalf("Failed to write name route.go: %v", err)
+	}
+
+	// Create nested directory with route
+	idDir := filepath.Join(nameDir, "deployments", "[id]")
+	if err := os.MkdirAll(idDir, 0755); err != nil {
+		t.Fatalf("Failed to create nested directory: %v", err)
+	}
+
+	idRouteContent := `package id
+
+import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+
+func Get(c *fuego.Context) error {
+	return c.JSON(200, map[string]string{"id": c.Param("id")})
+}
+`
+	if err := os.WriteFile(filepath.Join(idDir, "route.go"), []byte(idRouteContent), 0644); err != nil {
+		t.Fatalf("Failed to write id route.go: %v", err)
+	}
+
+	// Test symlink creation
+	_, err := CreateImportSymlinks(appDir)
+	if err != nil {
+		t.Fatalf("CreateImportSymlinks() error = %v", err)
+	}
+
+	// Check that _name is a REAL directory (not symlink) because it has children
+	namePath := filepath.Join(tmpDir, ".fuego", "imports", "app", "api", "apps", "_name")
+	nameInfo, err := os.Lstat(namePath)
+	if err != nil {
+		t.Fatalf("Expected _name directory, got error: %v", err)
+	}
+	if nameInfo.Mode()&os.ModeSymlink != 0 {
+		t.Error("_name should be a real directory (has children), but it's a symlink")
+	}
+
+	// Check that _name/route.go exists as a FILE SYMLINK
+	routeFilePath := filepath.Join(namePath, "route.go")
+	routeInfo, err := os.Lstat(routeFilePath)
+	if err != nil {
+		t.Errorf("Expected _name/route.go file symlink, got error: %v", err)
+	} else if routeInfo.Mode()&os.ModeSymlink == 0 {
+		t.Error("Expected _name/route.go to be a file symlink")
+	}
+
+	// Check that _name/deployments/_id is a SYMLINK (leaf directory)
+	idPath := filepath.Join(namePath, "deployments", "_id")
+	idInfo, err := os.Lstat(idPath)
+	if err != nil {
+		t.Errorf("Expected _id symlink, got error: %v", err)
+	} else if idInfo.Mode()&os.ModeSymlink == 0 {
+		t.Error("Expected _id to be a symlink (leaf directory)")
+	}
+
+	// Cleanup
+	_ = CleanupImportSymlinks(tmpDir)
+}
+
+func TestTripleNestedBrackets(t *testing.T) {
+	// Test case for Bug #4: Incorrect relative path for deeply nested symlinks
+	// This test creates: app/orgs/[org]/users/[user]/posts/[post]/route.go
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+
+	// Create triple nested bracket structure
+	postDir := filepath.Join(appDir, "orgs", "[org]", "users", "[user]", "posts", "[post]")
+	if err := os.MkdirAll(postDir, 0755); err != nil {
+		t.Fatalf("Failed to create test directory: %v", err)
+	}
+
+	routeContent := `package post
+
+import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+
+func Get(c *fuego.Context) error {
+	return c.JSON(200, map[string]any{
+		"org":  c.Param("org"),
+		"user": c.Param("user"),
+		"post": c.Param("post"),
+	})
+}
+`
+	if err := os.WriteFile(filepath.Join(postDir, "route.go"), []byte(routeContent), 0644); err != nil {
+		t.Fatalf("Failed to write test file: %v", err)
+	}
+
+	// Test symlink creation
+	_, err := CreateImportSymlinks(appDir)
+	if err != nil {
+		t.Fatalf("CreateImportSymlinks() error = %v", err)
+	}
+
+	// Check that the deepest symlink exists and resolves correctly
+	postSymlink := filepath.Join(tmpDir, ".fuego", "imports", "app", "orgs", "_org", "users", "_user", "posts", "_post")
+	info, err := os.Lstat(postSymlink)
+	if err != nil {
+		t.Fatalf("Expected symlink at %s, got error: %v", postSymlink, err)
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		t.Error("Expected _post to be a symlink")
+	}
+
+	// Verify the symlink resolves correctly
+	target, err := os.Readlink(postSymlink)
+	if err != nil {
+		t.Fatalf("Failed to read symlink: %v", err)
+	}
+
+	resolvedPath := filepath.Join(filepath.Dir(postSymlink), target)
+	resolvedPath, _ = filepath.EvalSymlinks(resolvedPath)
+	expectedPath, _ := filepath.EvalSymlinks(postDir)
+
+	if resolvedPath != expectedPath {
+		t.Errorf("Symlink resolves to %q, want %q", resolvedPath, expectedPath)
+	}
+
+	// Cleanup
+	_ = CleanupImportSymlinks(tmpDir)
+}
+
+func TestRouteGroupWithNestedBrackets(t *testing.T) {
+	// Test route groups combined with nested brackets
+	// Structure: app/(dashboard)/apps/[name]/settings/route.go
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "app")
+
+	settingsDir := filepath.Join(appDir, "(dashboard)", "apps", "[name]", "settings")
+	if err := os.MkdirAll(settingsDir, 0755); err != nil {
+		t.Fatalf("Failed to create test directory: %v", err)
+	}
+
+	routeContent := `package settings
+
+import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+
+func Get(c *fuego.Context) error {
+	return c.JSON(200, map[string]string{"name": c.Param("name")})
+}
+`
+	if err := os.WriteFile(filepath.Join(settingsDir, "route.go"), []byte(routeContent), 0644); err != nil {
+		t.Fatalf("Failed to write test file: %v", err)
+	}
+
+	// Test symlink creation
+	_, err := CreateImportSymlinks(appDir)
+	if err != nil {
+		t.Fatalf("CreateImportSymlinks() error = %v", err)
+	}
+
+	// Check that the symlink path includes the sanitized route group
+	expectedPath := filepath.Join(tmpDir, ".fuego", "imports", "app", "_group_dashboard", "apps", "_name", "settings")
+	info, err := os.Lstat(expectedPath)
+	if err != nil {
+		t.Errorf("Expected symlink at %s, got error: %v", expectedPath, err)
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		t.Error("Expected settings to be a symlink")
+	}
+
+	// Cleanup
+	_ = CleanupImportSymlinks(tmpDir)
+}
+
+func TestScanAndGenerateRoutesWithDeeplyNestedBrackets(t *testing.T) {
+	// End-to-end test for the exact bug report scenario
+	tmpDir := t.TempDir()
+	// Resolve symlinks to handle macOS /var -> /private/var
+	tmpDir, _ = filepath.EvalSymlinks(tmpDir)
+	appDir := filepath.Join(tmpDir, "app")
+
+	// Create the exact structure from the bug report
+	dirs := map[string]string{
+		"api/apps/[name]":                         "name",
+		"api/apps/[name]/deployments/[id]":        "id",
+		"api/apps/[name]/domains/[domain]":        "domain",
+		"api/apps/[name]/domains/[domain]/verify": "verify",
+		"api/apps/[name]/env":                     "env",
+		"api/apps/[name]/metrics":                 "metrics",
+	}
+
+	routeTemplate := `package %s
+
+import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+
+func Get(c *fuego.Context) error {
+	return c.JSON(200, nil)
+}
+`
+
+	for dir, pkg := range dirs {
+		fullDir := filepath.Join(appDir, dir)
+		if err := os.MkdirAll(fullDir, 0755); err != nil {
+			t.Fatalf("Failed to create directory %s: %v", dir, err)
+		}
+		content := fmt.Sprintf(routeTemplate, pkg)
+		if err := os.WriteFile(filepath.Join(fullDir, "route.go"), []byte(content), 0644); err != nil {
+			t.Fatalf("Failed to write route.go in %s: %v", dir, err)
+		}
+	}
+
+	// Add POST handler to verify route
+	verifyContent := `package verify
+
+import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+
+func Get(c *fuego.Context) error {
+	return c.JSON(200, nil)
+}
+
+func Post(c *fuego.Context) error {
+	return c.JSON(201, nil)
+}
+`
+	verifyDir := filepath.Join(appDir, "api/apps/[name]/domains/[domain]/verify")
+	if err := os.WriteFile(filepath.Join(verifyDir, "route.go"), []byte(verifyContent), 0644); err != nil {
+		t.Fatalf("Failed to write verify route.go: %v", err)
+	}
+
+	// Write go.mod
+	goModContent := "module testmodule\ngo 1.21\n"
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(goModContent), 0644); err != nil {
+		t.Fatalf("Failed to write go.mod: %v", err)
+	}
+
+	// Change to tmpDir
+	origDir, _ := os.Getwd()
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("Failed to chdir: %v", err)
+	}
+	defer func() { _ = os.Chdir(origDir) }()
+
+	// Run the generator with relative path
+	result, err := ScanAndGenerateRoutes("app", "fuego_routes.go")
+	if err != nil {
+		t.Fatalf("ScanAndGenerateRoutes() error = %v", err)
+	}
+
+	if len(result.Files) == 0 {
+		t.Fatal("Expected generated files, got none")
+	}
+
+	// Read generated file
+	content, err := os.ReadFile("fuego_routes.go")
+	if err != nil {
+		t.Fatalf("Failed to read generated file: %v", err)
+	}
+
+	contentStr := string(content)
+
+	// Check that ALL expected routes are present (this was Bug #3)
+	expectedRoutes := []string{
+		"/api/apps/{name}",
+		"/api/apps/{name}/deployments/{id}",
+		"/api/apps/{name}/domains/{domain}",
+		"/api/apps/{name}/domains/{domain}/verify", // This was MISSING in the bug
+		"/api/apps/{name}/env",
+		"/api/apps/{name}/metrics",
+	}
+
+	for _, route := range expectedRoutes {
+		if !strings.Contains(contentStr, route) {
+			t.Errorf("Expected route %s to be present in generated file, but it's missing", route)
+		}
+	}
+
+	// Check that the verify route has both GET and POST
+	if !strings.Contains(contentStr, `"GET", "/api/apps/{name}/domains/{domain}/verify"`) {
+		t.Error("Expected GET handler for verify route")
+	}
+	if !strings.Contains(contentStr, `"POST", "/api/apps/{name}/domains/{domain}/verify"`) {
+		t.Error("Expected POST handler for verify route")
+	}
+
+	// Check that NO layout imports are present (Bug #1)
+	if strings.Contains(contentStr, "_layout") {
+		t.Error("Found unused layout import in generated file (Bug #1 not fixed)")
+	}
 }
