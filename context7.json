@@ -1,5 +1,7 @@
 {
   "$schema": "https://context7.com/schema/context7.json",
+  "url": "https://context7.com/abdul-hamid-achik/fuego",
+  "public_key": "pk_l5AAJ0fyntkwy1mlJmaHS",
   "projectTitle": "Fuego",
   "description": "File-based routing for Go. Fast to write. Faster to run. Build APIs and full-stack apps with conventions that feel natural.",
   "folders": ["docs"],
