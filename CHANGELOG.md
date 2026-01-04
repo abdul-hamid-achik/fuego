@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.8] - 2025-01-04
+
+### Added
+
+- **Comprehensive Test Suite**
+  - Added 6 new test files with 40+ test cases
+  - `pkg/mcp` coverage: 0% → 71.6%
+  - `cmd/fuego/commands` now has test coverage
+  - Overall test coverage: 39.5%
+
+### Test Files Added
+
+- `cmd/fuego/commands/routes_test.go` - Route scanning and layout matching
+- `cmd/fuego/commands/openapi_test.go` - OpenAPI helper functions
+- `cmd/fuego/commands/tailwind_test.go` - Tailwind CLI integration
+- `cmd/fuego/commands/generate_test.go` - Code generation tests
+- `pkg/mcp/server_test.go` - MCP server initialization
+- `pkg/mcp/handlers_test.go` - All MCP tool handlers
+
 ## [0.11.7] - 2025-01-04
 
 ### Fixed
