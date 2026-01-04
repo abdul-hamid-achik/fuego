@@ -4,9 +4,14 @@ package generator
 
 type routeTemplateData struct {
 	Package string
-	Methods []string
+	Methods []methodInfo
 	Params  []ParamInfo
 	Pattern string
+}
+
+type methodInfo struct {
+	Method   string // HTTP method (GET, POST, etc.)
+	FuncName string // Go function name (Get, Post, etc.)
 }
 
 type middlewareTemplateData struct {
@@ -22,12 +27,13 @@ type pageTemplateData struct {
 }
 
 // Route template
+// Note: Methods should be title case (Get, Post, Put, Delete) to match scanner expectations
 var routeTemplate = `package {{.Package}}
 
 import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
 {{range .Methods}}
-// {{.}} handles {{.}} /api/{{$.Pattern}}
-func {{.}}(c *fuego.Context) error {
+// {{.FuncName}} handles {{.Method}} /api/{{$.Pattern}}
+func {{.FuncName}}(c *fuego.Context) error {
 {{- range $.Params}}
 	{{.Name}} := c.Param("{{.Name}}")
 	_ = {{.Name}} // TODO: use this parameter
@@ -36,7 +42,7 @@ func {{.}}(c *fuego.Context) error {
 {{- range $.Params}}
 		"{{.Name}}": {{.Name}},
 {{- end}}
-		// TODO: Implement {{.}} handler
+		// TODO: Implement {{.FuncName}} handler
 	})
 }
 {{end}}`

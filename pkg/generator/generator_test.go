@@ -97,9 +97,11 @@ func TestGenerateRoute(t *testing.T) {
 			}
 
 			for _, method := range tt.methods {
-				funcName := "func " + method + "("
+				// Convert to title case (GET -> Get, POST -> Post)
+				titleMethod := strings.ToUpper(string(method[0])) + strings.ToLower(method[1:])
+				funcName := "func " + titleMethod + "("
 				if !strings.Contains(string(content), funcName) {
-					t.Errorf("Expected file to contain %s handler", method)
+					t.Errorf("Expected file to contain %s handler", titleMethod)
 				}
 			}
 		})

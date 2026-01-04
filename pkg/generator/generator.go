@@ -141,10 +141,19 @@ func GenerateRoute(cfg RouteConfig) (*Result, error) {
 	// Convert to URL pattern
 	pattern := pathToPattern(cfg.Path)
 
+	// Convert methods to methodInfo with proper function names
+	methods := make([]methodInfo, len(cfg.Methods))
+	for i, m := range cfg.Methods {
+		methods[i] = methodInfo{
+			Method:   m,
+			FuncName: toTitleCase(m),
+		}
+	}
+
 	// Generate code
 	data := routeTemplateData{
 		Package: pkgName,
-		Methods: cfg.Methods,
+		Methods: methods,
 		Params:  params,
 		Pattern: pattern,
 	}
@@ -632,6 +641,14 @@ func toTitle(s string) string {
 		}
 	}
 	return strings.Join(words, " ")
+}
+
+// toTitleCase converts HTTP method to Go function name (GET -> Get, POST -> Post)
+func toTitleCase(s string) string {
+	if s == "" {
+		return ""
+	}
+	return strings.ToUpper(string(s[0])) + strings.ToLower(s[1:])
 }
 
 // RouteRegistration holds information needed to generate route registration code.
