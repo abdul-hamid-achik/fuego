@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/abdul-hamid-achik/fuego/internal/version"
 )
 
 // Client is the Fuego Cloud API client.
@@ -30,7 +32,7 @@ func NewClient(token string) *Client {
 		HTTPClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		UserAgent: "fuego-cli/1.0",
+		UserAgent: "fuego-cli/" + version.GetVersion(),
 	}
 }
 
@@ -49,46 +51,86 @@ func NewClientFromCredentials() (*Client, error) {
 }
 
 // request performs an HTTP request and decodes the JSON response.
+// It includes automatic retry with exponential backoff for transient errors.
 func (c *Client) request(ctx context.Context, method, path string, body any, result any) error {
-	var bodyReader io.Reader
+	var bodyData []byte
 	if body != nil {
-		data, err := json.Marshal(body)
+		var err error
+		bodyData, err = json.Marshal(body)
 		if err != nil {
 			return fmt.Errorf("failed to marshal request body: %w", err)
 		}
-		bodyReader = bytes.NewReader(data)
 	}
 
 	reqURL := c.BaseURL + path
-	req, err := http.NewRequestWithContext(ctx, method, reqURL, bodyReader)
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
 
-	req.Header.Set("Authorization", "Bearer "+c.Token)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", c.UserAgent)
+	// Retry configuration
+	maxRetries := 3
+	baseDelay := 500 * time.Millisecond
 
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("request failed: %w", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	// Check for error responses
-	if resp.StatusCode >= 400 {
-		return c.parseError(resp)
-	}
-
-	// Decode successful response
-	if result != nil && resp.StatusCode != http.StatusNoContent {
-		if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
-			return fmt.Errorf("failed to decode response: %w", err)
+	var lastErr error
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		// Create fresh body reader for each attempt
+		var bodyReader io.Reader
+		if bodyData != nil {
+			bodyReader = bytes.NewReader(bodyData)
 		}
+
+		req, err := http.NewRequestWithContext(ctx, method, reqURL, bodyReader)
+		if err != nil {
+			return fmt.Errorf("failed to create request: %w", err)
+		}
+
+		req.Header.Set("Authorization", "Bearer "+c.Token)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("User-Agent", c.UserAgent)
+
+		resp, err := c.HTTPClient.Do(req)
+		if err != nil {
+			lastErr = fmt.Errorf("request failed: %w", err)
+			// Retry on network errors
+			if attempt < maxRetries-1 {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case <-time.After(baseDelay * time.Duration(1<<attempt)):
+					continue
+				}
+			}
+			return lastErr
+		}
+
+		// Check for error responses
+		if resp.StatusCode >= 400 {
+			apiErr := c.parseError(resp)
+			_ = resp.Body.Close()
+
+			// Retry on 429 (rate limit) or 5xx (server errors)
+			if (resp.StatusCode == 429 || resp.StatusCode >= 500) && attempt < maxRetries-1 {
+				lastErr = apiErr
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case <-time.After(baseDelay * time.Duration(1<<attempt)):
+					continue
+				}
+			}
+			return apiErr
+		}
+
+		// Decode successful response
+		if result != nil && resp.StatusCode != http.StatusNoContent {
+			if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
+				_ = resp.Body.Close()
+				return fmt.Errorf("failed to decode response: %w", err)
+			}
+		}
+		_ = resp.Body.Close()
+		return nil
 	}
 
-	return nil
+	return lastErr
 }
 
 // parseError parses an error response from the API.
