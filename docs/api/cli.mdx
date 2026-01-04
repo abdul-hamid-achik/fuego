@@ -304,9 +304,9 @@ fuego routes --app-dir custom/app
   GET     /api/health                   app/api/health/route.go
   GET     /api/users                    app/api/users/route.go
   POST    /api/users                    app/api/users/route.go
-  GET     /api/users/{id}               app/api/users/[id]/route.go
-  PUT     /api/users/{id}               app/api/users/[id]/route.go
-  DELETE  /api/users/{id}               app/api/users/[id]/route.go
+  GET     /api/users/{id}               app/api/users/_id/route.go
+  PUT     /api/users/{id}               app/api/users/_id/route.go
+  DELETE  /api/users/{id}               app/api/users/_id/route.go
 
   Total: 7 routes
 ```
@@ -360,10 +360,10 @@ fuego generate route <path> [flags]
 | Pattern | Example | URL |
 |---------|---------|-----|
 | Static | `users` | `/api/users` |
-| Dynamic `[param]` | `users/[id]` | `/api/users/:id` |
-| Catch-all `[...param]` | `docs/[...slug]` | `/api/docs/*` |
-| Optional `[[...param]]` | `shop/[[...cat]]` | `/api/shop` and `/api/shop/*` |
-| Group `(name)` | `(admin)/settings` | `/api/settings` |
+| Dynamic `_param` | `users/_id` | `/api/users/:id` |
+| Catch-all `__param` | `docs/__slug` | `/api/docs/*` |
+| Optional `___param` | `shop/___cat` | `/api/shop` and `/api/shop/*` |
+| Group `_group_name` | `_group_admin/settings` | `/api/settings` |
 
 ### Examples
 
@@ -375,20 +375,20 @@ fuego generate route users
 fuego generate route users --methods GET,POST
 
 # Dynamic route
-fuego generate route users/[id] --methods GET,PUT,DELETE
+fuego generate route users/_id --methods GET,PUT,DELETE
 
 # Catch-all route
-fuego generate route docs/[...slug] --methods GET
+fuego generate route docs/__slug --methods GET
 
 # Route in a group (doesn't affect URL)
-fuego generate route "(admin)/settings" --methods GET,PUT
+fuego generate route _group_admin/settings --methods GET,PUT
 ```
 
 ### Generated Code
 
 ```go
-// app/api/users/[id]/route.go
-package users
+// app/api/users/_id/route.go
+package _id
 
 import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
 

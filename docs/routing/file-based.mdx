@@ -80,14 +80,14 @@ All handlers must have the signature `func(c *fuego.Context) error`. Invalid sig
 
 ## Dynamic Routes
 
-Use `[param]` folders for dynamic segments:
+Use `_param` folders (underscore prefix) for dynamic segments:
 
 <FileTree>
   <Folder name="app" defaultOpen>
     <Folder name="api" defaultOpen>
       <Folder name="users">
         <File name="route.go" />
-        <Folder name="[id]">
+        <Folder name="_id">
           <File name="route.go" />
         </Folder>
       </Folder>
@@ -100,7 +100,7 @@ This creates:
 - `/api/users/:id` - dynamic route
 
 ```go
-package users
+package _id
 
 import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
 
@@ -111,15 +111,19 @@ func Get(c *fuego.Context) error {
 }
 ```
 
+<Info>
+The underscore convention ensures all directories are valid Go package names. No symlinks or special import handling required.
+</Info>
+
 ### Multiple Parameters
 
 <FileTree>
   <Folder name="app" defaultOpen>
     <Folder name="api" defaultOpen>
       <Folder name="orgs">
-        <Folder name="[orgId]">
+        <Folder name="_orgId">
           <Folder name="teams">
-            <Folder name="[teamId]">
+            <Folder name="_teamId">
               <File name="route.go" />
             </Folder>
           </Folder>
@@ -144,13 +148,13 @@ func Get(c *fuego.Context) error {
 
 ## Catch-All Routes
 
-Use `[...param]` for catch-all routes:
+Use `__param` (double underscore) for catch-all routes:
 
 <FileTree>
   <Folder name="app" defaultOpen>
     <Folder name="api" defaultOpen>
       <Folder name="docs">
-        <Folder name="[...slug]">
+        <Folder name="__slug">
           <File name="route.go" />
         </Folder>
       </Folder>
@@ -178,13 +182,13 @@ func Get(c *fuego.Context) error {
 
 ## Optional Catch-All
 
-Use `[[...param]]` for optional catch-all (matches with or without segments):
+Use `___param` (triple underscore) for optional catch-all (matches with or without segments):
 
 <FileTree>
   <Folder name="app" defaultOpen>
     <Folder name="api" defaultOpen>
       <Folder name="shop">
-        <Folder name="[[...categories]]">
+        <Folder name="___categories">
           <File name="route.go" />
         </Folder>
       </Folder>
@@ -199,12 +203,12 @@ Matches:
 
 ## Route Groups
 
-Use `(groupname)` folders to organize without affecting URLs:
+Use `_group_name` folders to organize without affecting URLs:
 
 <FileTree>
   <Folder name="app" defaultOpen>
     <Folder name="api" defaultOpen>
-      <Folder name="(marketing)">
+      <Folder name="_group_marketing">
         <Folder name="about">
           <File name="route.go" />
         </Folder>
@@ -212,7 +216,7 @@ Use `(groupname)` folders to organize without affecting URLs:
           <File name="route.go" />
         </Folder>
       </Folder>
-      <Folder name="(shop)">
+      <Folder name="_group_shop">
         <Folder name="products">
           <File name="route.go" />
         </Folder>
@@ -236,13 +240,13 @@ Route groups are great for organizing code and applying shared middleware withou
 
 ## Private Folders
 
-Following Next.js conventions, certain folders prefixed with `_` are private (not routable):
+Certain folders with specific underscore-prefixed names are private (not routable):
 
 <FileTree>
   <Folder name="app" defaultOpen>
     <Folder name="api" defaultOpen>
       <Folder name="users">
-        <Folder name="[id]">
+        <Folder name="_id">
           <File name="route.go" />
         </Folder>
         <File name="route.go" />
@@ -263,7 +267,7 @@ Following Next.js conventions, certain folders prefixed with `_` are private (no
   </Folder>
 </FileTree>
 
-**Private folder prefixes:**
+**Private folder names (not routable):**
 - `_components/` - UI components
 - `_lib/` - Utility libraries
 - `_utils/` - Helper functions
@@ -271,13 +275,13 @@ Following Next.js conventions, certain folders prefixed with `_` are private (no
 - `_private/` - Private implementation details
 - `_shared/` - Shared code
 
-<Tip>
-For better organization, consider keeping private code outside the `app/` directory entirely, following Next.js best practices.
-</Tip>
-
 <Warning>
-Fuego automatically creates symlinks in a `.fuego/imports/` directory for `[bracket]` directories and `(route groups)` to enable valid Go imports. These symlinks are managed automatically and the `.fuego/` directory should be added to `.gitignore`.
+Only these specific folder names are private. Single underscore directories like `_id` are dynamic route parameters, NOT private folders.
 </Warning>
+
+<Tip>
+For better organization, consider keeping private code outside the `app/` directory entirely.
+</Tip>
 
 ## Route Priority
 
@@ -316,7 +320,7 @@ Output:
   GET     /api/health                   app/api/health/route.go
   GET     /api/users                    app/api/users/route.go
   POST    /api/users                    app/api/users/route.go
-  GET     /api/users/{id}               app/api/users/[id]/route.go
+  GET     /api/users/{id}               app/api/users/_id/route.go
 
   Total: 5 routes
 ```
@@ -350,16 +354,16 @@ Invalid signatures are skipped with a warning. Make sure your handlers match the
       </Folder>
       <Folder name="users">
         <File name="route.go" />
-        <Folder name="[id]">
+        <Folder name="_id">
           <File name="route.go" />
         </Folder>
       </Folder>
       <Folder name="posts">
-        <Folder name="[...slug]">
+        <Folder name="__slug">
           <File name="route.go" />
         </Folder>
       </Folder>
-      <Folder name="(admin)">
+      <Folder name="_group_admin">
         <Folder name="settings">
           <File name="route.go" />
         </Folder>
@@ -376,9 +380,9 @@ Routes created:
 | GET | `/` | `app/page.templ` |
 | GET | `/api/health` | `app/api/health/route.go` |
 | GET,POST | `/api/users` | `app/api/users/route.go` |
-| GET,PUT,DELETE | `/api/users/:id` | `app/api/users/[id]/route.go` |
-| GET | `/api/posts/*` | `app/api/posts/[...slug]/route.go` |
-| GET,PUT | `/api/settings` | `app/api/(admin)/settings/route.go` |
+| GET,PUT,DELETE | `/api/users/:id` | `app/api/users/_id/route.go` |
+| GET | `/api/posts/*` | `app/api/posts/__slug/route.go` |
+| GET,PUT | `/api/settings` | `app/api/_group_admin/settings/route.go` |
 
 ## File Precedence Rules
 
@@ -455,7 +459,7 @@ app.Get("/dashboard", func(c *fuego.Context) error {
 Generate a loader with:
 ```bash
 fuego generate loader dashboard
-fuego generate loader users/_id --data-type UserDetailData
+fuego generate loader users/_id --data-type UserDetailData  # For /users/:id route
 ```
 
 ### Alternative: HTMX Pattern

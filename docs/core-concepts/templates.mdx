@@ -23,7 +23,7 @@ Fuego uses [templ](https://templ.guide) for type-safe HTML templates. Templ prov
       <File name="layout.templ" />
     </Folder>
     <Folder name="users">
-      <Folder name="[id]">
+      <Folder name="_id">
         <File name="page.templ" />
       </Folder>
     </Folder>
@@ -137,14 +137,14 @@ Nested layouts override parent layouts.
 
 ## Dynamic Pages
 
-Dynamic pages use bracket notation in directory names to capture URL parameters.
+Dynamic pages use underscore-prefixed directory names to capture URL parameters.
 
 ### URL Parameters
 
-Create `app/posts/[slug]/page.templ`:
+Create `app/posts/_slug/page.templ`:
 
 ```go
-package slug
+package _slug
 
 templ Page(slug string) {
     <article>
@@ -160,13 +160,13 @@ This maps to `/posts/:slug`. The `slug` parameter is automatically extracted fro
 
 ### Parameter Matching
 
-Fuego matches URL parameters to `Page()` parameters **by name**. Your parameter names should match the bracket directory names:
+Fuego matches URL parameters to `Page()` parameters **by name**. Your parameter names should match the directory names (without the underscore prefix):
 
 | Directory | Page Signature | Match |
 |-----------|---------------|-------|
-| `[slug]` | `Page(slug string)` | ✓ |
-| `[id]` | `Page(id string)` | ✓ |
-| `[id]` | `Page(userId string)` | ⚠️ Warning |
+| `_slug` | `Page(slug string)` | ✓ |
+| `_id` | `Page(id string)` | ✓ |
+| `_id` | `Page(userId string)` | ⚠️ Warning |
 
 <Warning>
 If parameter names don't match, Fuego shows a warning during route generation. The page still renders, but mismatched parameters receive zero values.
@@ -177,8 +177,8 @@ If parameter names don't match, Fuego shows a warning during route generation. T
 For nested dynamic routes:
 
 ```go
-// app/orgs/[orgId]/users/[userId]/page.templ
-package userId
+// app/orgs/_orgId/users/_userId/page.templ
+package _userId
 
 templ Page(orgId, userId string) {
     <div>
@@ -192,11 +192,11 @@ This maps to `/orgs/:orgId/users/:userId`.
 
 ### Catch-All Routes
 
-Use `[...param]` for catch-all routes:
+Use `__param` (double underscore) for catch-all routes:
 
 ```go
-// app/docs/[...slug]/page.templ
-package slug
+// app/docs/__slug/page.templ
+package __slug
 
 templ Page(slug string) {
     <div>
@@ -212,8 +212,8 @@ This matches `/docs/anything/here/deeply/nested` with `slug = "anything/here/dee
 You can accept additional parameters beyond URL params. Non-URL parameters receive zero values unless you fetch data in a custom handler:
 
 ```go
-// app/users/[id]/page.templ
-package id
+// app/users/_id/page.templ
+package _id
 
 type User struct {
     ID    string
@@ -237,18 +237,9 @@ templ Page(id string, user User) {
 For pages that need to load data before rendering, consider using HTMX to load content dynamically, or create a custom route handler.
 </Info>
 
-### Generated Symlinks
-
-Due to Go's restriction on brackets in import paths, Fuego creates temporary symlinks for bracket directories:
-
-```
-app/posts/[slug]/  →  app/posts/_slug/  (symlink)
-```
-
-These symlinks are:
-- Created automatically during `fuego dev` and `fuego build`
-- Should be added to `.gitignore`
-- Cleaned up when the dev server stops
+<Tip>
+The underscore convention ensures all directories are valid Go package names. No symlinks or special import handling required!
+</Tip>
 
 ## Components
 

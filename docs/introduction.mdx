@@ -68,7 +68,7 @@ With Fuego, your file structure is your router:
     <Folder name="api" defaultOpen>
       <Folder name="users">
         <File name="route.go" />
-        <Folder name="[id]">
+        <Folder name="_id">
           <File name="route.go" />
         </Folder>
       </Folder>
@@ -81,7 +81,7 @@ With Fuego, your file structure is your router:
 
 This maps to:
 - `app/api/users/route.go` → `GET/POST /api/users`
-- `app/api/users/[id]/route.go` → `GET/PUT/DELETE /api/users/:id`
+- `app/api/users/_id/route.go` → `GET/PUT/DELETE /api/users/:id`
 - `app/api/posts/route.go` → `GET/POST /api/posts`
 
 **No registration. No configuration. Just files.**
@@ -189,8 +189,8 @@ If you've used Next.js, Nuxt, SvelteKit, or similar frameworks, Fuego's patterns
 | Pattern | File | Route |
 |---------|------|-------|
 | Static | `app/api/users/route.go` | `/api/users` |
-| Dynamic | `app/api/users/[id]/route.go` | `/api/users/:id` |
-| Catch-all | `app/docs/[...slug]/route.go` | `/docs/*` |
+| Dynamic | `app/api/users/_id/route.go` | `/api/users/:id` |
+| Catch-all | `app/docs/__slug/route.go` | `/docs/*` |
 | Middleware | `app/api/middleware.go` | Applies to `/api/*` |
 | Pages | `app/dashboard/page.templ` | `/dashboard` |
 | Layouts | `app/layout.templ` | Wraps child pages |

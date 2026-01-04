@@ -25,7 +25,7 @@ With Fuego, your file structure is your router:
 
 ```
 app/api/users/route.go      → GET/POST /api/users
-app/api/users/[id]/route.go → GET/PUT/DELETE /api/users/:id
+app/api/users/_id/route.go  → GET/PUT/DELETE /api/users/:id
 app/api/posts/route.go      → GET/POST /api/posts
 ```
 
@@ -96,9 +96,9 @@ Fuego uses file-based routing patterns found in modern web frameworks:
 | Pattern | File | Route |
 |---------|------|-------|
 | Static | `app/api/users/route.go` | `/api/users` |
-| Dynamic | `app/api/users/[id]/route.go` | `/api/users/:id` |
-| Catch-all | `app/docs/[...slug]/route.go` | `/docs/*` |
-| Optional catch-all | `app/shop/[[...categories]]/route.go` | `/shop`, `/shop/*` |
+| Dynamic | `app/api/users/_id/route.go` | `/api/users/:id` |
+| Catch-all | `app/docs/__slug/route.go` | `/docs/*` |
+| Optional catch-all | `app/shop/___categories/route.go` | `/shop`, `/shop/*` |
 | Middleware | `app/api/middleware.go` | Applies to `/api/*` |
 | Pages | `app/dashboard/page.templ` | `/dashboard` |
 | Layouts | `app/layout.templ` | Wraps child pages |
@@ -148,8 +148,8 @@ func Post(c *fuego.Context) error {
 ## Example: Dynamic Route
 
 ```go
-// app/api/users/[id]/route.go
-package users
+// app/api/users/_id/route.go
+package id
 
 import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
 

@@ -13,10 +13,14 @@ If you've used modern meta-frameworks like Next.js, Nuxt, SvelteKit, or Remix, F
 | Page file | `page.tsx` / `+page.svelte` | `page.templ` |
 | Layout | `layout.tsx` / `+layout.svelte` | `layout.templ` |
 | Middleware | `middleware.ts` | `middleware.go` |
-| Dynamic segment | `[id]` | `[id]` |
-| Catch-all | `[...slug]` | `[...slug]` |
-| Optional catch-all | `[[...slug]]` | `[[...slug]]` |
-| Route groups | `(group)` | `(group)` |
+| Dynamic segment | `[id]` | `_id` |
+| Catch-all | `[...slug]` | `__slug` |
+| Optional catch-all | `[[...slug]]` | `___slug` |
+| Route groups | `(group)` | `_group_name` |
+
+<Info>
+Fuego uses underscores instead of brackets to ensure all directories are valid Go package names. No symlinks or special import handling required!
+</Info>
 
 ## Key Differences
 
@@ -168,7 +172,7 @@ Benefits:
   <Folder name="app" defaultOpen>
     <Folder name="api">
       <Folder name="users">
-        <Folder name="[id]">
+        <Folder name="_id">
           <File name="route.go" />
         </Folder>
       </Folder>
@@ -181,7 +185,7 @@ Benefits:
   </Folder>
 </FileTree>
 
-The structure is nearly identical - just swap the file extensions.
+The structure is similar - swap extensions and use underscores for dynamic segments.
 
 ## Code Comparison
 

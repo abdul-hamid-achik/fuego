@@ -317,21 +317,21 @@ Demonstrates all dynamic routing patterns: parameters, catch-all, optional catch
       <Folder name="api" defaultOpen>
         <Folder name="users" defaultOpen>
           <File name="route.go" />
-          <Folder name="[id]">
+          <Folder name="_id">
             <File name="route.go" />
           </Folder>
         </Folder>
         <Folder name="posts" defaultOpen>
-          <Folder name="[...slug]">
+          <Folder name="__slug">
             <File name="route.go" />
           </Folder>
         </Folder>
         <Folder name="docs" defaultOpen>
-          <Folder name="[[...path]]">
+          <Folder name="___path">
             <File name="route.go" />
           </Folder>
         </Folder>
-        <Folder name="(admin)" defaultOpen>
+        <Folder name="_group_admin" defaultOpen>
           <Folder name="settings">
             <File name="route.go" />
           </Folder>
@@ -345,11 +345,11 @@ Demonstrates all dynamic routing patterns: parameters, catch-all, optional catch
   </Folder>
 </FileTree>
 
-### Dynamic Parameter `[id]`
+### Dynamic Parameter `_id`
 
 ```go
-// app/api/users/[id]/route.go
-package users
+// app/api/users/_id/route.go
+package _id
 
 import (
     "myapp/internal/store"
@@ -404,11 +404,11 @@ func Delete(c *fuego.Context) error {
 }
 ```
 
-### Catch-All Route `[...slug]`
+### Catch-All Route `__slug`
 
 ```go
-// app/api/posts/[...slug]/route.go
-package posts
+// app/api/posts/__slug/route.go
+package __slug
 
 import (
     "strings"
@@ -432,11 +432,11 @@ func Get(c *fuego.Context) error {
 }
 ```
 
-### Optional Catch-All `[[...path]]`
+### Optional Catch-All `___path`
 
 ```go
-// app/api/docs/[[...path]]/route.go
-package docs
+// app/api/docs/___path/route.go
+package ___path
 
 import (
     "github.com/abdul-hamid-achik/fuego/pkg/fuego"
@@ -451,7 +451,7 @@ var docs = map[string]string{
     "api/authentication":  "Authentication guide",
 }
 
-// GET /api/docs/[[...path]] - Optional catch-all for documentation
+// GET /api/docs/___path - Optional catch-all for documentation
 // Matches:
 //   /api/docs                    → path = ""
 //   /api/docs/getting-started    → path = "getting-started"
@@ -485,15 +485,15 @@ func getDocSections() []string {
 }
 ```
 
-### Route Groups `(group)`
+### Route Groups `_group_name`
 
 ```go
-// app/api/(admin)/settings/route.go
+// app/api/_group_admin/settings/route.go
 package settings
 
 import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
 
-// GET /api/settings - The (admin) group doesn't affect the URL
+// GET /api/settings - The _group_admin group doesn't affect the URL
 func Get(c *fuego.Context) error {
     return c.JSON(200, map[string]any{
         "theme":          "dark",
@@ -518,7 +518,7 @@ func Put(c *fuego.Context) error {
 ```
 
 ```go
-// app/api/(admin)/dashboard/route.go
+// app/api/_group_admin/dashboard/route.go
 package dashboard
 
 import "github.com/abdul-hamid-achik/fuego/pkg/fuego"

@@ -74,7 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Documentation Updates**
   - Updated `context7.json` with 6 new rules for recent features (SSE, Cookie methods, GetBool)
-  - Updated symlink strategy explanation to clarify file-level symlinks for nested bracket directories
+  - Updated symlink strategy explanation to clarify file-level symlinks for nested dynamic directories
   - Added version tags v0.9.8, v0.9.9, v0.9.10 to Context7 previousVersions for better AI assistant support
   - Clarified AGENTS.md symlink documentation with example of nested bracket directories
   - Updated templ dependency from v0.3.960 to v0.3.977 to match latest generator version
@@ -85,14 +85,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - SSE (Server-Sent Events) streaming documentation
   - Cookie handling methods (Cookie(), SetCookie())
   - Context storage GetBool() method
-  - File-level symlink strategy for nested bracket directories
+  - File-level symlink strategy for nested dynamic directories
 
 ## [0.9.10] - 2025-01-03
 
 ### Fixed
 
-- **Nested Bracket Directory Symlinks** (Complete fix)
-  - Completely fixed symlink handling for nested bracket directories like `[name]/deployments/[id]`
+- **Nested Dynamic Directory Symlinks** (Complete fix)
+  - Completely fixed symlink handling for nested dynamic directories like `_name/deployments/_id`
   - Previous implementation created symlinks to directories which caused issues with source tree modification
   - New implementation creates real directories in `.fuego/imports/` and only symlinks individual files
   - This approach:
@@ -115,8 +115,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **File Symlink Recreation for Intermediate Directories**
   - Fixed "file exists" error when running `fuego build` multiple times
-  - Properly handles existing file symlinks in intermediate bracket directories
-  - When an intermediate directory (e.g., `[domain]` with both `route.go` and nested `verify/`) already has file symlinks, they're now checked and skipped if correct, or removed and recreated if pointing to wrong location
+  - Properly handles existing file symlinks in intermediate dynamic directories
+  - When an intermediate directory (e.g., `_domain` with both `route.go` and nested `verify/`) already has file symlinks, they're now checked and skipped if correct, or removed and recreated if pointing to wrong location
   - Ensures idempotent symlink creation - running `fuego build` multiple times now works correctly
 
 ## [0.9.8] - 2025-01-02
@@ -128,42 +128,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Layout packages were being imported but never used, causing Go compiler errors
   - Layouts are now correctly handled by templ's `@Layout()` syntax without explicit imports
 
-- **Missing Symlinks for Nested Bracket Directories** (Bug #2)
-  - Fixed symlink creation for deeply nested bracket directories like `[name]/deployments/[id]`
-  - Previously, only top-level bracket directories had symlinks created in `.fuego/imports/`
+- **Missing Symlinks for Nested Dynamic Directories** (Bug #2)
+  - Fixed symlink creation for deeply nested dynamic directories like `_name/deployments/_id`
+  - Previously, only top-level dynamic directories had symlinks created in `.fuego/imports/`
   - Now creates proper mirror structure with real directories for intermediate paths and symlinks for leaf directories
-  - Example: `app/api/apps/[name]/deployments/[id]` now properly creates:
+  - Example: `app/api/apps/_name/deployments/_id` now properly creates:
     - `.fuego/imports/app/api/apps/_name/` (real directory)
     - `.fuego/imports/app/api/apps/_name/deployments/_id` (symlink to leaf directory)
 
-- **Routes Under Bracket Directories Not Discovered** (Bug #3)
-  - Fixed missing routes in directories nested under bracket directories
+- **Routes Under Dynamic Directories Not Discovered** (Bug #3)
+  - Fixed missing routes in directories nested under dynamic directories
   - Routes like `/api/apps/{name}/domains/{domain}/verify` are now properly discovered and generated
   - Previously failed because nested symlink paths didn't exist
 
 - **Broken Symlinks for Deeply Nested Paths** (Bug #4)
-  - Fixed symlink target calculation for deeply nested bracket directory structures
-  - Symlinks now resolve correctly even with triple-nested structures like `[org]/[user]/[post]`
+  - Fixed symlink target calculation for deeply nested dynamic directory structures
+  - Symlinks now resolve correctly even with triple-nested structures like `_org/_user/_post`
   - Improved `mkdirAllNoFollow()` helper to prevent following existing symlinks during directory creation
 
 ### Changed
 
 - **Symlink Creation Strategy**
   - Completely rewrote `CreateImportSymlinks()` function with new algorithm:
-    1. Classify bracket directories as "leaf" (no nested routes) or "intermediate" (has nested routes)
+    1. Classify dynamic directories as "leaf" (no nested routes) or "intermediate" (has nested routes)
     2. Create real directories for intermediate paths to avoid symlink traversal issues
     3. Create symlinks only for leaf directories containing route files
     4. For intermediate directories with direct route files, create file-level symlinks
-  - This ensures Go import paths work correctly for arbitrarily nested bracket directory structures
+  - This ensures Go import paths work correctly for arbitrarily nested dynamic directory structures
 
 ### Added
 
 - **New Test Coverage**
-  - `TestNestedBracketDirectorySymlinks` - Tests nested `[name]/[id]` patterns
-  - `TestIntermediateBracketWithDirectRoute` - Tests `[name]/route.go` + `[name]/sub/[id]/route.go`
-  - `TestTripleNestedBrackets` - Tests `[a]/[b]/[c]` patterns
-  - `TestRouteGroupWithNestedBrackets` - Tests `(group)/[name]/[id]` patterns
-  - `TestScanAndGenerateRoutesWithDeeplyNestedBrackets` - End-to-end test for bug report scenario
+  - `TestNestedDynamicDirectorySymlinks` - Tests nested `_name/_id` patterns
+  - `TestIntermediateDynamicWithDirectRoute` - Tests `_name/route.go` + `_name/sub/_id/route.go`
+  - `TestTripleNestedDynamic` - Tests `_a/_b/_c` patterns
+  - `TestRouteGroupWithNestedDynamic` - Tests `_group_name/_id` patterns
+  - `TestScanAndGenerateRoutesWithDeeplyNestedDynamic` - End-to-end test for bug report scenario
 
 - **New Helper Functions**
   - `createSymlinkSafely()` - Creates symlinks with existence checking
@@ -174,10 +174,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Route Groups Import Path Bug**
-  - Fixed invalid Go import paths for route groups like `(dashboard)` and `(auth)`
-  - Directories with parentheses `(name)` now generate symlinks in `.fuego/imports/` for valid imports
-  - Previously, `fuego build` would generate imports like `github.com/.../app/(dashboard)` which is invalid Go syntax
-  - Now correctly generates `github.com/.../.fuego/imports/app/_group_dashboard` using symlinks
+  - Fixed invalid Go import paths for route groups
+  - Route group directories now use `_group_name` convention for valid Go imports
+  - Previously, route groups would generate invalid import paths
+  - Now correctly uses `.fuego/imports/` with proper `_group_` prefix
 
 ### Added
 
@@ -187,9 +187,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Single directory to add to `.gitignore`
 
 - **Route Group Support in Sanitization**
-  - `(groupname)` directories are now converted to `_group_groupname` for valid Go imports
-  - Works with nested route groups: `app/(auth)/(dashboard)/settings` becomes `app/_group_auth/_group_dashboard/settings`
-  - Full support for complex paths like `app/(dashboard)/apps/[name]/domains/[domain]/verify`
+  - Route group directories use `_group_name` convention for valid Go imports
+  - Works with nested route groups: `app/_group_auth/_group_dashboard/settings`
+  - Full support for complex paths like `app/_group_dashboard/apps/_name/domains/_domain/verify`
 
 - **New Helper Functions**
   - `needsImportSanitization()` - Check if a path contains invalid Go import characters
@@ -267,11 +267,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Dynamic Page Routes with Bracket Notation**
-  - Page templates in bracket directories (e.g., `[slug]`, `[id]`) are now properly detected
+- **Dynamic Page Routes with Underscore Convention**
+  - Page templates in dynamic directories (e.g., `_slug`, `_id`) are now properly detected
   - URL parameters are automatically wired to `Page()` function parameters
   - Support for `Page(slug string)`, `Page(id, name string)`, and complex signatures
-  - Catch-all routes (`[...slug]`) and optional catch-all (`[[...slug]]`) supported
+  - Catch-all routes (`__slug`) and optional catch-all (`___slug`) supported
 
 ## [0.8.0] - 2025-12-30
 
@@ -282,7 +282,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `fuego openapi serve` - Serve Swagger UI for interactive API exploration
   - Automatic documentation extraction from handler comments
   - Tags derived from directory structure
-  - Path parameters detected from `[param]` segments
+  - Path parameters detected from `_param` segments
 
 ## [0.7.4] - 2024-12-30
 
@@ -452,8 +452,8 @@ app.DisableLogger()
   - `page.templ` files define HTML pages at routes
   - `layout.templ` files wrap pages with shared UI (navigation, footer)
   - Automatic title derivation from directory names
-  - Dynamic routes `[param]` and catch-all `[...param]` for pages
-  - Route groups `(group)` for page organization
+  - Dynamic routes `_param` and catch-all `__param` for pages
+  - Route groups `_group_name` for page organization
 - **Tailwind CSS v4 integration** - No Node.js required!
   - Uses standalone Tailwind binary (auto-downloaded)
   - `fuego tailwind build` - Build CSS for production
@@ -600,8 +600,8 @@ app.DisableLogger()
 - Core App struct with chi router integration
 - Context API with stdlib compatibility
 - File-based route scanning with AST parsing
-- Dynamic routes `[param]`, catch-all `[...param]`, optional `[[...param]]`
-- Route groups `(group)` that don't affect URL structure
+- Dynamic routes `_param`, catch-all `__param`, optional `___param`
+- Route groups `_group_name` that don't affect URL structure
 - Private folders `_folder` that are not routable
 - Route priority system (static > dynamic > catch-all)
 - CLI with commands:
