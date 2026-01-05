@@ -1,16 +1,16 @@
-// Package cloud provides the API client and types for Fuego Cloud.
+// Package cloud provides the API client and types for Nexo Cloud.
 package cloud
 
 import "time"
 
-// User represents a Fuego Cloud user.
+// User represents a Nexo Cloud user.
 type User struct {
 	ID       string `json:"id"`
 	Username string `json:"username"`
 	Email    string `json:"email"`
 }
 
-// App represents a Fuego Cloud application.
+// App represents a Nexo Cloud application.
 type App struct {
 	ID           string    `json:"id"`
 	Name         string    `json:"name"`

@@ -65,7 +65,7 @@ func TestUpdaterCacheDir(t *testing.T) {
 	// Should be under home directory
 	home, _ := os.UserHomeDir()
 	if home != "" {
-		expected := filepath.Join(home, ".cache", "fuego")
+		expected := filepath.Join(home, ".cache", "nexo")
 		if cacheDir != expected {
 			t.Errorf("CacheDir = %q, want %q", cacheDir, expected)
 		}
@@ -78,9 +78,9 @@ func TestUpdaterCacheDirFallback(t *testing.T) {
 	u := NewUpdater()
 	cacheDir := u.CacheDir()
 
-	// Should contain "fuego" somewhere in the path
-	if !strings.Contains(cacheDir, "fuego") {
-		t.Errorf("CacheDir should contain 'fuego', got %s", cacheDir)
+	// Should contain "nexo" somewhere in the path
+	if !strings.Contains(cacheDir, "nexo") {
+		t.Errorf("CacheDir should contain 'nexo', got %s", cacheDir)
 	}
 }
 
@@ -91,8 +91,8 @@ func TestUpdaterBackupPath(t *testing.T) {
 		t.Error("BackupPath should not be empty")
 	}
 
-	if filepath.Base(backupPath) != "fuego.backup" {
-		t.Errorf("BackupPath should end with fuego.backup, got %s", backupPath)
+	if filepath.Base(backupPath) != "nexo.backup" {
+		t.Errorf("BackupPath should end with nexo.backup, got %s", backupPath)
 	}
 }
 
@@ -112,11 +112,11 @@ func TestGetAssetForPlatform(t *testing.T) {
 	release := &ReleaseInfo{
 		TagName: "v0.5.0",
 		Assets: []Asset{
-			{Name: "fuego_0.5.0_darwin_amd64.tar.gz", DownloadURL: "https://example.com/darwin_amd64.tar.gz"},
-			{Name: "fuego_0.5.0_darwin_arm64.tar.gz", DownloadURL: "https://example.com/darwin_arm64.tar.gz"},
-			{Name: "fuego_0.5.0_linux_amd64.tar.gz", DownloadURL: "https://example.com/linux_amd64.tar.gz"},
-			{Name: "fuego_0.5.0_linux_arm64.tar.gz", DownloadURL: "https://example.com/linux_arm64.tar.gz"},
-			{Name: "fuego_0.5.0_windows_amd64.zip", DownloadURL: "https://example.com/windows_amd64.zip"},
+			{Name: "nexo_0.5.0_darwin_amd64.tar.gz", DownloadURL: "https://example.com/darwin_amd64.tar.gz"},
+			{Name: "nexo_0.5.0_darwin_arm64.tar.gz", DownloadURL: "https://example.com/darwin_arm64.tar.gz"},
+			{Name: "nexo_0.5.0_linux_amd64.tar.gz", DownloadURL: "https://example.com/linux_amd64.tar.gz"},
+			{Name: "nexo_0.5.0_linux_arm64.tar.gz", DownloadURL: "https://example.com/linux_arm64.tar.gz"},
+			{Name: "nexo_0.5.0_windows_amd64.zip", DownloadURL: "https://example.com/windows_amd64.zip"},
 			{Name: "checksums.txt", DownloadURL: "https://example.com/checksums.txt"},
 		},
 	}
@@ -149,7 +149,7 @@ func TestGetAssetForPlatformNotFound(t *testing.T) {
 	release := &ReleaseInfo{
 		TagName: "v0.5.0",
 		Assets: []Asset{
-			{Name: "fuego_0.5.0_unknowos_unknownarch.tar.gz", DownloadURL: "https://example.com/unknown.tar.gz"},
+			{Name: "nexo_0.5.0_unknowos_unknownarch.tar.gz", DownloadURL: "https://example.com/unknown.tar.gz"},
 		},
 	}
 
@@ -164,7 +164,7 @@ func TestGetAssetForPlatformNotFound(t *testing.T) {
 
 func TestShouldCheckForUpdate(t *testing.T) {
 	// Create a temp directory for cache
-	tmpDir, err := os.MkdirTemp("", "fuego-test-*")
+	tmpDir, err := os.MkdirTemp("", "nexo-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -193,7 +193,7 @@ func TestShouldCheckForUpdate(t *testing.T) {
 }
 
 func TestShouldCheckForUpdate_InvalidTimestamp(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "fuego-test-*")
+	tmpDir, err := os.MkdirTemp("", "nexo-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -231,7 +231,7 @@ func (t *testUpdater) LastCheckPath() string {
 }
 
 func (t *testUpdater) BackupPath() string {
-	return filepath.Join(t.cacheDir, "fuego.backup")
+	return filepath.Join(t.cacheDir, "nexo.backup")
 }
 
 func (t *testUpdater) ShouldCheckForUpdate() bool {
@@ -267,18 +267,18 @@ func TestCheckForUpdate_MockServer(t *testing.T) {
 	mockReleases := []ReleaseInfo{
 		{
 			TagName:     "v0.6.0",
-			Name:        "Fuego v0.6.0",
+			Name:        "Nexo v0.6.0",
 			Body:        "New features",
 			Draft:       false,
 			Prerelease:  false,
 			PublishedAt: time.Now(),
 			Assets: []Asset{
-				{Name: "fuego_0.6.0_darwin_arm64.tar.gz", DownloadURL: "https://example.com/fuego.tar.gz"},
+				{Name: "nexo_0.6.0_darwin_arm64.tar.gz", DownloadURL: "https://example.com/nexo.tar.gz"},
 			},
 		},
 		{
 			TagName:     "v0.5.0",
-			Name:        "Fuego v0.5.0",
+			Name:        "Nexo v0.5.0",
 			Body:        "Previous release",
 			Draft:       false,
 			Prerelease:  false,
@@ -339,7 +339,7 @@ func TestNewUpdater(t *testing.T) {
 
 func TestHasBackup(t *testing.T) {
 	// Create a temp directory for cache
-	tmpDir, err := os.MkdirTemp("", "fuego-test-*")
+	tmpDir, err := os.MkdirTemp("", "nexo-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -356,7 +356,7 @@ func TestHasBackup(t *testing.T) {
 	}
 
 	// Create a fake backup file
-	backupPath := filepath.Join(tmpDir, "fuego.backup")
+	backupPath := filepath.Join(tmpDir, "nexo.backup")
 	if err := os.WriteFile(backupPath, []byte("fake binary"), 0755); err != nil {
 		t.Fatalf("Failed to create fake backup: %v", err)
 	}
@@ -425,7 +425,7 @@ func TestCalculateSHA256_EmptyFile(t *testing.T) {
 }
 
 func TestExtractFromTarGz(t *testing.T) {
-	// Create a temp tar.gz file with a fake fuego binary
+	// Create a temp tar.gz file with a fake nexo binary
 	tmpDir, err := os.MkdirTemp("", "extract-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
@@ -443,10 +443,10 @@ func TestExtractFromTarGz(t *testing.T) {
 	gw := gzip.NewWriter(f)
 	tw := tar.NewWriter(gw)
 
-	// Add a fake fuego binary
-	content := []byte("#!/bin/sh\necho 'fake fuego'")
+	// Add a fake nexo binary
+	content := []byte("#!/bin/sh\necho 'fake nexo'")
 	hdr := &tar.Header{
-		Name: "fuego",
+		Name: "nexo",
 		Mode: 0755,
 		Size: int64(len(content)),
 	}
@@ -498,8 +498,8 @@ func TestExtractFromTarGz_NoBinary(t *testing.T) {
 	gw := gzip.NewWriter(f)
 	tw := tar.NewWriter(gw)
 
-	// Add a file that's not fuego
-	content := []byte("not fuego")
+	// Add a file that's not nexo
+	content := []byte("not nexo")
 	hdr := &tar.Header{
 		Name: "README.md",
 		Mode: 0644,
@@ -519,7 +519,7 @@ func TestExtractFromTarGz_NoBinary(t *testing.T) {
 	u := NewUpdater()
 	_, err = u.ExtractBinary(archivePath)
 	if err == nil {
-		t.Error("Expected error when fuego binary not found in archive")
+		t.Error("Expected error when nexo binary not found in archive")
 	}
 	if !strings.Contains(err.Error(), "not found") {
 		t.Errorf("Expected 'not found' error, got: %v", err)
@@ -543,9 +543,9 @@ func TestExtractFromZip(t *testing.T) {
 
 	zw := zip.NewWriter(f)
 
-	// Add a fake fuego.exe binary
-	content := []byte("fake fuego windows binary")
-	fw, err := zw.Create("fuego.exe")
+	// Add a fake nexo.exe binary
+	content := []byte("fake nexo windows binary")
+	fw, err := zw.Create("nexo.exe")
 	if err != nil {
 		t.Fatalf("Failed to create zip entry: %v", err)
 	}
@@ -584,7 +584,7 @@ func TestExtractFromZip_NoBinary(t *testing.T) {
 
 	archivePath := filepath.Join(tmpDir, "test.zip")
 
-	// Create zip without fuego
+	// Create zip without nexo
 	f, err := os.Create(archivePath)
 	if err != nil {
 		t.Fatalf("Failed to create archive file: %v", err)
@@ -592,14 +592,14 @@ func TestExtractFromZip_NoBinary(t *testing.T) {
 
 	zw := zip.NewWriter(f)
 	fw, _ := zw.Create("README.md")
-	_, _ = fw.Write([]byte("not fuego"))
+	_, _ = fw.Write([]byte("not nexo"))
 	_ = zw.Close()
 	_ = f.Close()
 
 	u := NewUpdater()
 	_, err = u.extractFromZip(archivePath)
 	if err == nil {
-		t.Error("Expected error when fuego binary not found in zip")
+		t.Error("Expected error when nexo binary not found in zip")
 	}
 }
 
@@ -617,7 +617,7 @@ func TestExtractBinary_DetectsFormat(t *testing.T) {
 	zipPath := filepath.Join(tmpDir, "test.zip")
 	f, _ := os.Create(zipPath)
 	zw := zip.NewWriter(f)
-	fw, _ := zw.Create("fuego")
+	fw, _ := zw.Create("nexo")
 	_, _ = fw.Write([]byte("binary content"))
 	_ = zw.Close()
 	_ = f.Close()
@@ -640,7 +640,7 @@ func TestDownload_MockServer(t *testing.T) {
 
 	u := NewUpdater()
 	asset := &Asset{
-		Name:        "fuego_test.tar.gz",
+		Name:        "nexo_test.tar.gz",
 		DownloadURL: server.URL,
 		Size:        int64(len(binaryContent)),
 	}
@@ -670,7 +670,7 @@ func TestDownload_ServerError(t *testing.T) {
 
 	u := NewUpdater()
 	asset := &Asset{
-		Name:        "fuego_test.tar.gz",
+		Name:        "nexo_test.tar.gz",
 		DownloadURL: server.URL,
 	}
 
@@ -706,7 +706,7 @@ func TestVerifyChecksum_NoChecksumFile(t *testing.T) {
 	release := &ReleaseInfo{
 		TagName: "v0.5.0",
 		Assets: []Asset{
-			{Name: "fuego_0.5.0_darwin_arm64.tar.gz"},
+			{Name: "nexo_0.5.0_darwin_arm64.tar.gz"},
 			// No checksums.txt asset
 		},
 	}
@@ -736,7 +736,7 @@ func TestVerifyChecksum_WithMockServer(t *testing.T) {
 	} else {
 		extension = ".tar.gz"
 	}
-	assetName := fmt.Sprintf("fuego_0.5.0_%s_%s%s", goos, goarch, extension)
+	assetName := fmt.Sprintf("nexo_0.5.0_%s_%s%s", goos, goarch, extension)
 
 	archivePath := filepath.Join(tmpDir, assetName)
 	content := []byte("test archive content")
@@ -758,7 +758,7 @@ func TestVerifyChecksum_WithMockServer(t *testing.T) {
 	release := &ReleaseInfo{
 		TagName: "v0.5.0",
 		Assets: []Asset{
-			{Name: assetName, DownloadURL: "https://example.com/fuego.tar.gz"},
+			{Name: assetName, DownloadURL: "https://example.com/nexo.tar.gz"},
 			{Name: "checksums.txt", DownloadURL: server.URL},
 		},
 	}

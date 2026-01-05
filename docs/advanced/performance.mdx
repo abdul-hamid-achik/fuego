@@ -1,13 +1,13 @@
 ---
 title: Performance
-description: 'Optimize your Fuego application for maximum throughput and minimal latency.'
+description: 'Optimize your Nexo application for maximum throughput and minimal latency.'
 ---
 
-Fuego is built on Go's high-performance `net/http` and `chi` router, providing excellent performance out of the box. This guide covers techniques to optimize your application further.
+Nexo is built on Go's high-performance `net/http` and `chi` router, providing excellent performance out of the box. This guide covers techniques to optimize your application further.
 
 ## Performance Characteristics
 
-Fuego inherits Go's performance benefits:
+Nexo inherits Go's performance benefits:
 
 - **Compiled binary** - No runtime interpretation
 - **Efficient goroutine scheduling** - Handles thousands of concurrent connections
@@ -35,12 +35,12 @@ import (
     "net/http/httptest"
     "testing"
     
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 func BenchmarkGetUsers(b *testing.B) {
-    app := fuego.New()
-    app.Get("/api/users", func(c *fuego.Context) error {
+    app := nexo.New()
+    app.Get("/api/users", func(c *nexo.Context) error {
         return c.JSON(200, map[string]any{
             "users": []string{"alice", "bob", "charlie"},
         })
@@ -127,7 +127,7 @@ func (c *Cache) Set(key string, data any, ttl time.Duration) {
 // Usage in handler
 var cache = &Cache{items: make(map[string]cacheItem)}
 
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     cacheKey := "users:all"
     
     if data, ok := cache.Get(cacheKey); ok {
@@ -136,7 +136,7 @@ func Get(c *fuego.Context) error {
     
     users, err := db.GetAllUsers()
     if err != nil {
-        return fuego.InternalServerError("failed to fetch users")
+        return nexo.InternalServerError("failed to fetch users")
     }
     
     cache.Set(cacheKey, users, 5*time.Minute)
@@ -185,7 +185,7 @@ var bufferPool = sync.Pool{
     },
 }
 
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     buf := bufferPool.Get().(*bytes.Buffer)
     defer func() {
         buf.Reset()
@@ -215,7 +215,7 @@ return c.JSON(200, data)
 ```go
 import "github.com/bytedance/sonic"
 
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     data, _ := sonic.Marshal(response)
     return c.Blob(200, "application/json", data)
 }
@@ -226,7 +226,7 @@ func Get(c *fuego.Context) error {
 // Pre-encode static responses
 var healthResponse = []byte(`{"status":"ok"}`)
 
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     c.SetHeader("Content-Type", "application/json")
     _, err := c.Response.Write(healthResponse)
     return err
@@ -241,9 +241,9 @@ Keep middleware lean:
 
 ```go
 // Good - Fast middleware
-func Timing() fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func Timing() nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             start := time.Now()
             err := next(c)
             c.SetHeader("X-Response-Time", time.Since(start).String())
@@ -253,9 +253,9 @@ func Timing() fuego.MiddlewareFunc {
 }
 
 // Avoid - Slow middleware with unnecessary work
-func SlowMiddleware() fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func SlowMiddleware() nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             // Don't do heavy work on every request
             expensiveOperation()  // Bad!
             return next(c)
@@ -290,9 +290,9 @@ func (u *LazyUser) Posts(db *sql.DB) ([]Post, error) {
 Enable gzip compression for large responses:
 
 ```go
-func Gzip() fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func Gzip() nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             // Check if client accepts gzip
             if !strings.Contains(c.Header("Accept-Encoding"), "gzip") {
                 return next(c)
@@ -324,10 +324,10 @@ The built-in logger is designed for minimal overhead:
 app.DisableLogger()
 
 // Or skip certain paths
-app.SetLogger(fuego.RequestLoggerConfig{
+app.SetLogger(nexo.RequestLoggerConfig{
     SkipPaths:  []string{"/health", "/metrics"},
     SkipStatic: true,
-    Level:      fuego.LogLevelWarn, // Only log errors
+    Level:      nexo.LogLevelWarn, // Only log errors
 })
 ```
 
@@ -336,7 +336,7 @@ app.SetLogger(fuego.RequestLoggerConfig{
 For high-traffic static files, use a CDN or reverse proxy:
 
 ```go
-// In Fuego - OK for moderate traffic
+// In Nexo - OK for moderate traffic
 app.Static("/static", "static")
 
 // Better - Use nginx or CDN for static files
@@ -360,9 +360,9 @@ import (
 
 func main() {
     // Enable pprof endpoints
-    app := fuego.New()
+    app := nexo.New()
     
-    app.Get("/debug/pprof/*", func(c *fuego.Context) error {
+    app.Get("/debug/pprof/*", func(c *nexo.Context) error {
         pprof.Index(c.Response, c.Request)
         return nil
     })
@@ -431,15 +431,15 @@ Automatically sets GOMAXPROCS in containers.
   
   <Accordion title="Configure timeouts">
 ```go
-app := fuego.New()
-app.Use(fuego.Timeout(30 * time.Second))
+app := nexo.New()
+app.Use(nexo.Timeout(30 * time.Second))
 ```
 Prevent slow requests from consuming resources.
   </Accordion>
   
   <Accordion title="Add rate limiting">
 ```go
-app.Use(fuego.RateLimiter(1000, time.Minute))
+app.Use(nexo.RateLimiter(1000, time.Minute))
 ```
 Protect against traffic spikes.
   </Accordion>
@@ -474,7 +474,7 @@ Set up monitoring to track performance:
 
 ```go
 // Prometheus metrics middleware
-func Metrics() fuego.MiddlewareFunc {
+func Metrics() nexo.MiddlewareFunc {
     requestDuration := prometheus.NewHistogramVec(
         prometheus.HistogramOpts{
             Name:    "http_request_duration_seconds",
@@ -485,8 +485,8 @@ func Metrics() fuego.MiddlewareFunc {
     )
     prometheus.MustRegister(requestDuration)
     
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             start := time.Now()
             err := next(c)
             duration := time.Since(start).Seconds()
@@ -507,7 +507,7 @@ func Metrics() fuego.MiddlewareFunc {
 
 ### Horizontal Scaling
 
-Fuego apps are stateless by default, making horizontal scaling easy:
+Nexo apps are stateless by default, making horizontal scaling easy:
 
 ```yaml
 # docker-compose.yml
@@ -517,7 +517,7 @@ services:
     deploy:
       replicas: 4
     environment:
-      - FUEGO_PORT=3000
+      - NEXO_PORT=3000
   
   nginx:
     image: nginx:alpine
@@ -531,7 +531,7 @@ services:
 
 ```nginx
 # nginx.conf
-upstream fuego_app {
+upstream nexo_app {
     least_conn;
     server app:3000;
 }
@@ -540,7 +540,7 @@ server {
     listen 80;
     
     location / {
-        proxy_pass http://fuego_app;
+        proxy_pass http://nexo_app;
         proxy_http_version 1.1;
         proxy_set_header Connection "";
         proxy_set_header Host $host;

@@ -1,152 +1,152 @@
 ---
 title: Deployment
-description: 'Deploy Fuego apps to any platform with a single binary.'
+description: 'Deploy Nexo apps to any platform with a single binary.'
 ---
 
-Fuego apps compile to a single binary, making deployment straightforward across any platform.
+Nexo apps compile to a single binary, making deployment straightforward across any platform.
 
-## Fuego Cloud
+## Nexo Cloud
 
-The easiest way to deploy Fuego apps is with **Fuego Cloud** - our managed platform at [cloud.fuego.build](https://cloud.fuego.build).
+The easiest way to deploy Nexo apps is with **Nexo Cloud** - our managed platform at [cloud.nexo.build](https://cloud.nexo.build).
 
 ### Quick Start
 
 ```bash
-# Login to Fuego Cloud
-fuego login
+# Login to Nexo Cloud
+nexo login
 
 # Deploy your app
-fuego deploy
+nexo deploy
 ```
 
-That's it! Fuego Cloud handles building, containerization, and deployment automatically.
+That's it! Nexo Cloud handles building, containerization, and deployment automatically.
 
 ### Authentication
 
 ```bash
 # Browser OAuth (default)
-fuego login
+nexo login
 
 # Use API token directly
-fuego login --token fgc_xxxxxxxxxxxx
+nexo login --token fgc_xxxxxxxxxxxx
 
 # Device flow for headless environments
-fuego login --device
+nexo login --device
 
 # Log out
-fuego logout
+nexo logout
 ```
 
 ### Application Management
 
 ```bash
 # List all your apps
-fuego apps
+nexo apps
 
 # Create a new app
-fuego apps create my-api
-fuego apps create my-api --region gdl --size starter
+nexo apps create my-api
+nexo apps create my-api --region gdl --size starter
 
 # Delete an app
-fuego apps delete my-api
-fuego apps delete my-api --force  # Skip confirmation
+nexo apps delete my-api
+nexo apps delete my-api --force  # Skip confirmation
 ```
 
 ### Deployment
 
 ```bash
 # Build and deploy (default)
-fuego deploy
+nexo deploy
 
 # Deploy without rebuilding
-fuego deploy --no-build
+nexo deploy --no-build
 
 # Set environment variables during deploy
-fuego deploy --env DATABASE_URL=postgres://...
+nexo deploy --env DATABASE_URL=postgres://...
 
 # Deploy to specific app
-fuego deploy --app my-api
+nexo deploy --app my-api
 
 # Rollback to previous deployment
-fuego rollback my-api
+nexo rollback my-api
 
 # Rollback to specific deployment
-fuego rollback my-api abc123
+nexo rollback my-api abc123
 ```
 
 The deploy command:
-1. Reads `fuego.yaml` for app configuration
+1. Reads `nexo.yaml` for app configuration
 2. Builds the Go binary
 3. Creates a Docker image
 4. Pushes to container registry
-5. Triggers deployment on Fuego Cloud
+5. Triggers deployment on Nexo Cloud
 6. Streams deployment logs
 
 ### Logs & Monitoring
 
 ```bash
 # View recent logs
-fuego logs my-api
+nexo logs my-api
 
 # Stream logs in real-time
-fuego logs my-api -f
+nexo logs my-api -f
 
 # Last 100 lines
-fuego logs my-api --tail 100
+nexo logs my-api --tail 100
 
 # Logs from the last hour
-fuego logs my-api --since 1h
+nexo logs my-api --since 1h
 
 # Filter by level
-fuego logs my-api --level error
+nexo logs my-api --level error
 
 # View app status, deployments, and metrics
-fuego status my-api
+nexo status my-api
 ```
 
 ### Environment Variables
 
 ```bash
 # List variables (values redacted)
-fuego env my-api
+nexo env my-api
 
 # Show actual values
-fuego env my-api --show
+nexo env my-api --show
 
 # Set variables
-fuego env my-api set DATABASE_URL=postgres://...
-fuego env my-api set API_KEY=secret DEBUG=true
+nexo env my-api set DATABASE_URL=postgres://...
+nexo env my-api set API_KEY=secret DEBUG=true
 
 # Remove variables
-fuego env my-api unset DEBUG
+nexo env my-api unset DEBUG
 ```
 
 ### Custom Domains
 
 ```bash
 # List domains
-fuego domains my-api
+nexo domains my-api
 
 # Add a domain
-fuego domains my-api add api.example.com
+nexo domains my-api add api.example.com
 
 # Verify DNS configuration
-fuego domains my-api verify api.example.com
+nexo domains my-api verify api.example.com
 
 # Remove a domain
-fuego domains my-api remove api.example.com
+nexo domains my-api remove api.example.com
 ```
 
 After adding a domain, configure DNS:
 ```
 Type:  CNAME
 Name:  api.example.com
-Value: my-api.fuego.build
+Value: my-api.nexo.build
 ```
 
 ### Configuration
 
-Add a `cloud` section to your `fuego.yaml`:
+Add a `cloud` section to your `nexo.yaml`:
 
 ```yaml
 name: my-api
@@ -165,9 +165,9 @@ cloud:
 All commands support `--json` for automation:
 
 ```bash
-fuego apps --json
-fuego status my-api --json
-fuego logs my-api --json
+nexo apps --json
+nexo status my-api --json
+nexo logs my-api --json
 ```
 
 ---
@@ -175,8 +175,8 @@ fuego logs my-api --json
 ## Building for Production
 
 ```bash
-# Using Fuego CLI
-fuego build
+# Using Nexo CLI
+nexo build
 
 # Or directly with Go
 go build -o myapp .
@@ -218,15 +218,15 @@ If using Tailwind CSS:
 FROM golang:1.23-alpine AS builder
 WORKDIR /app
 
-# Install Fuego CLI for Tailwind
-RUN go install github.com/abdul-hamid-achik/fuego/cmd/fuego@latest
+# Install Nexo CLI for Tailwind
+RUN go install github.com/abdul-hamid-achik/nexo/cmd/fuego@latest
 
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 
 # Build Tailwind CSS
-RUN fuego tailwind build
+RUN nexo tailwind build
 
 # Build Go binary
 RUN go build -ldflags="-s -w" -o server .
@@ -250,8 +250,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - FUEGO_PORT=3000
-      - FUEGO_HOST=0.0.0.0
+      - NEXO_PORT=3000
+      - NEXO_HOST=0.0.0.0
     restart: unless-stopped
 ```
 
@@ -306,8 +306,8 @@ Railway auto-detects Go projects.
 
 **Environment variables:**
 ```
-FUEGO_PORT=3000
-FUEGO_HOST=0.0.0.0
+NEXO_PORT=3000
+NEXO_HOST=0.0.0.0
 ```
   </Tab>
   <Tab title="Render">
@@ -344,13 +344,13 @@ package main
 import (
     "github.com/aws/aws-lambda-go/lambda"
     "github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
-var app *fuego.App
+var app *nexo.App
 
 func init() {
-    app = fuego.New()
+    app = nexo.New()
     // Configure routes
 }
 
@@ -375,7 +375,7 @@ Use the Docker image with ECS task definition:
         }
       ],
       "environment": [
-        {"name": "FUEGO_PORT", "value": "3000"}
+        {"name": "NEXO_PORT", "value": "3000"}
       ]
     }
   ]
@@ -468,7 +468,7 @@ spec:
           ports:
             - containerPort: 3000
           env:
-            - name: FUEGO_PORT
+            - name: NEXO_PORT
               value: "3000"
 ---
 apiVersion: v1
@@ -490,16 +490,16 @@ spec:
 
 ### Environment Variables
 
-Fuego reads configuration from environment variables:
+Nexo reads configuration from environment variables:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `FUEGO_PORT` | Server port | `3000` |
-| `FUEGO_HOST` | Server host | `localhost` |
-| `FUEGO_ENV` | Environment (dev/prod) | `dev` |
-| `FUEGO_LOG_LEVEL` | Log level | `info` |
+| `NEXO_PORT` | Server port | `3000` |
+| `NEXO_HOST` | Server host | `localhost` |
+| `NEXO_ENV` | Environment (dev/prod) | `dev` |
+| `NEXO_LOG_LEVEL` | Log level | `info` |
 
-### fuego.yaml
+### nexo.yaml
 
 ```yaml
 port: 3000
@@ -521,9 +521,9 @@ Add a health endpoint for load balancers:
 // app/api/health/route.go
 package health
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     return c.JSON(200, map[string]string{
         "status": "healthy",
     })
@@ -547,7 +547,7 @@ COPY --from=builder /app/static ./static
 
 ## Graceful Shutdown
 
-Fuego handles SIGINT and SIGTERM for graceful shutdown automatically. In Kubernetes, configure a termination grace period:
+Nexo handles SIGINT and SIGTERM for graceful shutdown automatically. In Kubernetes, configure a termination grace period:
 
 ```yaml
 spec:
@@ -559,7 +559,7 @@ spec:
 <AccordionGroup>
   <Accordion title="Security">
     - Enable HTTPS
-    - Set secure headers (`app.Use(fuego.SecureHeaders())`)
+    - Set secure headers (`app.Use(nexo.SecureHeaders())`)
     - Use environment variables for secrets
     - Enable CORS properly
   </Accordion>

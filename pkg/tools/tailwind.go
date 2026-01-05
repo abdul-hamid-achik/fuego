@@ -1,4 +1,4 @@
-// Package tools provides utilities for managing external tools used by Fuego.
+// Package tools provides utilities for managing external tools used by Nexo.
 package tools
 
 import (
@@ -17,7 +17,7 @@ const (
 	TailwindVersion = "4.0.0"
 
 	// DefaultCacheDir is the default cache directory for tools
-	DefaultCacheDir = ".cache/fuego/bin"
+	DefaultCacheDir = ".cache/nexo/bin"
 )
 
 // TailwindCLI manages the Tailwind CSS standalone binary

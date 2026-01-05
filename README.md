@@ -1,15 +1,15 @@
-# Fuego
+# Nexo
 
 **File-based routing for Go. Fast to write. Faster to run.**
 
 Your file structure *is* your router. Build APIs and full-stack web apps with conventions that feel natural — if you've used modern meta-frameworks, you'll be productive in minutes.
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/abdul-hamid-achik/fuego.svg)](https://pkg.go.dev/github.com/abdul-hamid-achik/fuego)
-[![Go Report Card](https://goreportcard.com/badge/github.com/abdul-hamid-achik/fuego)](https://goreportcard.com/report/github.com/abdul-hamid-achik/fuego)
+[![Go Reference](https://pkg.go.dev/badge/github.com/abdul-hamid-achik/nexo.svg)](https://pkg.go.dev/github.com/abdul-hamid-achik/nexo)
+[![Go Report Card](https://goreportcard.com/badge/github.com/abdul-hamid-achik/nexo)](https://goreportcard.com/report/github.com/abdul-hamid-achik/nexo)
 
 > **fue**GO — Spanish for "fire", with Go built right in. Born in Mexico, built for speed.
 
-## Why Fuego?
+## Why Nexo?
 
 Traditional Go routing requires manual registration:
 
@@ -21,7 +21,7 @@ r.HandleFunc("/api/posts", postsHandler)
 // ...repeat for every route
 ```
 
-With Fuego, your file structure is your router:
+With Nexo, your file structure is your router:
 
 ```
 app/api/users/route.go      → GET/POST /api/users
@@ -48,24 +48,24 @@ app/api/posts/route.go      → GET/POST /api/posts
 ### Using Homebrew (macOS/Linux)
 
 ```bash
-brew install abdul-hamid-achik/tap/fuego-cli
+brew install abdul-hamid-achik/tap/nexo-cli
 ```
 
 ### Using Go
 
 ```bash
-go install github.com/abdul-hamid-achik/fuego/cmd/fuego@latest
+go install github.com/abdul-hamid-achik/nexo/cmd/fuego@latest
 ```
 
 ## Quick Start
 
 ```bash
 # Create a new project
-fuego new myapp
+nexo new myapp
 
 # Start development server
 cd myapp
-fuego dev
+nexo dev
 ```
 
 Visit http://localhost:3000
@@ -85,13 +85,13 @@ myapp/
 │           └── route.go      # GET /api/health
 ├── static/
 ├── main.go
-├── fuego.yaml
+├── nexo.yaml
 └── go.mod
 ```
 
 ## Familiar Conventions
 
-Fuego uses file-based routing patterns found in modern web frameworks:
+Nexo uses file-based routing patterns found in modern web frameworks:
 
 | Pattern | File | Route |
 |---------|------|-------|
@@ -124,22 +124,22 @@ If you've used Next.js, Nuxt, SvelteKit, or similar frameworks, these patterns w
 // app/api/users/route.go
 package users
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/fuego"
 
 // GET /api/users
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     return c.JSON(200, map[string]any{
         "users": []string{"alice", "bob"},
     })
 }
 
 // POST /api/users
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     var input struct {
         Name string `json:"name"`
     }
     if err := c.Bind(&input); err != nil {
-        return fuego.BadRequest("invalid input")
+        return nexo.BadRequest("invalid input")
     }
     return c.JSON(201, map[string]string{"created": input.Name})
 }
@@ -151,10 +151,10 @@ func Post(c *fuego.Context) error {
 // app/api/users/_id/route.go
 package id
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/fuego"
 
 // GET /api/users/:id
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     id := c.Param("id")
     return c.JSON(200, map[string]any{
         "id": id,
@@ -173,30 +173,30 @@ package app
 
 import (
     "strings"
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/fuego"
 )
 
-func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
     path := c.Path()
     
     // Redirect old URLs
     if strings.HasPrefix(path, "/api/v1/") {
         newPath := strings.Replace(path, "/api/v1/", "/api/v2/", 1)
-        return fuego.Redirect(newPath, 301), nil
+        return nexo.Redirect(newPath, 301), nil
     }
     
     // Block unauthorized access
     if strings.HasPrefix(path, "/admin") && !isAdmin(c) {
-        return fuego.ResponseJSON(403, `{"error":"forbidden"}`), nil
+        return nexo.ResponseJSON(403, `{"error":"forbidden"}`), nil
     }
     
     // Rewrite for A/B testing
     if c.Cookie("experiment") == "variant-b" {
-        return fuego.Rewrite("/variant-b" + path), nil
+        return nexo.Rewrite("/variant-b" + path), nil
     }
     
     // Continue to normal routing
-    return fuego.Continue(), nil
+    return nexo.Continue(), nil
 }
 ```
 
@@ -208,11 +208,11 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
 // app/api/middleware.go
 package api
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/fuego"
 
-func Middleware() fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func Middleware() nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             // Applied to all routes under /api
             c.SetHeader("X-API-Version", "1.0")
             return next(c)
@@ -224,43 +224,43 @@ func Middleware() fuego.MiddlewareFunc {
 ### Built-in Middleware
 
 ```go
-app := fuego.New()
+app := nexo.New()
 
 // Request logging is enabled by default!
 // Output: [12:34:56] GET /api/users 200 in 45ms (1.2KB)
-// Customize with: app.SetLogger(fuego.RequestLoggerConfig{...})
+// Customize with: app.SetLogger(nexo.RequestLoggerConfig{...})
 
 // Panic recovery
-app.Use(fuego.Recover())
+app.Use(nexo.Recover())
 
 // Request ID
-app.Use(fuego.RequestID())
+app.Use(nexo.RequestID())
 
 // CORS
-app.Use(fuego.CORSWithConfig(fuego.CORSConfig{
+app.Use(nexo.CORSWithConfig(nexo.CORSConfig{
     AllowOrigins: []string{"https://example.com"},
     AllowMethods: []string{"GET", "POST", "PUT", "DELETE"},
 }))
 
 // Rate limiting
-app.Use(fuego.RateLimiter(100, time.Minute))
+app.Use(nexo.RateLimiter(100, time.Minute))
 
 // Timeout
-app.Use(fuego.Timeout(30 * time.Second))
+app.Use(nexo.Timeout(30 * time.Second))
 
 // Basic auth
-app.Use(fuego.BasicAuth(func(user, pass string) bool {
+app.Use(nexo.BasicAuth(func(user, pass string) bool {
     return user == "admin" && pass == "secret"
 }))
 
 // Security headers
-app.Use(fuego.SecureHeaders())
+app.Use(nexo.SecureHeaders())
 ```
 
 ## Context API
 
 ```go
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     // URL parameters
     id := c.Param("id")
     idInt, _ := c.ParamInt("id")
@@ -298,20 +298,20 @@ func Get(c *fuego.Context) error {
 ## Error Handling
 
 ```go
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     if notFound {
-        return fuego.NotFound("resource not found")
+        return nexo.NotFound("resource not found")
     }
     
     if unauthorized {
-        return fuego.Unauthorized("invalid token")
+        return nexo.Unauthorized("invalid token")
     }
     
     if badInput {
-        return fuego.BadRequest("invalid input")
+        return nexo.BadRequest("invalid input")
     }
     
-    return fuego.InternalServerError("something went wrong")
+    return nexo.InternalServerError("something went wrong")
 }
 ```
 
@@ -319,24 +319,24 @@ func Get(c *fuego.Context) error {
 
 ```bash
 # Create new project
-fuego new myapp
-fuego new myapp --api-only      # Without templ templates
-fuego new myapp --with-proxy    # Include proxy.go example
+nexo new myapp
+nexo new myapp --api-only      # Without templ templates
+nexo new myapp --with-proxy    # Include proxy.go example
 
 # Development server with hot reload
-fuego dev
+nexo dev
 
 # Build for production
-fuego build
+nexo build
 
 # List all routes
-fuego routes
+nexo routes
 ```
 
 ## Configuration
 
 ```yaml
-# fuego.yaml
+# nexo.yaml
 port: 3000
 host: "0.0.0.0"
 app_dir: "app"
@@ -355,39 +355,39 @@ middleware:
 
 ## Documentation
 
-Full documentation is available at [fuego.build](https://fuego.build).
+Full documentation is available at [nexo.build](https://nexo.build).
 
 **Getting Started:**
-- [Quick Start](https://fuego.build/docs/getting-started/quickstart)
-- [Familiar Patterns](https://fuego.build/docs/getting-started/familiar-patterns)
+- [Quick Start](https://nexo.build/docs/getting-started/quickstart)
+- [Familiar Patterns](https://nexo.build/docs/getting-started/familiar-patterns)
 
 **Core Concepts:**
-- [File-based Routing](https://fuego.build/docs/routing/file-based)
-- [Middleware](https://fuego.build/docs/middleware/overview)
-- [Proxy](https://fuego.build/docs/middleware/proxy)
-- [Templates](https://fuego.build/docs/core-concepts/templates)
-- [Static Files](https://fuego.build/docs/core-concepts/static-files)
+- [File-based Routing](https://nexo.build/docs/routing/file-based)
+- [Middleware](https://nexo.build/docs/middleware/overview)
+- [Proxy](https://nexo.build/docs/middleware/proxy)
+- [Templates](https://nexo.build/docs/core-concepts/templates)
+- [Static Files](https://nexo.build/docs/core-concepts/static-files)
 
 **Frontend:**
-- [HTMX Integration](https://fuego.build/docs/frontend/htmx)
-- [Tailwind CSS](https://fuego.build/docs/frontend/tailwind)
-- [Forms](https://fuego.build/docs/frontend/forms)
+- [HTMX Integration](https://nexo.build/docs/frontend/htmx)
+- [Tailwind CSS](https://nexo.build/docs/frontend/tailwind)
+- [Forms](https://nexo.build/docs/frontend/forms)
 
 **Guides:**
-- [Examples](https://fuego.build/docs/guides/examples) - Working code examples for common patterns
-- [Authentication](https://fuego.build/docs/guides/authentication)
-- [Database](https://fuego.build/docs/guides/database)
-- [Deployment](https://fuego.build/docs/guides/deployment)
+- [Examples](https://nexo.build/docs/guides/examples) - Working code examples for common patterns
+- [Authentication](https://nexo.build/docs/guides/authentication)
+- [Database](https://nexo.build/docs/guides/database)
+- [Deployment](https://nexo.build/docs/guides/deployment)
 
 **API Reference:**
-- [Overview](https://fuego.build/docs/api/overview) - Quick reference tables for all types
-- [App](https://fuego.build/docs/api/app) - Application lifecycle and routing
-- [Context](https://fuego.build/docs/api/context) - Request/response methods
-- [Config](https://fuego.build/docs/api/config) - Configuration options
-- [Middleware](https://fuego.build/docs/api/middleware) - Built-in middleware reference
-- [Proxy](https://fuego.build/docs/api/proxy) - Request interception
-- [Errors](https://fuego.build/docs/api/errors) - Error handling helpers
-- [CLI](https://fuego.build/docs/api/cli) - Command-line interface
+- [Overview](https://nexo.build/docs/api/overview) - Quick reference tables for all types
+- [App](https://nexo.build/docs/api/app) - Application lifecycle and routing
+- [Context](https://nexo.build/docs/api/context) - Request/response methods
+- [Config](https://nexo.build/docs/api/config) - Configuration options
+- [Middleware](https://nexo.build/docs/api/middleware) - Built-in middleware reference
+- [Proxy](https://nexo.build/docs/api/proxy) - Request interception
+- [Errors](https://nexo.build/docs/api/errors) - Error handling helpers
+- [CLI](https://nexo.build/docs/api/cli) - Command-line interface
 
 ## Development
 
@@ -412,9 +412,9 @@ task install
 
 ## Acknowledgments
 
-Fuego stands on the shoulders of giants:
+Nexo stands on the shoulders of giants:
 
-- **[chi](https://github.com/go-chi/chi)** by Peter Kieltyka — The lightweight router that powers Fuego
+- **[chi](https://github.com/go-chi/chi)** by Peter Kieltyka — The lightweight router that powers Nexo
 - **[templ](https://github.com/a-h/templ)** by Adrian Hesketh — Type-safe HTML templating for Go
 - **[fsnotify](https://github.com/fsnotify/fsnotify)** — Cross-platform file watching
 - **[cobra](https://github.com/spf13/cobra)** by Steve Francia — CLI framework

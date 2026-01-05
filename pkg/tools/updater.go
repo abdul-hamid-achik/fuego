@@ -1,4 +1,4 @@
-// Package tools provides utility functions for the Fuego CLI.
+// Package tools provides utility functions for the Nexo CLI.
 package tools
 
 import (
@@ -18,13 +18,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/abdul-hamid-achik/fuego/internal/version"
+	"github.com/abdul-hamid-achik/nexo/internal/version"
 )
 
 // Constants for the update system
 const (
 	GitHubOwner        = "abdul-hamid-achik"
-	GitHubRepo         = "fuego"
+	GitHubRepo         = "nexo"
 	ReleasesAPIURL     = "https://api.github.com/repos/%s/%s/releases"
 	CheckIntervalHours = 24 // Cache update check for 24h
 )
@@ -47,7 +47,7 @@ type Asset struct {
 	Size        int64  `json:"size"`
 }
 
-// Updater handles self-updates for the Fuego CLI
+// Updater handles self-updates for the Nexo CLI
 type Updater struct {
 	CurrentVersion    string
 	IncludePrerelease bool
@@ -64,18 +64,18 @@ func NewUpdater() *Updater {
 	}
 }
 
-// CacheDir returns the cache directory path (~/.cache/fuego)
+// CacheDir returns the cache directory path (~/.cache/nexo)
 func (u *Updater) CacheDir() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return filepath.Join(os.TempDir(), "fuego")
+		return filepath.Join(os.TempDir(), "nexo")
 	}
-	return filepath.Join(home, ".cache", "fuego")
+	return filepath.Join(home, ".cache", "nexo")
 }
 
 // BackupPath returns the path to the backup binary
 func (u *Updater) BackupPath() string {
-	return filepath.Join(u.CacheDir(), "fuego.backup")
+	return filepath.Join(u.CacheDir(), "nexo.backup")
 }
 
 // LastCheckPath returns the path to the last check timestamp file
@@ -147,7 +147,7 @@ func (u *Updater) GetLatestRelease() (*ReleaseInfo, error) {
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
-	req.Header.Set("User-Agent", "fuego-cli/"+u.CurrentVersion)
+	req.Header.Set("User-Agent", "nexo-cli/"+u.CurrentVersion)
 
 	resp, err := u.client.Do(req)
 	if err != nil {
@@ -176,7 +176,7 @@ func (u *Updater) fetchReleases() ([]ReleaseInfo, error) {
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
-	req.Header.Set("User-Agent", "fuego-cli/"+u.CurrentVersion)
+	req.Header.Set("User-Agent", "nexo-cli/"+u.CurrentVersion)
 
 	resp, err := u.client.Do(req)
 	if err != nil {
@@ -201,9 +201,9 @@ func (u *Updater) GetAssetForPlatform(release *ReleaseInfo) (*Asset, error) {
 	goos := runtime.GOOS
 	goarch := runtime.GOARCH
 
-	// Asset naming: fuego_0.5.0_darwin_arm64.tar.gz
+	// Asset naming: nexo_0.5.0_darwin_arm64.tar.gz
 	versionStr := strings.TrimPrefix(release.TagName, "v")
-	expectedName := fmt.Sprintf("fuego_%s_%s_%s", versionStr, goos, goarch)
+	expectedName := fmt.Sprintf("nexo_%s_%s_%s", versionStr, goos, goarch)
 
 	// Windows uses .zip, others use .tar.gz
 	var extension string
@@ -227,7 +227,7 @@ func (u *Updater) GetAssetForPlatform(release *ReleaseInfo) (*Asset, error) {
 // Returns the path to the downloaded archive
 func (u *Updater) Download(asset *Asset) (string, error) {
 	// Create temp file for download
-	tmpFile, err := os.CreateTemp("", "fuego-download-*")
+	tmpFile, err := os.CreateTemp("", "nexo-download-*")
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp file: %w", err)
 	}
@@ -240,7 +240,7 @@ func (u *Updater) Download(asset *Asset) (string, error) {
 		_ = os.Remove(tmpPath)
 		return "", err
 	}
-	req.Header.Set("User-Agent", "fuego-cli/"+u.CurrentVersion)
+	req.Header.Set("User-Agent", "nexo-cli/"+u.CurrentVersion)
 
 	resp, err := u.client.Do(req)
 	if err != nil {
@@ -272,7 +272,7 @@ func (u *Updater) Download(asset *Asset) (string, error) {
 	return tmpPath, nil
 }
 
-// ExtractBinary extracts the fuego binary from the downloaded archive
+// ExtractBinary extracts the nexo binary from the downloaded archive
 // Returns the path to the extracted binary
 func (u *Updater) ExtractBinary(archivePath string) (string, error) {
 	if strings.HasSuffix(archivePath, ".zip") {
@@ -297,7 +297,7 @@ func (u *Updater) extractFromTarGz(archivePath string) (string, error) {
 
 	tr := tar.NewReader(gzr)
 
-	// Look for the fuego binary
+	// Look for the nexo binary
 	for {
 		header, err := tr.Next()
 		if err == io.EOF {
@@ -307,11 +307,11 @@ func (u *Updater) extractFromTarGz(archivePath string) (string, error) {
 			return "", fmt.Errorf("failed to read tar: %w", err)
 		}
 
-		// Look for fuego or fuego.exe
+		// Look for nexo or nexo.exe
 		baseName := filepath.Base(header.Name)
-		if baseName == "fuego" || baseName == "fuego.exe" {
+		if baseName == "nexo" || baseName == "nexo.exe" {
 			// Extract to temp file
-			tmpFile, err := os.CreateTemp("", "fuego-binary-*")
+			tmpFile, err := os.CreateTemp("", "nexo-binary-*")
 			if err != nil {
 				return "", fmt.Errorf("failed to create temp file: %w", err)
 			}
@@ -331,7 +331,7 @@ func (u *Updater) extractFromTarGz(archivePath string) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("fuego binary not found in archive")
+	return "", fmt.Errorf("nexo binary not found in archive")
 }
 
 // extractFromZip extracts the binary from a .zip archive (Windows)
@@ -344,13 +344,13 @@ func (u *Updater) extractFromZip(archivePath string) (string, error) {
 
 	for _, f := range r.File {
 		baseName := filepath.Base(f.Name)
-		if baseName == "fuego" || baseName == "fuego.exe" {
+		if baseName == "nexo" || baseName == "nexo.exe" {
 			rc, err := f.Open()
 			if err != nil {
 				return "", fmt.Errorf("failed to open file in zip: %w", err)
 			}
 
-			tmpFile, err := os.CreateTemp("", "fuego-binary-*")
+			tmpFile, err := os.CreateTemp("", "nexo-binary-*")
 			if err != nil {
 				_ = rc.Close()
 				return "", fmt.Errorf("failed to create temp file: %w", err)
@@ -373,7 +373,7 @@ func (u *Updater) extractFromZip(archivePath string) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("fuego binary not found in archive")
+	return "", fmt.Errorf("nexo binary not found in archive")
 }
 
 // VerifyChecksum verifies the downloaded archive against checksums.txt
@@ -454,7 +454,7 @@ func (u *Updater) downloadChecksums(asset *Asset) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "fuego-cli/"+u.CurrentVersion)
+	req.Header.Set("User-Agent", "nexo-cli/"+u.CurrentVersion)
 
 	resp, err := u.client.Do(req)
 	if err != nil {

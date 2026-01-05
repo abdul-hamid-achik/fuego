@@ -64,4 +64,4 @@ jobs:
           cache: true
 
       - name: Build
-        run: go build -o fuego ./cmd/fuego
+        run: go build -o nexo ./cmd/nexo

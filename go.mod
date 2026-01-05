@@ -1,4 +1,4 @@
-module github.com/abdul-hamid-achik/fuego
+module github.com/abdul-hamid-achik/nexo
 
 go 1.25.5
 

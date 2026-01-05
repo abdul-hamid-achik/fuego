@@ -1,6 +1,6 @@
 ---
 title: Quick Start
-description: 'Get up and running with Fuego in under 5 minutes.'
+description: 'Get up and running with Nexo in under 5 minutes.'
 ---
 
 ## Installation
@@ -8,11 +8,11 @@ description: 'Get up and running with Fuego in under 5 minutes.'
 <CodeGroup>
 
 ```bash Homebrew (macOS/Linux)
-brew install abdul-hamid-achik/tap/fuego-cli
+brew install abdul-hamid-achik/tap/nexo-cli
 ```
 
 ```bash Go Install
-go install github.com/abdul-hamid-achik/fuego/cmd/fuego@latest
+go install github.com/abdul-hamid-achik/nexo/cmd/fuego@latest
 ```
 
 </CodeGroup>
@@ -20,7 +20,7 @@ go install github.com/abdul-hamid-achik/fuego/cmd/fuego@latest
 ## Create a Project
 
 ```bash
-fuego new myapp
+nexo new myapp
 cd myapp
 ```
 
@@ -39,7 +39,7 @@ This creates:
     </Folder>
     <Folder name="static" />
     <File name="main.go" />
-    <File name="fuego.yaml" />
+    <File name="nexo.yaml" />
     <File name="go.mod" />
   </Folder>
 </FileTree>
@@ -51,7 +51,7 @@ The `route.go` in `app/api/health/` automatically maps to `GET /api/health`.
 ## Run Development Server
 
 ```bash
-fuego dev
+nexo dev
 ```
 
 Visit [http://localhost:3000](http://localhost:3000)
@@ -68,10 +68,10 @@ Create `app/api/users/route.go`:
 ```go
 package users
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // GET /api/users
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     users := []map[string]any{
         {"id": 1, "name": "Alice"},
         {"id": 2, "name": "Bob"},
@@ -80,12 +80,12 @@ func Get(c *fuego.Context) error {
 }
 
 // POST /api/users
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     var user struct {
         Name string `json:"name"`
     }
     if err := c.Bind(&user); err != nil {
-        return fuego.BadRequest("invalid request body")
+        return nexo.BadRequest("invalid request body")
     }
     return c.JSON(201, map[string]any{
         "id":   3,
@@ -121,12 +121,12 @@ Create `app/api/middleware.go`:
 ```go
 package api
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // Middleware applies to all routes under /api/*
-func Middleware() fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func Middleware() nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             c.SetHeader("X-API-Version", "1.0")
             return next(c)
         }
@@ -143,10 +143,10 @@ Create `app/api/users/_id/route.go`:
 ```go
 package _id
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // GET /api/users/:id
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     id := c.Param("id")
     return c.JSON(200, map[string]any{
         "id":   id,
@@ -155,13 +155,13 @@ func Get(c *fuego.Context) error {
 }
 
 // PUT /api/users/:id
-func Put(c *fuego.Context) error {
+func Put(c *nexo.Context) error {
     id := c.Param("id")
     var input struct {
         Name string `json:"name"`
     }
     if err := c.Bind(&input); err != nil {
-        return fuego.BadRequest("invalid request body")
+        return nexo.BadRequest("invalid request body")
     }
     return c.JSON(200, map[string]any{
         "id":      id,
@@ -171,7 +171,7 @@ func Put(c *fuego.Context) error {
 }
 
 // DELETE /api/users/:id
-func Delete(c *fuego.Context) error {
+func Delete(c *nexo.Context) error {
     id := c.Param("id")
     return c.JSON(200, map[string]string{
         "message": "User " + id + " deleted",
@@ -184,12 +184,12 @@ Now `GET /api/users/123` returns `{"id": "123", "name": "User 123"}`.
 ## View Your Routes
 
 ```bash
-fuego routes
+nexo routes
 ```
 
 Output:
 ```
-  Fuego Routes
+  Nexo Routes
 
   GET     /                             app/page.templ
   GET     /api/health                   app/api/health/route.go
@@ -208,7 +208,7 @@ Output:
 ## Build for Production
 
 ```bash
-fuego build
+nexo build
 ./myapp
 ```
 
@@ -249,7 +249,7 @@ Here's the full structure after adding routes:
       <File name="input.css" />
     </Folder>
     <File name="main.go" />
-    <File name="fuego.yaml" />
+    <File name="nexo.yaml" />
     <File name="go.mod" />
   </Folder>
 </FileTree>

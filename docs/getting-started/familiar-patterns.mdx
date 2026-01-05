@@ -1,13 +1,13 @@
 ---
 title: Familiar Patterns
-description: 'If you know Next.js, Nuxt, or SvelteKit, you already know Fuego.'
+description: 'If you know Next.js, Nuxt, or SvelteKit, you already know Nexo.'
 ---
 
-If you've used modern meta-frameworks like Next.js, Nuxt, SvelteKit, or Remix, Fuego's conventions will feel natural.
+If you've used modern meta-frameworks like Next.js, Nuxt, SvelteKit, or Remix, Nexo's conventions will feel natural.
 
 ## Quick Comparison
 
-| Concept | Other Frameworks | Fuego |
+| Concept | Other Frameworks | Nexo |
 |---------|------------------|-------|
 | Route file | `route.ts` / `+server.ts` | `route.go` |
 | Page file | `page.tsx` / `+page.svelte` | `page.templ` |
@@ -19,41 +19,41 @@ If you've used modern meta-frameworks like Next.js, Nuxt, SvelteKit, or Remix, F
 | Route groups | `(group)` | `_group_name` |
 
 <Info>
-Fuego uses underscores instead of brackets to ensure all directories are valid Go package names. No symlinks or special import handling required!
+Nexo uses underscores instead of brackets to ensure all directories are valid Go package names. No symlinks or special import handling required!
 </Info>
 
 ## Key Differences
 
 ### Handlers Are Named After HTTP Methods
 
-In JavaScript frameworks, you export named functions like `GET`, `POST`, etc. In Fuego, you define functions with capitalized method names:
+In JavaScript frameworks, you export named functions like `GET`, `POST`, etc. In Nexo, you define functions with capitalized method names:
 
 ```go
 // app/api/users/route.go
 package users
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     return c.JSON(200, []string{"alice", "bob"})
 }
 
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     var user User
     if err := c.Bind(&user); err != nil {
-        return fuego.BadRequest("invalid input")
+        return nexo.BadRequest("invalid input")
     }
     return c.JSON(201, user)
 }
 
-func Put(c *fuego.Context) error { /* ... */ }
-func Patch(c *fuego.Context) error { /* ... */ }
-func Delete(c *fuego.Context) error { /* ... */ }
+func Put(c *nexo.Context) error { /* ... */ }
+func Patch(c *nexo.Context) error { /* ... */ }
+func Delete(c *nexo.Context) error { /* ... */ }
 ```
 
 ### Templates Use templ, Not JSX
 
-Instead of JSX/TSX, Fuego uses [templ](https://templ.guide) for type-safe HTML:
+Instead of JSX/TSX, Nexo uses [templ](https://templ.guide) for type-safe HTML:
 
 ```go
 // app/dashboard/page.templ
@@ -75,14 +75,14 @@ Templ provides:
 
 ### No Build Step for Go Code
 
-Unlike JavaScript frameworks that require bundling, Fuego compiles to a single binary:
+Unlike JavaScript frameworks that require bundling, Nexo compiles to a single binary:
 
 ```bash
 # Development
-fuego dev
+nexo dev
 
 # Production
-fuego build
+nexo build
 ./myapp
 ```
 
@@ -90,7 +90,7 @@ The binary includes everything - no need for `node_modules`, npm, or a separate 
 
 ### HTMX Instead of Client-Side Frameworks
 
-For interactivity, Fuego encourages HTMX over React/Vue/Svelte:
+For interactivity, Nexo encourages HTMX over React/Vue/Svelte:
 
 ```html
 <!-- Load data on page load -->
@@ -115,11 +115,11 @@ Benefits:
 
 ### From Next.js App Router
 
-| Next.js | Fuego |
+| Next.js | Nexo |
 |---------|-------|
 | `app/api/users/route.ts` | `app/api/users/route.go` |
-| `export async function GET()` | `func Get(c *fuego.Context) error` |
-| `NextRequest` | `*fuego.Context` |
+| `export async function GET()` | `func Get(c *nexo.Context) error` |
+| `NextRequest` | `*nexo.Context` |
 | `NextResponse.json()` | `c.JSON(status, data)` |
 | `NextResponse.redirect()` | `c.Redirect(status, url)` |
 | `cookies().get()` | `c.Cookie("name")` |
@@ -127,22 +127,22 @@ Benefits:
 
 ### From Nuxt
 
-| Nuxt | Fuego |
+| Nuxt | Nexo |
 |------|-------|
 | `server/api/users.ts` | `app/api/users/route.go` |
-| `defineEventHandler()` | `func Get(c *fuego.Context) error` |
+| `defineEventHandler()` | `func Get(c *nexo.Context) error` |
 | `getQuery(event)` | `c.Query("key")` |
 | `readBody(event)` | `c.Bind(&body)` |
 | `setResponseStatus()` | `c.JSON(status, data)` |
 
 ### From SvelteKit
 
-| SvelteKit | Fuego |
+| SvelteKit | Nexo |
 |-----------|-------|
 | `+server.ts` | `route.go` |
 | `+page.svelte` | `page.templ` |
 | `+layout.svelte` | `layout.templ` |
-| `RequestHandler` | `func Get(c *fuego.Context) error` |
+| `RequestHandler` | `func Get(c *nexo.Context) error` |
 | `json()` helper | `c.JSON(status, data)` |
 
 ## File Structure Comparison
@@ -166,7 +166,7 @@ Benefits:
   </Folder>
 </FileTree>
 
-### Fuego
+### Nexo
 
 <FileTree>
   <Folder name="app" defaultOpen>
@@ -207,22 +207,22 @@ export async function POST(request: NextRequest) {
 }
 ```
   </Tab>
-  <Tab title="Fuego">
+  <Tab title="Nexo">
 ```go
 // app/api/users/route.go
 package users
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     users := db.Users.FindMany()
     return c.JSON(200, users)
 }
 
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     var body CreateUserInput
     if err := c.Bind(&body); err != nil {
-        return fuego.BadRequest("invalid input")
+        return nexo.BadRequest("invalid input")
     }
     user := db.Users.Create(body)
     return c.JSON(201, user)
@@ -233,7 +233,7 @@ func Post(c *fuego.Context) error {
 
 ## Why Go?
 
-If you're comfortable with JavaScript frameworks, why use Fuego?
+If you're comfortable with JavaScript frameworks, why use Nexo?
 
 | Benefit | Description |
 |---------|-------------|

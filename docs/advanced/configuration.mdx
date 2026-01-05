@@ -1,22 +1,22 @@
 ---
 title: Configuration
-description: 'Complete reference for fuego.yaml configuration and environment variables.'
+description: 'Complete reference for nexo.yaml configuration and environment variables.'
 ---
 
-Fuego uses sensible defaults out of the box, but provides extensive configuration options through `fuego.yaml`, environment variables, and programmatic options.
+Nexo uses sensible defaults out of the box, but provides extensive configuration options through `nexo.yaml`, environment variables, and programmatic options.
 
 ## Configuration Priority
 
 Configuration values are resolved in this order (highest to lowest priority):
 
-1. **Programmatic options** - `fuego.New(WithPort("8080"))`
-2. **Environment variables** - `FUEGO_PORT=8080`
-3. **fuego.yaml file** - `port: 8080`
+1. **Programmatic options** - `nexo.New(WithPort("8080"))`
+2. **Environment variables** - `NEXO_PORT=8080`
+3. **nexo.yaml file** - `port: 8080`
 4. **Default values** - `3000`
 
-## fuego.yaml Reference
+## nexo.yaml Reference
 
-Create `fuego.yaml` in your project root:
+Create `nexo.yaml` in your project root:
 
 ```yaml
 # Server configuration
@@ -57,7 +57,7 @@ The port the server listens on.
 |----------|-------|
 | Type | `string` |
 | Default | `"3000"` |
-| Env | `FUEGO_PORT` |
+| Env | `NEXO_PORT` |
 
 ```yaml
 port: "8080"
@@ -71,7 +71,7 @@ The host address to bind to.
 |----------|-------|
 | Type | `string` |
 | Default | `"0.0.0.0"` |
-| Env | `FUEGO_HOST` |
+| Env | `NEXO_HOST` |
 
 ```yaml
 host: "127.0.0.1"  # localhost only
@@ -90,7 +90,7 @@ The directory containing your route files.
 |----------|-------|
 | Type | `string` |
 | Default | `"app"` |
-| Env | `FUEGO_APP_DIR` |
+| Env | `NEXO_APP_DIR` |
 
 ```yaml
 app_dir: src/routes
@@ -104,7 +104,7 @@ The directory containing static files to serve.
 |----------|-------|
 | Type | `string` |
 | Default | `"static"` |
-| Env | `FUEGO_STATIC_DIR` |
+| Env | `NEXO_STATIC_DIR` |
 
 ```yaml
 static_dir: public/assets
@@ -118,7 +118,7 @@ The URL path prefix for static files.
 |----------|-------|
 | Type | `string` |
 | Default | `"/static"` |
-| Env | `FUEGO_STATIC_PATH` |
+| Env | `NEXO_STATIC_PATH` |
 
 ```yaml
 static_path: /assets
@@ -138,7 +138,7 @@ Enable hot reloading during development.
 |----------|-------|
 | Type | `bool` |
 | Default | `true` |
-| Env | `FUEGO_HOT_RELOAD` |
+| Env | `NEXO_HOT_RELOAD` |
 
 ```yaml
 dev:
@@ -193,7 +193,7 @@ Enable the built-in request logger.
 |----------|-------|
 | Type | `bool` |
 | Default | `true` |
-| Env | `FUEGO_LOGGER` |
+| Env | `NEXO_LOGGER` |
 
 ```yaml
 middleware:
@@ -208,7 +208,7 @@ Enable panic recovery middleware.
 |----------|-------|
 | Type | `bool` |
 | Default | `true` |
-| Env | `FUEGO_RECOVER` |
+| Env | `NEXO_RECOVER` |
 
 ```yaml
 middleware:
@@ -219,45 +219,45 @@ middleware:
 
 ## Environment Variables
 
-All configuration options can be set via environment variables with the `FUEGO_` prefix:
+All configuration options can be set via environment variables with the `NEXO_` prefix:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `FUEGO_PORT` | Server port | `3000` |
-| `FUEGO_HOST` | Server host | `0.0.0.0` |
-| `FUEGO_APP_DIR` | App directory | `app` |
-| `FUEGO_STATIC_DIR` | Static files directory | `static` |
-| `FUEGO_STATIC_PATH` | Static URL path | `/static` |
-| `FUEGO_HOT_RELOAD` | Enable hot reload | `true` |
-| `FUEGO_LOGGER` | Enable request logger | `true` |
-| `FUEGO_RECOVER` | Enable panic recovery | `true` |
-| `FUEGO_LOG_LEVEL` | Log level | `info` |
-| `FUEGO_DEV` | Development mode | `false` |
+| `NEXO_PORT` | Server port | `3000` |
+| `NEXO_HOST` | Server host | `0.0.0.0` |
+| `NEXO_APP_DIR` | App directory | `app` |
+| `NEXO_STATIC_DIR` | Static files directory | `static` |
+| `NEXO_STATIC_PATH` | Static URL path | `/static` |
+| `NEXO_HOT_RELOAD` | Enable hot reload | `true` |
+| `NEXO_LOGGER` | Enable request logger | `true` |
+| `NEXO_RECOVER` | Enable panic recovery | `true` |
+| `NEXO_LOG_LEVEL` | Log level | `info` |
+| `NEXO_DEV` | Development mode | `false` |
 | `GO_ENV` | Environment (affects logging) | - |
 
 ### Log Level Configuration
 
-Control logging verbosity with `FUEGO_LOG_LEVEL`:
+Control logging verbosity with `NEXO_LOG_LEVEL`:
 
 ```bash
 # Log everything
-export FUEGO_LOG_LEVEL=debug
+export NEXO_LOG_LEVEL=debug
 
 # Log all requests (default)
-export FUEGO_LOG_LEVEL=info
+export NEXO_LOG_LEVEL=info
 
 # Log only 4xx and 5xx
-export FUEGO_LOG_LEVEL=warn
+export NEXO_LOG_LEVEL=warn
 
 # Log only 5xx errors
-export FUEGO_LOG_LEVEL=error
+export NEXO_LOG_LEVEL=error
 
 # Disable logging
-export FUEGO_LOG_LEVEL=off
+export NEXO_LOG_LEVEL=off
 ```
 
 <Info>
-Setting `FUEGO_DEV=true` automatically sets log level to `debug`.
+Setting `NEXO_DEV=true` automatically sets log level to `debug`.
 Setting `GO_ENV=production` automatically sets log level to `warn`.
 </Info>
 
@@ -268,15 +268,15 @@ Configure your app in code using option functions:
 ```go
 package main
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 func main() {
-    app := fuego.New(
-        fuego.WithPort("8080"),
-        fuego.WithHost("127.0.0.1"),
-        fuego.WithAppDir("src/routes"),
-        fuego.WithStaticDir("public"),
-        fuego.WithStaticPath("/assets"),
+    app := nexo.New(
+        nexo.WithPort("8080"),
+        nexo.WithHost("127.0.0.1"),
+        nexo.WithAppDir("src/routes"),
+        nexo.WithStaticDir("public"),
+        nexo.WithStaticPath("/assets"),
     )
     
     app.Start()
@@ -287,16 +287,16 @@ func main() {
 
 ```go
 // Server options
-fuego.WithPort("8080")           // Set server port
-fuego.WithHost("127.0.0.1")      // Set server host
+nexo.WithPort("8080")           // Set server port
+nexo.WithHost("127.0.0.1")      // Set server host
 
 // Directory options
-fuego.WithAppDir("src/routes")   // Set app directory
-fuego.WithStaticDir("public")    // Set static files directory
-fuego.WithStaticPath("/assets")  // Set static URL path
+nexo.WithAppDir("src/routes")   // Set app directory
+nexo.WithStaticDir("public")    // Set static files directory
+nexo.WithStaticPath("/assets")  // Set static URL path
 
 // Load from config file
-fuego.WithConfig("custom.yaml")  // Load specific config file
+nexo.WithConfig("custom.yaml")  // Load specific config file
 ```
 
 ## Configuration Examples
@@ -304,7 +304,7 @@ fuego.WithConfig("custom.yaml")  // Load specific config file
 ### Development Setup
 
 ```yaml
-# fuego.yaml - Development
+# nexo.yaml - Development
 port: 3000
 host: 127.0.0.1
 
@@ -323,7 +323,7 @@ middleware:
 ### Production Setup
 
 ```yaml
-# fuego.yaml - Production
+# nexo.yaml - Production
 port: 8080
 host: 0.0.0.0
 
@@ -338,8 +338,8 @@ middleware:
 With environment variables:
 
 ```bash
-export FUEGO_PORT=8080
-export FUEGO_LOG_LEVEL=warn
+export NEXO_PORT=8080
+export NEXO_LOG_LEVEL=warn
 export GO_ENV=production
 ```
 
@@ -354,11 +354,11 @@ RUN go build -o main ./cmd/myapp
 FROM alpine:latest
 WORKDIR /app
 COPY --from=builder /app/main .
-COPY --from=builder /app/fuego.yaml .
+COPY --from=builder /app/nexo.yaml .
 COPY --from=builder /app/static ./static
 
-ENV FUEGO_PORT=8080
-ENV FUEGO_HOST=0.0.0.0
+ENV NEXO_PORT=8080
+ENV NEXO_HOST=0.0.0.0
 ENV GO_ENV=production
 
 EXPOSE 8080
@@ -371,9 +371,9 @@ CMD ["./main"]
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: fuego-config
+  name: nexo-config
 data:
-  fuego.yaml: |
+  nexo.yaml: |
     port: 8080
     host: 0.0.0.0
     middleware:
@@ -392,16 +392,16 @@ spec:
           env:
             - name: GO_ENV
               value: production
-            - name: FUEGO_LOG_LEVEL
+            - name: NEXO_LOG_LEVEL
               value: warn
           volumeMounts:
             - name: config
-              mountPath: /app/fuego.yaml
-              subPath: fuego.yaml
+              mountPath: /app/nexo.yaml
+              subPath: nexo.yaml
       volumes:
         - name: config
           configMap:
-            name: fuego-config
+            name: nexo-config
 ```
 
 ## Accessing Configuration at Runtime
@@ -409,7 +409,7 @@ spec:
 Access the current configuration from your app:
 
 ```go
-app := fuego.New()
+app := nexo.New()
 
 // Get the full config
 config := app.Config()
@@ -425,16 +425,16 @@ addr := config.Address()  // "0.0.0.0:3000"
 Configure the request logger programmatically:
 
 ```go
-app := fuego.New()
+app := nexo.New()
 
 // Configure logger with options
-app.SetLogger(fuego.RequestLoggerConfig{
+app.SetLogger(nexo.RequestLoggerConfig{
     ShowIP:        true,   // Show client IP address
     ShowUserAgent: true,   // Show user agent string
     ShowSize:      true,   // Show response size
     SkipStatic:    true,   // Don't log static file requests
     SkipPaths:     []string{"/health", "/ready", "/metrics"},
-    Level:         fuego.LogLevelInfo,
+    Level:         nexo.LogLevelInfo,
 })
 
 // Disable logger entirely
@@ -463,7 +463,7 @@ With `ShowIP` and `ShowUserAgent`:
 
 ## Validation
 
-Fuego validates configuration at startup:
+Nexo validates configuration at startup:
 
 ```go
 config := app.Config()
@@ -479,7 +479,7 @@ Validation checks:
 - App directory exists (if specified)
 
 <Warning>
-If the `app_dir` doesn't exist, Fuego will fail to start. Make sure the directory exists before running your application.
+If the `app_dir` doesn't exist, Nexo will fail to start. Make sure the directory exists before running your application.
 </Warning>
 
 ## Best Practices
@@ -488,16 +488,16 @@ If the `app_dir` doesn't exist, Fuego will fail to start. Make sure the director
   <Accordion title="Use environment variables in production">
 Don't commit production secrets or configuration to git. Use environment variables for deployment-specific settings.
   </Accordion>
-  <Accordion title="Keep fuego.yaml for development defaults">
-Use `fuego.yaml` for sensible development defaults that all team members can share.
+  <Accordion title="Keep nexo.yaml for development defaults">
+Use `nexo.yaml` for sensible development defaults that all team members can share.
   </Accordion>
   <Accordion title="Override per environment">
 ```bash
 # Development
-fuego dev
+nexo dev
 
 # Production
-FUEGO_PORT=8080 GO_ENV=production ./myapp
+NEXO_PORT=8080 GO_ENV=production ./myapp
 ```
   </Accordion>
   <Accordion title="Validate early">
@@ -517,7 +517,7 @@ if err := app.Config().Validate(); err != nil {
     Get your first app running
   </Card>
   <Card title="Deployment" icon="cloud" href="/docs/guides/deployment">
-    Deploy your Fuego app
+    Deploy your Nexo app
   </Card>
   <Card title="Middleware" icon="layer-group" href="/docs/middleware/overview">
     Configure middleware behavior

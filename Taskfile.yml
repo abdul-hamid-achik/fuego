@@ -1,4 +1,4 @@
-# Taskfile for Fuego
+# Taskfile for Nexo
 # https://taskfile.dev
 #
 # Usage:
@@ -10,7 +10,7 @@
 version: '3'
 
 vars:
-  BINARY: fuego
+  BINARY: nexo
   VERSION:
     sh: git describe --tags --always --dirty 2>/dev/null || echo "dev"
 
@@ -24,7 +24,7 @@ tasks:
     desc: Build the CLI binary
     cmds:
       - echo "Building {{.BINARY}}..."
-      - go build -ldflags "-X github.com/abdul-hamid-achik/fuego/internal/version.Version={{.VERSION}}" -o bin/{{.BINARY}} ./cmd/fuego
+      - go build -ldflags "-X github.com/abdul-hamid-achik/nexo/internal/version.Version={{.VERSION}}" -o bin/{{.BINARY}} ./cmd/nexo
       - echo "Done bin/{{.BINARY}}"
     sources:
       - "**/*.go"
@@ -33,7 +33,7 @@ tasks:
     desc: Install the CLI globally
     cmds:
       - echo "Installing {{.BINARY}}..."
-      - go install -ldflags "-X github.com/abdul-hamid-achik/fuego/internal/version.Version={{.VERSION}}" ./cmd/fuego
+      - go install -ldflags "-X github.com/abdul-hamid-achik/nexo/internal/version.Version={{.VERSION}}" ./cmd/nexo
       - echo "Done {{.BINARY}} installed"
 
   test:
@@ -88,7 +88,7 @@ tasks:
   dev:
     desc: Run development server
     cmds:
-      - go run ./cmd/fuego dev
+      - go run ./cmd/nexo dev
 
   clean:
     desc: Remove build artifacts
@@ -104,11 +104,11 @@ tasks:
     cmds:
       - task clean
       - echo "Building for all platforms..."
-      - GOOS=darwin GOARCH=amd64 go build -ldflags "-X github.com/abdul-hamid-achik/fuego/internal/version.Version={{.VERSION}}" -o dist/{{.BINARY}}-darwin-amd64 ./cmd/fuego
-      - GOOS=darwin GOARCH=arm64 go build -ldflags "-X github.com/abdul-hamid-achik/fuego/internal/version.Version={{.VERSION}}" -o dist/{{.BINARY}}-darwin-arm64 ./cmd/fuego
-      - GOOS=linux GOARCH=amd64 go build -ldflags "-X github.com/abdul-hamid-achik/fuego/internal/version.Version={{.VERSION}}" -o dist/{{.BINARY}}-linux-amd64 ./cmd/fuego
-      - GOOS=linux GOARCH=arm64 go build -ldflags "-X github.com/abdul-hamid-achik/fuego/internal/version.Version={{.VERSION}}" -o dist/{{.BINARY}}-linux-arm64 ./cmd/fuego
-      - GOOS=windows GOARCH=amd64 go build -ldflags "-X github.com/abdul-hamid-achik/fuego/internal/version.Version={{.VERSION}}" -o dist/{{.BINARY}}-windows-amd64.exe ./cmd/fuego
+      - GOOS=darwin GOARCH=amd64 go build -ldflags "-X github.com/abdul-hamid-achik/nexo/internal/version.Version={{.VERSION}}" -o dist/{{.BINARY}}-darwin-amd64 ./cmd/nexo
+      - GOOS=darwin GOARCH=arm64 go build -ldflags "-X github.com/abdul-hamid-achik/nexo/internal/version.Version={{.VERSION}}" -o dist/{{.BINARY}}-darwin-arm64 ./cmd/nexo
+      - GOOS=linux GOARCH=amd64 go build -ldflags "-X github.com/abdul-hamid-achik/nexo/internal/version.Version={{.VERSION}}" -o dist/{{.BINARY}}-linux-amd64 ./cmd/nexo
+      - GOOS=linux GOARCH=arm64 go build -ldflags "-X github.com/abdul-hamid-achik/nexo/internal/version.Version={{.VERSION}}" -o dist/{{.BINARY}}-linux-arm64 ./cmd/nexo
+      - GOOS=windows GOARCH=amd64 go build -ldflags "-X github.com/abdul-hamid-achik/nexo/internal/version.Version={{.VERSION}}" -o dist/{{.BINARY}}-windows-amd64.exe ./cmd/nexo
       - echo "Done binaries in dist/"
 
   release-snapshot:
@@ -119,9 +119,9 @@ tasks:
   routes:
     desc: List all routes in the app directory
     cmds:
-      - go run ./cmd/fuego routes
+      - go run ./cmd/nexo routes
 
   new:
-    desc: Create a new Fuego project
+    desc: Create a new Nexo project
     cmds:
-      - go run ./cmd/fuego new {{.CLI_ARGS}}
+      - go run ./cmd/nexo new {{.CLI_ARGS}}

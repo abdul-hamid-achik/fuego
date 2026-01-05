@@ -1,4 +1,4 @@
-// Package version provides version information for the Fuego CLI.
+// Package version provides version information for the Nexo CLI.
 package version
 
 // Version is set via ldflags during build.

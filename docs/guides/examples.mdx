@@ -3,7 +3,7 @@ title: Examples
 description: 'Complete working examples covering APIs, dynamic routes, full-stack applications, middleware, and proxy patterns.'
 ---
 
-This guide provides comprehensive, production-ready examples for building applications with Fuego. Each example is complete and can be used as a starting point for your projects.
+This guide provides comprehensive, production-ready examples for building applications with Nexo. Each example is complete and can be used as a starting point for your projects.
 
 ## Overview
 
@@ -68,11 +68,11 @@ package main
 import (
     "log"
     
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 func main() {
-    app := fuego.New()
+    app := nexo.New()
     
     log.Println("Starting server on :8080")
     if err := app.Start(":8080"); err != nil {
@@ -90,13 +90,13 @@ package api
 import (
     "time"
     
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // Middleware adds common headers and timing to all API routes.
-func Middleware() fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func Middleware() nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             // Add API version header
             c.SetHeader("X-API-Version", "1.0.0")
             
@@ -121,7 +121,7 @@ import (
     "runtime"
     "time"
     
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 var startTime = time.Now()
@@ -135,7 +135,7 @@ type HealthResponse struct {
 }
 
 // GET /api/health
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     return c.JSON(200, HealthResponse{
         Status:    "healthy",
         Uptime:    time.Since(startTime).String(),
@@ -256,11 +256,11 @@ package users
 
 import (
     "myapp/internal/store"
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // GET /api/users - List all users
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     users := store.Default.List()
     return c.JSON(200, map[string]any{
         "users": users,
@@ -269,7 +269,7 @@ func Get(c *fuego.Context) error {
 }
 
 // POST /api/users - Create a new user
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     var input struct {
         Name  string `json:"name"`
         Email string `json:"email"`
@@ -353,11 +353,11 @@ package _id
 
 import (
     "myapp/internal/store"
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // GET /api/users/:id - Get a user by ID
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     id := c.ParamInt("id", 0)
     if id == 0 {
         return c.JSON(400, map[string]string{"error": "invalid user id"})
@@ -372,7 +372,7 @@ func Get(c *fuego.Context) error {
 }
 
 // PUT /api/users/:id - Update a user
-func Put(c *fuego.Context) error {
+func Put(c *nexo.Context) error {
     id := c.ParamInt("id", 0)
     
     var input struct {
@@ -393,7 +393,7 @@ func Put(c *fuego.Context) error {
 }
 
 // DELETE /api/users/:id - Delete a user
-func Delete(c *fuego.Context) error {
+func Delete(c *nexo.Context) error {
     id := c.ParamInt("id", 0)
     
     if err := store.Default.Delete(id); err != nil {
@@ -413,14 +413,14 @@ package __slug
 import (
     "strings"
     
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // GET /api/posts/* - Catch-all route for blog posts
 // Examples:
 //   /api/posts/2024/01/hello-world → slug = "2024/01/hello-world"
 //   /api/posts/tech/go/tips       → slug = "tech/go/tips"
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     slug := c.Param("slug")
     segments := c.ParamAll("slug") // Split by "/"
     
@@ -439,7 +439,7 @@ func Get(c *fuego.Context) error {
 package ___path
 
 import (
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // Documentation structure
@@ -456,7 +456,7 @@ var docs = map[string]string{
 //   /api/docs                    → path = ""
 //   /api/docs/getting-started    → path = "getting-started"
 //   /api/docs/api/users          → path = "api/users"
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     path := c.Param("path")
     
     content, ok := docs[path]
@@ -491,10 +491,10 @@ func getDocSections() []string {
 // app/api/_group_admin/settings/route.go
 package settings
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // GET /api/settings - The _group_admin group doesn't affect the URL
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     return c.JSON(200, map[string]any{
         "theme":          "dark",
         "notifications":  true,
@@ -504,7 +504,7 @@ func Get(c *fuego.Context) error {
 }
 
 // PUT /api/settings
-func Put(c *fuego.Context) error {
+func Put(c *nexo.Context) error {
     var settings map[string]any
     if err := c.Bind(&settings); err != nil {
         return c.JSON(400, map[string]string{"error": "invalid settings"})
@@ -521,10 +521,10 @@ func Put(c *fuego.Context) error {
 // app/api/_group_admin/dashboard/route.go
 package dashboard
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // GET /api/dashboard - Admin dashboard data
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     return c.JSON(200, map[string]any{
         "total_users":    1234,
         "active_users":   567,
@@ -598,7 +598,7 @@ templ Layout(title string) {
     <head>
         <meta charset="UTF-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-        <title>{ title } - Fuego App</title>
+        <title>{ title } - Nexo App</title>
         <link rel="stylesheet" href="/docs/static/css/output.css"/>
         <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     </head>
@@ -608,7 +608,7 @@ templ Layout(title string) {
                 <div class="flex justify-between h-16">
                     <div class="flex">
                         <a href="/docs/" class="flex items-center px-2 text-xl font-bold text-orange-600">
-                            Fuego
+                            Nexo
                         </a>
                         <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
                             <a href="/docs/" class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900">
@@ -640,7 +640,7 @@ templ Page() {
     <div class="px-4 py-5 sm:p-6">
         <div class="text-center">
             <h1 class="text-4xl font-bold text-gray-900 mb-4">
-                Welcome to Fuego
+                Welcome to Nexo
             </h1>
             <p class="text-xl text-gray-600 mb-8">
                 A file-system based Go framework with templ, Tailwind CSS, and HTMX
@@ -752,7 +752,7 @@ type TaskStore struct {
 
 var Default = &TaskStore{
     tasks: []Task{
-        {ID: 1, Title: "Learn Fuego", Completed: true},
+        {ID: 1, Title: "Learn Nexo", Completed: true},
         {ID: 2, Title: "Build an app", Completed: false},
         {ID: 3, Title: "Deploy to production", Completed: false},
     },
@@ -860,16 +860,16 @@ package tasks
 
 import (
     "myapp/internal/tasks"
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // GET /api/tasks - Returns task list as HTML for HTMX
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     return c.HTML(200, tasks.Default.RenderHTML())
 }
 
 // POST /api/tasks - Add a new task
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     title := c.FormValue("title")
     if title == "" {
         return c.HTML(400, `<p class="text-red-500">Task title is required</p>`)
@@ -880,7 +880,7 @@ func Post(c *fuego.Context) error {
 }
 
 // DELETE /api/tasks - Delete a task
-func Delete(c *fuego.Context) error {
+func Delete(c *nexo.Context) error {
     id := c.QueryInt("id", 0)
     if id == 0 {
         return c.HTML(400, `<p class="text-red-500">Task ID is required</p>`)
@@ -897,11 +897,11 @@ package toggle
 
 import (
     "myapp/internal/tasks"
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // POST /api/tasks/toggle - Toggle task completion
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     id := c.QueryInt("id", 0)
     if id == 0 {
         return c.HTML(400, `<p class="text-red-500">Task ID is required</p>`)
@@ -941,8 +941,8 @@ func Post(c *fuego.Context) error {
 Build Tailwind:
 
 ```bash
-fuego tailwind build  # For production (minified)
-fuego tailwind watch  # For development
+nexo tailwind build  # For production (minified)
+nexo tailwind watch  # For development
 ```
 
 ---
@@ -988,13 +988,13 @@ Comprehensive middleware examples for logging, timing, authentication, and more.
 package app
 
 import (
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // Middleware applies to ALL routes in the app.
-func Middleware() fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func Middleware() nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             // Add security headers to all responses
             c.SetHeader("X-Content-Type-Options", "nosniff")
             c.SetHeader("X-Frame-Options", "DENY")
@@ -1015,13 +1015,13 @@ package api
 import (
     "time"
     
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // Middleware applies to all routes under /api/*.
-func Middleware() fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func Middleware() nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             // Add API version header
             c.SetHeader("X-API-Version", "1.0.0")
             
@@ -1046,13 +1046,13 @@ import (
     "fmt"
     "strings"
     
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // JWTMiddleware validates Bearer tokens.
-func JWTMiddleware() fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func JWTMiddleware() nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             authHeader := c.Header("Authorization")
             if authHeader == "" {
                 return c.JSON(401, map[string]any{
@@ -1091,9 +1091,9 @@ func JWTMiddleware() fuego.MiddlewareFunc {
 }
 
 // RequireRole creates middleware that checks for specific roles.
-func RequireRole(roles ...string) fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func RequireRole(roles ...string) nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             userRole := c.GetString("user_role")
             
             for _, role := range roles {
@@ -1138,11 +1138,11 @@ package protected
 import (
     "myapp/internal/auth"
     
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // Middleware requires authentication for all protected routes.
-func Middleware() fuego.MiddlewareFunc {
+func Middleware() nexo.MiddlewareFunc {
     return auth.JWTMiddleware()
 }
 ```
@@ -1151,10 +1151,10 @@ func Middleware() fuego.MiddlewareFunc {
 // app/api/protected/route.go
 package protected
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // GET /api/protected - Returns user profile
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     return c.JSON(200, map[string]any{
         "user_id": c.GetString("user_id"),
         "email":   c.GetString("user_email"),
@@ -1173,11 +1173,11 @@ package admin
 import "myapp/internal/auth"
 
 // Middleware chains JWT auth + admin role requirement.
-func Middleware() fuego.MiddlewareFunc {
+func Middleware() nexo.MiddlewareFunc {
     jwtMiddleware := auth.JWTMiddleware()
     adminMiddleware := auth.RequireRole("admin")
     
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
         // Chain: JWT validation → Role check → Handler
         return jwtMiddleware(adminMiddleware(next))
     }
@@ -1188,10 +1188,10 @@ func Middleware() fuego.MiddlewareFunc {
 // app/api/admin/route.go
 package admin
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // GET /api/admin - Admin-only endpoint
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     return c.JSON(200, map[string]any{
         "message": "Welcome, admin!",
         "admin_data": map[string]any{
@@ -1264,11 +1264,11 @@ import (
     "sync"
     "time"
     
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // ProxyConfig limits which paths run through the proxy
-var ProxyConfig = &fuego.ProxyConfig{
+var ProxyConfig = &nexo.ProxyConfig{
     Matcher: []string{
         "/api/:path*",    // All API routes
         "/v1/:path*",     // Legacy API routes
@@ -1280,12 +1280,12 @@ var ProxyConfig = &fuego.ProxyConfig{
 var rateLimiter = newRateLimiter(100, time.Minute)
 
 // Proxy handles request interception before routing.
-func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
     path := c.Path()
     
     // 1. Maintenance Mode
     if isMaintenanceMode() && !strings.HasPrefix(path, "/api/health") {
-        return fuego.ResponseHTML(503, `
+        return nexo.ResponseHTML(503, `
             <!DOCTYPE html>
             <html>
             <head><title>Maintenance</title></head>
@@ -1300,7 +1300,7 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
     // 2. Rate Limiting
     clientIP := c.ClientIP()
     if !rateLimiter.Allow(clientIP) {
-        return fuego.ResponseJSON(429, `{
+        return nexo.ResponseJSON(429, `{
             "error": "too_many_requests",
             "message": "Rate limit exceeded. Please try again later.",
             "retry_after": 60
@@ -1310,7 +1310,7 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
     // 3. Legacy URL Rewriting: /v1/* -> /api/*
     if strings.HasPrefix(path, "/v1/") {
         newPath := strings.Replace(path, "/v1/", "/api/", 1)
-        return fuego.Rewrite(newPath).
+        return nexo.Rewrite(newPath).
             WithHeader("X-Deprecated", "true").
             WithHeader("X-Migrate-To", newPath), nil
     }
@@ -1319,7 +1319,7 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
     if strings.HasPrefix(path, "/admin") || strings.HasPrefix(path, "/api/admin") {
         authHeader := c.Header("Authorization")
         if authHeader == "" {
-            return fuego.ResponseJSON(401, `{
+            return nexo.ResponseJSON(401, `{
                 "error": "unauthorized",
                 "message": "Authentication required"
             }`), nil
@@ -1327,7 +1327,7 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
         
         // Simple token check (use real JWT validation in production)
         if !strings.HasPrefix(authHeader, "Bearer admin-") {
-            return fuego.ResponseJSON(403, `{
+            return nexo.ResponseJSON(403, `{
                 "error": "forbidden",
                 "message": "Admin access required"
             }`), nil
@@ -1335,7 +1335,7 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
     }
     
     // 5. Add tracking headers
-    return fuego.Continue().
+    return nexo.Continue().
         WithHeader("X-Request-ID", generateRequestID()).
         WithHeader("X-Proxy-Time", time.Now().Format(time.RFC3339)), nil
 }
@@ -1396,7 +1396,7 @@ func (l *simpleLimiter) Allow(key string) bool {
 
 ```go
 // app/proxy.go
-func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
     path := c.Path()
     
     // A/B testing for pricing page
@@ -1413,15 +1413,15 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
         }
         
         if variant == "B" {
-            return fuego.Rewrite("/pricing-new").
+            return nexo.Rewrite("/pricing-new").
                 WithHeader("X-AB-Variant", "B"), nil
         }
         
-        return fuego.Continue().
+        return nexo.Continue().
             WithHeader("X-AB-Variant", "A"), nil
     }
     
-    return fuego.Continue(), nil
+    return nexo.Continue(), nil
 }
 ```
 
@@ -1429,7 +1429,7 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
 
 ```go
 // app/proxy.go
-func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
     // Get country from Cloudflare/CDN header
     country := c.Header("CF-IPCountry")
     if country == "" {
@@ -1440,7 +1440,7 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
     
     // Route EU users to GDPR-compliant endpoints
     if isEUCountry(country) && strings.HasPrefix(path, "/api/") {
-        return fuego.Rewrite("/api/eu" + strings.TrimPrefix(path, "/api")).
+        return nexo.Rewrite("/api/eu" + strings.TrimPrefix(path, "/api")).
             WithHeader("X-Region", "EU"), nil
     }
     
@@ -1448,15 +1448,15 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
     if path == "/" {
         switch country {
         case "DE":
-            return fuego.Redirect("/de", 302), nil
+            return nexo.Redirect("/de", 302), nil
         case "FR":
-            return fuego.Redirect("/fr", 302), nil
+            return nexo.Redirect("/fr", 302), nil
         case "ES":
-            return fuego.Redirect("/es", 302), nil
+            return nexo.Redirect("/es", 302), nil
         }
     }
     
-    return fuego.Continue(), nil
+    return nexo.Continue(), nil
 }
 
 func isEUCountry(code string) bool {
@@ -1534,11 +1534,11 @@ import (
     "fmt"
     "time"
     
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // GET /api/events - Stream events to client
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     sse, err := c.SSE()
     if err != nil {
         return err
@@ -1586,11 +1586,11 @@ import (
     "os"
     "time"
     
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // GET /api/logs - Stream log file in real-time
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     sse, err := c.SSE()
     if err != nil {
         return err
@@ -1640,11 +1640,11 @@ package progress
 import (
     "time"
     
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // GET /api/progress - Stream task progress
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     sse, err := c.SSE()
     if err != nil {
         return err
@@ -1791,7 +1791,7 @@ HTMX has built-in SSE support:
   <Accordion title="Error Handling">
     - Return proper HTTP status codes
     - Include error messages in responses
-    - Use `fuego.BadRequest()`, `fuego.Unauthorized()`, etc.
+    - Use `nexo.BadRequest()`, `nexo.Unauthorized()`, etc.
     - Log errors server-side, return safe messages to clients
   </Accordion>
   <Accordion title="Middleware">

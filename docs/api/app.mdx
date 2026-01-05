@@ -3,20 +3,20 @@ title: App
 description: 'Application struct and lifecycle methods'
 ---
 
-The `App` struct is the core of a Fuego application. It manages routing, middleware, server lifecycle, and configuration.
+The `App` struct is the core of a Nexo application. It manages routing, middleware, server lifecycle, and configuration.
 
 ## Creating an App
 
 ```go
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // Basic app with defaults
-app := fuego.New()
+app := nexo.New()
 
 // App with options
-app := fuego.New(
-    fuego.WithAppDir("routes"),
-    fuego.WithStaticDir("public"),
+app := nexo.New(
+    nexo.WithAppDir("routes"),
+    nexo.WithStaticDir("public"),
 )
 ```
 
@@ -41,7 +41,7 @@ When using file-based routing (the default), you typically don't need to manuall
     Register a GET route handler.
 
     ```go
-    app.Get("/users", func(c *fuego.Context) error {
+    app.Get("/users", func(c *nexo.Context) error {
         return c.JSON(200, users)
     })
     ```
@@ -55,10 +55,10 @@ When using file-based routing (the default), you typically don't need to manuall
     Register a POST route handler.
 
     ```go
-    app.Post("/users", func(c *fuego.Context) error {
+    app.Post("/users", func(c *nexo.Context) error {
         var user User
         if err := c.Bind(&user); err != nil {
-            return fuego.BadRequest("invalid body")
+            return nexo.BadRequest("invalid body")
         }
         return c.JSON(201, user)
     })
@@ -89,7 +89,7 @@ When using file-based routing (the default), you typically don't need to manuall
     Register a DELETE route handler.
 
     ```go
-    app.Delete("/users/{id}", func(c *fuego.Context) error {
+    app.Delete("/users/{id}", func(c *nexo.Context) error {
         id := c.Param("id")
         // Delete user...
         return c.NoContent()
@@ -137,9 +137,9 @@ When using file-based routing (the default), you typically don't need to manuall
     Add global middleware that applies to all routes.
 
     ```go
-    app.Use(fuego.Logger())
-    app.Use(fuego.Recover())
-    app.Use(fuego.CORS())
+    app.Use(nexo.Logger())
+    app.Use(nexo.Recover())
+    app.Use(nexo.CORS())
     ```
 
     <Tip>
@@ -155,14 +155,14 @@ When using file-based routing (the default), you typically don't need to manuall
     Create a route group with shared middleware and path prefix.
 
     ```go
-    app.Group("/api", func(api *fuego.RouteGroup) {
+    app.Group("/api", func(api *nexo.RouteGroup) {
         api.Use(authMiddleware)
         
         api.Get("/users", listUsers)
         api.Post("/users", createUser)
         
         // Nested group
-        api.Group("/admin", func(admin *fuego.RouteGroup) {
+        api.Group("/admin", func(admin *nexo.RouteGroup) {
             admin.Use(adminOnlyMiddleware)
             admin.Get("/stats", getStats)
         })
@@ -349,8 +349,8 @@ When using file-based routing (the default), you typically don't need to manuall
     Configure the request logger with custom settings.
 
     ```go
-    app.SetLogger(fuego.RequestLoggerConfig{
-        Level:         fuego.LogLevelInfo,
+    app.SetLogger(nexo.RequestLoggerConfig{
+        Level:         nexo.LogLevelInfo,
         ShowIP:        true,
         ShowUserAgent: true,
         SkipPaths:     []string{"/health", "/metrics"},
@@ -392,12 +392,12 @@ When using file-based routing (the default), you typically don't need to manuall
     Set a proxy function for request interception.
 
     ```go
-    app.SetProxy(func(c *fuego.Context) (*fuego.ProxyResult, error) {
+    app.SetProxy(func(c *nexo.Context) (*nexo.ProxyResult, error) {
         if c.Header("X-API-Key") == "" {
-            return fuego.ResponseJSON(401, `{"error":"unauthorized"}`), nil
+            return nexo.ResponseJSON(401, `{"error":"unauthorized"}`), nil
         }
-        return fuego.Continue(), nil
-    }, &fuego.ProxyConfig{
+        return nexo.Continue(), nil
+    }, &nexo.ProxyConfig{
         Matchers: []string{"/api/*"},
         Excludes: []string{"/api/health"},
     })
@@ -441,10 +441,10 @@ type RouteGroup struct {
 ### Example
 
 ```go
-app.Group("/api/v1", func(v1 *fuego.RouteGroup) {
-    v1.Use(fuego.Logger())
+app.Group("/api/v1", func(v1 *nexo.RouteGroup) {
+    v1.Use(nexo.Logger())
     
-    v1.Group("/users", func(users *fuego.RouteGroup) {
+    v1.Group("/users", func(users *nexo.RouteGroup) {
         users.Get("/", listUsers)           // GET /api/v1/users
         users.Post("/", createUser)         // POST /api/v1/users
         users.Get("/{id}", getUser)         // GET /api/v1/users/{id}
@@ -452,7 +452,7 @@ app.Group("/api/v1", func(v1 *fuego.RouteGroup) {
         users.Delete("/{id}", deleteUser)   // DELETE /api/v1/users/{id}
     })
     
-    v1.Group("/posts", func(posts *fuego.RouteGroup) {
+    v1.Group("/posts", func(posts *nexo.RouteGroup) {
         posts.Get("/", listPosts)
         posts.Post("/", createPost)
     })
@@ -474,27 +474,27 @@ import (
     "syscall"
     "time"
 
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 func main() {
-    app := fuego.New(
-        fuego.WithAppDir("app"),
-        fuego.WithStaticDir("static"),
+    app := nexo.New(
+        nexo.WithAppDir("app"),
+        nexo.WithStaticDir("static"),
     )
 
     // Global middleware
-    app.Use(fuego.Logger())
-    app.Use(fuego.Recover())
-    app.Use(fuego.RequestID())
-    app.Use(fuego.CORS())
+    app.Use(nexo.Logger())
+    app.Use(nexo.Recover())
+    app.Use(nexo.RequestID())
+    app.Use(nexo.CORS())
 
     // Serve static files
     app.Static("/static", "static")
 
     // API routes
-    app.Group("/api", func(api *fuego.RouteGroup) {
-        api.Get("/health", func(c *fuego.Context) error {
+    app.Group("/api", func(api *nexo.RouteGroup) {
+        api.Get("/health", func(c *nexo.Context) error {
             return c.JSON(200, map[string]string{"status": "ok"})
         })
     })

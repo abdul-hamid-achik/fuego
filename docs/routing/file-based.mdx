@@ -3,7 +3,7 @@ title: File-Based Routing
 description: 'Your file structure defines your routes. No configuration required.'
 ---
 
-Fuego uses a file-system based router inspired by Next.js App Router. Your file structure defines your routes.
+Nexo uses a file-system based router inspired by Next.js App Router. Your file structure defines your routes.
 
 ## Basic Routing
 
@@ -35,47 +35,47 @@ Export functions named after HTTP methods:
 ```go
 package users
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // GET /api/users
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     return c.JSON(200, []string{"alice", "bob"})
 }
 
 // POST /api/users
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     return c.JSON(201, map[string]string{"status": "created"})
 }
 
 // PUT /api/users
-func Put(c *fuego.Context) error {
+func Put(c *nexo.Context) error {
     return c.JSON(200, map[string]string{"status": "updated"})
 }
 
 // PATCH /api/users
-func Patch(c *fuego.Context) error {
+func Patch(c *nexo.Context) error {
     return c.JSON(200, map[string]string{"status": "patched"})
 }
 
 // DELETE /api/users
-func Delete(c *fuego.Context) error {
+func Delete(c *nexo.Context) error {
     return c.NoContent()
 }
 
 // HEAD /api/users
-func Head(c *fuego.Context) error {
+func Head(c *nexo.Context) error {
     return c.NoContent()
 }
 
 // OPTIONS /api/users
-func Options(c *fuego.Context) error {
+func Options(c *nexo.Context) error {
     c.SetHeader("Allow", "GET, POST, PUT, PATCH, DELETE")
     return c.NoContent()
 }
 ```
 
 <Info>
-All handlers must have the signature `func(c *fuego.Context) error`. Invalid signatures are skipped with a warning.
+All handlers must have the signature `func(c *nexo.Context) error`. Invalid signatures are skipped with a warning.
 </Info>
 
 ## Dynamic Routes
@@ -102,10 +102,10 @@ This creates:
 ```go
 package _id
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // GET /api/users/:id
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     id := c.Param("id")
     return c.JSON(200, map[string]string{"id": id})
 }
@@ -136,7 +136,7 @@ The underscore convention ensures all directories are valid Go package names. No
 Maps to `/api/orgs/:orgId/teams/:teamId`
 
 ```go
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     orgId := c.Param("orgId")
     teamId := c.Param("teamId")
     return c.JSON(200, map[string]string{
@@ -165,7 +165,7 @@ Use `__param` (double underscore) for catch-all routes:
 Maps to `/api/docs/*`
 
 ```go
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     // /api/docs/api/users/create → slug = "api/users/create"
     slug := c.Param("slug")
     segments := strings.Split(slug, "/")
@@ -371,12 +371,12 @@ GET /docs/anything  → matches /docs/* (catch-all)
 Use the CLI to list all routes:
 
 ```bash
-fuego routes
+nexo routes
 ```
 
 Output:
 ```
-  Fuego Routes
+  Nexo Routes
 
   GET     /                             app/route.go
   GET     /api/health                   app/api/health/route.go
@@ -390,7 +390,7 @@ Output:
 Add `--json` for machine-readable output:
 
 ```bash
-fuego routes --json
+nexo routes --json
 ```
 
 ## Handler Signature
@@ -398,7 +398,7 @@ fuego routes --json
 All handlers must have this signature:
 
 ```go
-func HandlerName(c *fuego.Context) error
+func HandlerName(c *nexo.Context) error
 ```
 
 <Warning>
@@ -448,7 +448,7 @@ Routes created:
 
 ## File Precedence Rules
 
-When multiple files exist in the same directory, Fuego follows these precedence rules:
+When multiple files exist in the same directory, Nexo follows these precedence rules:
 
 ### page.templ + route.go
 
@@ -481,14 +481,14 @@ The cleanest pattern for pages that need server-side data is the **loader patter
 ```go
 package dashboard
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 type DashboardData struct {
     UserName string
     Stats    Stats
 }
 
-func Loader(c *fuego.Context) (DashboardData, error) {
+func Loader(c *nexo.Context) (DashboardData, error) {
     // Fetch from database, API, etc.
     return DashboardData{
         UserName: "Alice",
@@ -506,22 +506,22 @@ templ Page(data DashboardData) {
 }
 ```
 
-Fuego automatically wires them together:
+Nexo automatically wires them together:
 ```go
 // Generated code:
-app.Get("/dashboard", func(c *fuego.Context) error {
+app.Get("/dashboard", func(c *nexo.Context) error {
     data, err := dashboard.Loader(c)
     if err != nil {
         return err
     }
-    return fuego.TemplComponent(c, 200, dashboard.Page(data))
+    return nexo.TemplComponent(c, 200, dashboard.Page(data))
 })
 ```
 
 Generate a loader with:
 ```bash
-fuego generate loader dashboard
-fuego generate loader users/_id --data-type UserDetailData  # For /users/:id route
+nexo generate loader dashboard
+nexo generate loader users/_id --data-type UserDetailData  # For /users/:id route
 ```
 
 ### Alternative: HTMX Pattern

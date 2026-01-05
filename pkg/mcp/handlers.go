@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/abdul-hamid-achik/fuego/pkg/fuego"
-	"github.com/abdul-hamid-achik/fuego/pkg/generator"
+	"github.com/abdul-hamid-achik/nexo/pkg/nexo"
+	"github.com/abdul-hamid-achik/nexo/pkg/generator"
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
@@ -32,7 +32,7 @@ func (s *Server) handleNew(ctx context.Context, req mcp.CallToolRequest) (*mcp.C
 		args = append(args, "--with-proxy")
 	}
 
-	cmd := exec.CommandContext(ctx, "fuego", args...)
+	cmd := exec.CommandContext(ctx, "nexo", args...)
 	cmd.Dir = s.workdir
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -153,7 +153,7 @@ func (s *Server) handleGeneratePage(ctx context.Context, req mcp.CallToolRequest
 
 func (s *Server) handleListRoutes(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	appDir := filepath.Join(s.workdir, "app")
-	scanner := fuego.NewScanner(appDir)
+	scanner := nexo.NewScanner(appDir)
 
 	routes, err := scanner.ScanRouteInfo()
 	if err != nil {
@@ -186,8 +186,8 @@ func (s *Server) handleInfo(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 		"workdir": s.workdir,
 	}
 
-	// Check for fuego.yaml
-	configPath := filepath.Join(s.workdir, "fuego.yaml")
+	// Check for nexo.yaml
+	configPath := filepath.Join(s.workdir, "nexo.yaml")
 	if _, err := os.Stat(configPath); err == nil {
 		info["has_config"] = true
 		info["config_path"] = configPath
@@ -207,7 +207,7 @@ func (s *Server) handleInfo(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 	appDir := filepath.Join(s.workdir, "app")
 	if _, err := os.Stat(appDir); err == nil {
 		info["has_app_dir"] = true
-		scanner := fuego.NewScanner(appDir)
+		scanner := nexo.NewScanner(appDir)
 
 		routes, _ := scanner.ScanRouteInfo()
 		middlewares, _ := scanner.ScanMiddlewareInfo()
@@ -257,7 +257,7 @@ func (s *Server) handleValidate(ctx context.Context, req mcp.CallToolRequest) (*
 	// Scan for route issues
 	var routeCount int
 	if _, err := os.Stat(appDir); err == nil {
-		scanner := fuego.NewScanner(appDir)
+		scanner := nexo.NewScanner(appDir)
 		scanner.SetVerbose(false)
 
 		routes, err := scanner.ScanRouteInfo()

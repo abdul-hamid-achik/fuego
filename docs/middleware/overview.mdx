@@ -3,16 +3,16 @@ title: Middleware
 description: 'Add cross-cutting concerns like authentication, logging, and timing to your routes.'
 ---
 
-Fuego provides a powerful middleware system with built-in middleware and support for custom middleware.
+Nexo provides a powerful middleware system with built-in middleware and support for custom middleware.
 
 ## How Middleware Works
 
 Middleware wraps handlers to add functionality:
 
 ```go
-func MyMiddleware() fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func MyMiddleware() nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             // Before handler
             fmt.Println("Request started")
             
@@ -48,9 +48,9 @@ Response
 Apply to all routes via `app.Use()`:
 
 ```go
-app := fuego.New()
-app.Use(fuego.Recover())
-app.Use(fuego.RequestID())
+app := nexo.New()
+app.Use(nexo.Recover())
+app.Use(nexo.RequestID())
 ```
 
 ## File-Based Middleware
@@ -84,12 +84,12 @@ package api
 
 import (
     "time"
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
-func Middleware() fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func Middleware() nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             // Add API version header
             c.SetHeader("X-API-Version", "1.0")
             
@@ -108,10 +108,10 @@ func Middleware() fuego.MiddlewareFunc {
 
 ### Request Logger (App-Level)
 
-Fuego includes an app-level request logger that captures **all** requests, including those handled by the proxy layer. The logger is enabled by default.
+Nexo includes an app-level request logger that captures **all** requests, including those handled by the proxy layer. The logger is enabled by default.
 
 ```go
-app := fuego.New() // Logger enabled by default!
+app := nexo.New() // Logger enabled by default!
 ```
 
 Output:
@@ -125,13 +125,13 @@ Output:
 #### Configuration
 
 ```go
-app.SetLogger(fuego.RequestLoggerConfig{
+app.SetLogger(nexo.RequestLoggerConfig{
     ShowIP:        true,   // Show client IP
     ShowUserAgent: true,   // Show user agent
     ShowSize:      true,   // Show response size (default: true)
     SkipStatic:    true,   // Don't log static files
     SkipPaths:     []string{"/health", "/metrics"},
-    Level:         fuego.LogLevelInfo,
+    Level:         nexo.LogLevelInfo,
 })
 ```
 
@@ -147,8 +147,8 @@ app.SetLogger(fuego.RequestLoggerConfig{
 
 #### Environment Variables
 
-- `FUEGO_LOG_LEVEL` - Set log level (`debug`, `info`, `warn`, `error`, `off`)
-- `FUEGO_DEV=true` - Automatically sets debug level
+- `NEXO_LOG_LEVEL` - Set log level (`debug`, `info`, `warn`, `error`, `off`)
+- `NEXO_DEV=true` - Automatically sets debug level
 - `GO_ENV=production` - Automatically sets warn level
 
 #### Disable/Enable Logger
@@ -163,7 +163,7 @@ app.EnableLogger()  // Re-enable with default config
 Recovers from panics and returns 500 error:
 
 ```go
-app.Use(fuego.Recover())
+app.Use(nexo.Recover())
 ```
 
 ### RequestID
@@ -171,7 +171,7 @@ app.Use(fuego.Recover())
 Adds a unique request ID header:
 
 ```go
-app.Use(fuego.RequestID())
+app.Use(nexo.RequestID())
 ```
 
 Header: `X-Request-Id: abc123...`
@@ -182,10 +182,10 @@ Handle Cross-Origin Resource Sharing:
 
 ```go
 // Simple - allow all origins
-app.Use(fuego.CORS())
+app.Use(nexo.CORS())
 
 // Configured
-app.Use(fuego.CORSWithConfig(fuego.CORSConfig{
+app.Use(nexo.CORSWithConfig(nexo.CORSConfig{
     AllowOrigins:     []string{"https://example.com"},
     AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
     AllowHeaders:     []string{"Authorization", "Content-Type"},
@@ -199,7 +199,7 @@ app.Use(fuego.CORSWithConfig(fuego.CORSConfig{
 Set request timeout:
 
 ```go
-app.Use(fuego.Timeout(30 * time.Second))
+app.Use(nexo.Timeout(30 * time.Second))
 ```
 
 ### BasicAuth
@@ -207,7 +207,7 @@ app.Use(fuego.Timeout(30 * time.Second))
 Simple username/password authentication:
 
 ```go
-app.Use(fuego.BasicAuth(func(user, pass string) bool {
+app.Use(nexo.BasicAuth(func(user, pass string) bool {
     return user == "admin" && pass == "secret"
 }))
 ```
@@ -217,7 +217,7 @@ app.Use(fuego.BasicAuth(func(user, pass string) bool {
 Add security-related headers:
 
 ```go
-app.Use(fuego.SecureHeaders())
+app.Use(nexo.SecureHeaders())
 ```
 
 Adds:
@@ -231,7 +231,7 @@ Adds:
 Limit requests per IP:
 
 ```go
-app.Use(fuego.RateLimiter(100, time.Minute)) // 100 requests per minute
+app.Use(nexo.RateLimiter(100, time.Minute)) // 100 requests per minute
 ```
 
 ## Custom Middleware
@@ -239,17 +239,17 @@ app.Use(fuego.RateLimiter(100, time.Minute)) // 100 requests per minute
 Create your own middleware using the factory pattern:
 
 ```go
-func AuthMiddleware() fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func AuthMiddleware() nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             token := c.Header("Authorization")
             if token == "" {
-                return fuego.Unauthorized("missing authorization header")
+                return nexo.Unauthorized("missing authorization header")
             }
             
             user, err := validateToken(token)
             if err != nil {
-                return fuego.Unauthorized("invalid token")
+                return nexo.Unauthorized("invalid token")
             }
             
             // Store user in context for handlers
@@ -269,11 +269,11 @@ Here's a complete authentication middleware:
 // app/api/protected/middleware.go
 package protected
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
-func Middleware() fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func Middleware() nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             token := c.Header("Authorization")
             if token == "" {
                 return c.JSON(401, map[string]string{
@@ -322,7 +322,7 @@ See [Proxy Documentation](/docs/middleware/proxy) for pre-routing manipulation.
     Each middleware should do one thing well. Don't combine authentication, logging, and timing in one middleware.
   </Accordion>
   <Accordion title="Handle errors properly">
-    Return proper errors, don't panic. Use the error helpers like `fuego.Unauthorized()`.
+    Return proper errors, don't panic. Use the error helpers like `nexo.Unauthorized()`.
   </Accordion>
   <Accordion title="Use context for sharing data">
     Store shared data with `c.Set()` and retrieve with `c.Get()`.

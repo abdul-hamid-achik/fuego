@@ -14,15 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Comprehensive Test Suite**
   - Added 6 new test files with 40+ test cases
   - `pkg/mcp` coverage: 0% → 71.6%
-  - `cmd/fuego/commands` now has test coverage
+  - `cmd/nexo/commands` now has test coverage
   - Overall test coverage: 39.5%
 
 ### Test Files Added
 
-- `cmd/fuego/commands/routes_test.go` - Route scanning and layout matching
-- `cmd/fuego/commands/openapi_test.go` - OpenAPI helper functions
-- `cmd/fuego/commands/tailwind_test.go` - Tailwind CLI integration
-- `cmd/fuego/commands/generate_test.go` - Code generation tests
+- `cmd/nexo/commands/routes_test.go` - Route scanning and layout matching
+- `cmd/nexo/commands/openapi_test.go` - OpenAPI helper functions
+- `cmd/nexo/commands/tailwind_test.go` - Tailwind CLI integration
+- `cmd/nexo/commands/generate_test.go` - Code generation tests
 - `pkg/mcp/server_test.go` - MCP server initialization
 - `pkg/mcp/handlers_test.go` - All MCP tool handlers
 
@@ -34,17 +34,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `main.go` now uses `PORT` environment variable instead of hardcoded `:3000`
   - Route generator creates correct function names (`Get`, `Post` instead of `GET`, `POST`)
   - Scanner properly detects all generated routes
-  - Projects created with `fuego new` compile and run without errors
+  - Projects created with `nexo new` compile and run without errors
 
 ### Verified Working
 
 All CLI commands tested end-to-end:
-- `fuego new` - creates fully functional project
-- `fuego dev` - runs dev server with hot reload
-- `fuego generate route/middleware/page` - creates valid Go code
-- `fuego routes` - lists all routes correctly  
-- `fuego tailwind build` - builds CSS
-- `fuego openapi generate` - generates OpenAPI spec
+- `nexo new` - creates fully functional project
+- `nexo dev` - runs dev server with hot reload
+- `nexo generate route/middleware/page` - creates valid Go code
+- `nexo routes` - lists all routes correctly  
+- `nexo tailwind build` - builds CSS
+- `nexo openapi generate` - generates OpenAPI spec
 
 ## [0.11.6] - 2025-01-04
 
@@ -105,12 +105,12 @@ All CLI commands tested end-to-end:
 - **Data Loader Pattern**
   - New `loader.go` file type for separating data fetching from page rendering
   - Generator automatically wires `Loader()` function to `Page()` component
-  - New command: `fuego generate loader <path>` with `--data-type` flag
+  - New command: `nexo generate loader <path>` with `--data-type` flag
   - Pages with loaders are auto-wired: `Loader(c) -> Page(data)`
   - Documentation added to routing guide
 
 - **Dev Mode Verbose Flag**
-  - Added `--verbose` / `-v` flag to `fuego dev` for detailed debugging info
+  - Added `--verbose` / `-v` flag to `nexo dev` for detailed debugging info
   - Shows file change events, watched directories, and rebuild steps
   - Helpful for diagnosing hot reload issues
 
@@ -125,7 +125,7 @@ All CLI commands tested end-to-end:
   - Added `HasLoader`, `LoaderImportPath`, `LoaderPackage` fields to PageRegistration
   - Added `LoaderRegistration` type for loader metadata
   - Updated route template to handle loader pattern
-  - Added loader template for `fuego generate loader` command
+  - Added loader template for `nexo generate loader` command
 
 ## [0.11.2] - 2025-01-03
 
@@ -165,9 +165,9 @@ All CLI commands tested end-to-end:
 - **Nested Dynamic Directory Symlinks** (Complete fix)
   - Completely fixed symlink handling for nested dynamic directories like `_name/deployments/_id`
   - Previous implementation created symlinks to directories which caused issues with source tree modification
-  - New implementation creates real directories in `.fuego/imports/` and only symlinks individual files
+  - New implementation creates real directories in `.nexo/imports/` and only symlinks individual files
   - This approach:
-    - Creates `.fuego/imports/app/api/apps/_name/deployments/_id/` as real directories
+    - Creates `.nexo/imports/app/api/apps/_name/deployments/_id/` as real directories
     - Symlinks each `.go` and `.templ` file inside to the source files
     - Avoids any modifications to the source tree
     - Works correctly with arbitrarily deep nesting
@@ -185,27 +185,27 @@ All CLI commands tested end-to-end:
 ### Fixed
 
 - **File Symlink Recreation for Intermediate Directories**
-  - Fixed "file exists" error when running `fuego build` multiple times
+  - Fixed "file exists" error when running `nexo build` multiple times
   - Properly handles existing file symlinks in intermediate dynamic directories
   - When an intermediate directory (e.g., `_domain` with both `route.go` and nested `verify/`) already has file symlinks, they're now checked and skipped if correct, or removed and recreated if pointing to wrong location
-  - Ensures idempotent symlink creation - running `fuego build` multiple times now works correctly
+  - Ensures idempotent symlink creation - running `nexo build` multiple times now works correctly
 
 ## [0.9.8] - 2025-01-02
 
 ### Fixed
 
 - **Unused Layout Package Imports** (Bug #1)
-  - Fixed build failures caused by unused layout package imports in generated `fuego_routes.go`
+  - Fixed build failures caused by unused layout package imports in generated `nexo_routes.go`
   - Layout packages were being imported but never used, causing Go compiler errors
   - Layouts are now correctly handled by templ's `@Layout()` syntax without explicit imports
 
 - **Missing Symlinks for Nested Dynamic Directories** (Bug #2)
   - Fixed symlink creation for deeply nested dynamic directories like `_name/deployments/_id`
-  - Previously, only top-level dynamic directories had symlinks created in `.fuego/imports/`
+  - Previously, only top-level dynamic directories had symlinks created in `.nexo/imports/`
   - Now creates proper mirror structure with real directories for intermediate paths and symlinks for leaf directories
   - Example: `app/api/apps/_name/deployments/_id` now properly creates:
-    - `.fuego/imports/app/api/apps/_name/` (real directory)
-    - `.fuego/imports/app/api/apps/_name/deployments/_id` (symlink to leaf directory)
+    - `.nexo/imports/app/api/apps/_name/` (real directory)
+    - `.nexo/imports/app/api/apps/_name/deployments/_id` (symlink to leaf directory)
 
 - **Routes Under Dynamic Directories Not Discovered** (Bug #3)
   - Fixed missing routes in directories nested under dynamic directories
@@ -248,12 +248,12 @@ All CLI commands tested end-to-end:
   - Fixed invalid Go import paths for route groups
   - Route group directories now use `_group_name` convention for valid Go imports
   - Previously, route groups would generate invalid import paths
-  - Now correctly uses `.fuego/imports/` with proper `_group_` prefix
+  - Now correctly uses `.nexo/imports/` with proper `_group_` prefix
 
 ### Added
 
-- **New `.fuego/` Build Directory**
-  - All import symlinks are now created in `.fuego/imports/` (similar to Next.js `.next/` directory)
+- **New `.nexo/` Build Directory**
+  - All import symlinks are now created in `.nexo/imports/` (similar to Next.js `.next/` directory)
   - Cleaner project structure - no symlinks scattered in the `app/` directory
   - Single directory to add to `.gitignore`
 
@@ -264,13 +264,13 @@ All CLI commands tested end-to-end:
 
 - **New Helper Functions**
   - `needsImportSanitization()` - Check if a path contains invalid Go import characters
-  - `CreateImportSymlinks()` - New function to create symlinks in `.fuego/imports/`
-  - `CleanupImportSymlinks()` - Clean up the `.fuego/` directory
+  - `CreateImportSymlinks()` - New function to create symlinks in `.nexo/imports/`
+  - `CleanupImportSymlinks()` - Clean up the `.nexo/` directory
 
 ### Changed
 
-- Symlinks are now created in `.fuego/imports/` instead of next to original directories
-- Updated `.gitignore` template to include `.fuego/` directory
+- Symlinks are now created in `.nexo/imports/` instead of next to original directories
+- Updated `.gitignore` template to include `.nexo/` directory
 - Improved documentation for route groups and symlink handling
 
 ### Deprecated
@@ -290,8 +290,8 @@ All CLI commands tested end-to-end:
 
 ### Changed
 
-- Improved `.gitignore` pattern from `fuego` to `/fuego` to only ignore fuego binary in root directory
-- Prevents future issues where files containing "fuego" in their path might be accidentally ignored
+- Improved `.gitignore` pattern from `nexo` to `/fuego` to only ignore fuego binary in root directory
+- Prevents future issues where files containing "nexo" in their path might be accidentally ignored
 
 ## [0.9.2] - 2025-12-30
 
@@ -316,21 +316,21 @@ All CLI commands tested end-to-end:
 
 ### Added
 
-- **Self-Update Command (`fuego upgrade`)**
+- **Self-Update Command (`nexo upgrade`)**
   - Check for and install new versions directly from CLI
-  - `fuego upgrade` - Upgrade to latest stable version
-  - `fuego upgrade --check` - Check for updates without installing
-  - `fuego upgrade --version v0.5.0` - Install specific version
-  - `fuego upgrade --prerelease` - Include prerelease versions
-  - `fuego upgrade --rollback` - Restore previous version from backup
-  - Automatic backup before upgrade to `~/.cache/fuego/fuego.backup`
+  - `nexo upgrade` - Upgrade to latest stable version
+  - `nexo upgrade --check` - Check for updates without installing
+  - `nexo upgrade --version v0.5.0` - Install specific version
+  - `nexo upgrade --prerelease` - Include prerelease versions
+  - `nexo upgrade --rollback` - Restore previous version from backup
+  - Automatic backup before upgrade to `~/.cache/nexo/fuego.backup`
   - SHA256 checksum verification for downloaded binaries
-  - Background update check when running `fuego dev` (once per 24 hours)
+  - Background update check when running `nexo dev` (once per 24 hours)
 
 ### Changed
 
-- **Documentation domain updated to `fuego.build`**
-  - All documentation URLs now point to https://fuego.build
+- **Documentation domain updated to `nexo.build`**
+  - All documentation URLs now point to https://nexo.build
   - Updated README.md, AGENTS.md, and llms.txt
   - Updated GitHub repository homepage URL
 
@@ -349,8 +349,8 @@ All CLI commands tested end-to-end:
 ### Added
 
 - **Automatic OpenAPI 3.1 Specification Generation**
-  - `fuego openapi generate` - Generate OpenAPI spec from routes
-  - `fuego openapi serve` - Serve Swagger UI for interactive API exploration
+  - `nexo openapi generate` - Generate OpenAPI spec from routes
+  - `nexo openapi serve` - Serve Swagger UI for interactive API exploration
   - Automatic documentation extraction from handler comments
   - Tags derived from directory structure
   - Path parameters detected from `_param` segments
@@ -398,7 +398,7 @@ All CLI commands tested end-to-end:
   - Consolidated examples into `docs/guides/examples.mdx`
   - Removed standalone `examples/` folder
 
-- Updated domain to `gofuego.dev`
+- Updated domain to `nexo.build`
 
 ## [0.6.0] - 2024-12-29
 
@@ -417,24 +417,24 @@ All CLI commands tested end-to-end:
   - Static file filtering option
 
 - **Log level support with environment detection**
-  - `FUEGO_LOG_LEVEL` environment variable
-  - `FUEGO_DEV=true` auto-sets debug level
+  - `NEXO_LOG_LEVEL` environment variable
+  - `NEXO_DEV=true` auto-sets debug level
   - `GO_ENV=production` auto-sets warn level
 
 - **Response writer wrapper** for accurate status code and size capture
 
 - **Error helper functions**
-  - `fuego.BadRequest(message)` - 400 Bad Request
-  - `fuego.Unauthorized(message)` - 401 Unauthorized
-  - `fuego.Forbidden(message)` - 403 Forbidden
-  - `fuego.NotFound(message)` - 404 Not Found
-  - `fuego.Conflict(message)` - 409 Conflict
-  - `fuego.InternalServerError(message)` - 500 Internal Server Error
+  - `nexo.BadRequest(message)` - 400 Bad Request
+  - `nexo.Unauthorized(message)` - 401 Unauthorized
+  - `nexo.Forbidden(message)` - 403 Forbidden
+  - `nexo.NotFound(message)` - 404 Not Found
+  - `nexo.Conflict(message)` - 409 Conflict
+  - `nexo.InternalServerError(message)` - 500 Internal Server Error
 
 ### Changed
 
 - **Logger is now enabled by default at the app level**
-  - No need to call `app.Use(fuego.Logger())`
+  - No need to call `app.Use(nexo.Logger())`
   - Use `app.SetLogger(config)` to customize
   - Use `app.DisableLogger()` to disable
 
@@ -444,26 +444,26 @@ All CLI commands tested end-to-end:
 
 ### Deprecated
 
-- `app.Use(fuego.Logger())` middleware is still supported but app-level logging is recommended for complete visibility
+- `app.Use(nexo.Logger())` middleware is still supported but app-level logging is recommended for complete visibility
 
 ### Migration Guide
 
 **Before (v0.5.0):**
 ```go
-app := fuego.New()
-app.Use(fuego.Logger()) // Only captures router requests
+app := nexo.New()
+app.Use(nexo.Logger()) // Only captures router requests
 ```
 
 **After (v0.6.0):**
 ```go
-app := fuego.New()
+app := nexo.New()
 // Logger is enabled by default and captures ALL requests!
 
 // Customize if needed:
-app.SetLogger(fuego.RequestLoggerConfig{
+app.SetLogger(nexo.RequestLoggerConfig{
     ShowIP:     true,
     SkipStatic: true,
-    Level:      fuego.LogLevelInfo,
+    Level:      nexo.LogLevelInfo,
 })
 
 // Or disable:
@@ -489,7 +489,7 @@ app.DisableLogger()
 
 - **README completely rewritten**
   - New tagline: "File-based routing for Go. Fast to write. Faster to run."
-  - Added "Why Fuego?" section showing traditional vs file-based routing
+  - Added "Why Nexo?" section showing traditional vs file-based routing
   - Added "Familiar Conventions" section with routing patterns table
   - Improved features list with clearer value propositions
   - Complete examples table with descriptions
@@ -498,7 +498,7 @@ app.DisableLogger()
 - **All examples standardized**
   - All `go.mod` files now use Go 1.25.5
   - All examples use `replace` directive for local development
-  - Middleware signature fixed to use factory pattern: `func Middleware() fuego.MiddlewareFunc`
+  - Middleware signature fixed to use factory pattern: `func Middleware() nexo.MiddlewareFunc`
 
 - **Proxy example fixed**
   - `app/proxy.go` now correctly checks `/api/admin` instead of `/admin`
@@ -527,18 +527,18 @@ app.DisableLogger()
   - Route groups `_group_name` for page organization
 - **Tailwind CSS v4 integration** - No Node.js required!
   - Uses standalone Tailwind binary (auto-downloaded)
-  - `fuego tailwind build` - Build CSS for production
-  - `fuego tailwind watch` - Watch mode for development
-  - `fuego tailwind install` - Install Tailwind binary
-  - `fuego tailwind info` - Show installation info
-  - Auto-watches `styles/` directory during `fuego dev`
-  - Auto-builds CSS during `fuego build`
+  - `nexo tailwind build` - Build CSS for production
+  - `nexo tailwind watch` - Watch mode for development
+  - `nexo tailwind install` - Install Tailwind binary
+  - `nexo tailwind info` - Show installation info
+  - Auto-watches `styles/` directory during `nexo dev`
+  - Auto-builds CSS during `nexo build`
 - **HTMX integration** - Build interactive UIs without JavaScript
   - Default layout includes HTMX CDN
   - `c.IsHTMX()` - Check if request is from HTMX
   - `c.FormValue()` - Get form values for HTMX forms
   - Example HTMX patterns in documentation
-- **Interactive project creation** - `fuego new` now prompts:
+- **Interactive project creation** - `nexo new` now prompts:
   - "Would you like to use templ for pages?" (creates full-stack project)
   - `--api-only` flag to skip templ/Tailwind/HTMX
   - `--skip-prompts` flag to use defaults
@@ -561,46 +561,46 @@ app.DisableLogger()
 
 ### Changed
 
-- `fuego dev` now:
+- `nexo dev` now:
   - Watches `page.templ` and `layout.templ` files for changes
   - Starts Tailwind watcher if `styles/input.css` exists
   - Does initial CSS build if output doesn't exist
-- `fuego build` now:
+- `nexo build` now:
   - Builds Tailwind CSS before Go binary
-- `fuego new` creates full-stack project by default (with templ/Tailwind/HTMX)
+- `nexo new` creates full-stack project by default (with templ/Tailwind/HTMX)
 - Documentation updated with page/layout/Tailwind/HTMX guidance
 
 ### Technical Details
 
 - `pkg/tools/tailwind.go` - Tailwind CLI management
-- `pkg/fuego/renderer.go` - Templ rendering with layouts
-- `pkg/fuego/scanner.go` - Page and layout scanning
+- `pkg/nexo/renderer.go` - Templ rendering with layouts
+- `pkg/nexo/scanner.go` - Page and layout scanning
 - `pkg/generator/generator.go` - Page route generation
-- Binary cached at `~/.cache/fuego/bin/`
+- Binary cached at `~/.cache/nexo/bin/`
 
 ## [0.3.6] - 2024-12-29
 
 ### Fixed
 
-- **`fuego new` now properly fetches dependencies** - Uses `go get @latest` instead of hardcoded version
+- **`nexo new` now properly fetches dependencies** - Uses `go get @latest` instead of hardcoded version
   - New users no longer get "unknown revision v0.0.0" errors
   - Dependencies are fetched from the Go module proxy automatically
 
 ### Changed
 
 - `go.mod` template no longer includes a require statement (handled by `go get`)
-- Replaced `go mod tidy` with `go get github.com/abdul-hamid-achik/fuego/pkg/fuego@latest`
+- Replaced `go mod tidy` with `go get github.com/abdul-hamid-achik/nexo/pkg/nexo@latest`
 
 ## [0.3.0] - 2024-12-29
 
 ### Added
 
-- **Code generation for routes** - Routes are now registered via generated `fuego_routes.go` file
-  - `fuego dev` automatically generates routes before starting the server
+- **Code generation for routes** - Routes are now registered via generated `nexo_routes.go` file
+  - `nexo dev` automatically generates routes before starting the server
   - Routes are regenerated on file changes (route.go, middleware.go, proxy.go)
   - Generated file imports route packages and calls actual handlers
-- **Auto-detection of local fuego module** - `fuego dev` automatically adds `replace` directive when fuego module isn't published
-  - Searches common development directories for fuego source
+- **Auto-detection of local fuego module** - `nexo dev` automatically adds `replace` directive when fuego module isn't published
+  - Searches common development directories for nexo source
   - Uses `runtime.Caller` to detect source location when running from source
 - `ScanAndGenerateRoutes()` function for programmatic route generation
 - `GenerateRoutesFile()` for custom route file generation
@@ -608,9 +608,9 @@ app.DisableLogger()
 
 ### Changed
 
-- `fuego new` template now generates `main.go` that calls `RegisterRoutes(app)`
+- `nexo new` template now generates `main.go` that calls `RegisterRoutes(app)`
 - `App.Listen()` skips scanning if routes are already registered (enables code generation)
-- `.gitignore` template now includes `fuego_routes.go`
+- `.gitignore` template now includes `nexo_routes.go`
 
 ### Fixed
 
@@ -628,17 +628,17 @@ app.DisableLogger()
   - Early responses (auth checks, rate limiting, maintenance mode)
   - Request header manipulation
 - Proxy matcher patterns for selective path matching
-- `fuego.Continue()` - Continue to normal routing
-- `fuego.Redirect(url, statusCode)` - HTTP redirects
-- `fuego.Rewrite(path)` - Internal URL rewriting
-- `fuego.Response(statusCode, body, contentType)` - Direct responses
-- `fuego.ResponseJSON(statusCode, json)` - JSON responses
-- `fuego.ResponseHTML(statusCode, html)` - HTML responses
+- `nexo.Continue()` - Continue to normal routing
+- `nexo.Redirect(url, statusCode)` - HTTP redirects
+- `nexo.Rewrite(path)` - Internal URL rewriting
+- `nexo.Response(statusCode, body, contentType)` - Direct responses
+- `nexo.ResponseJSON(statusCode, json)` - JSON responses
+- `nexo.ResponseHTML(statusCode, html)` - HTML responses
 - `WithHeader()` and `WithHeaders()` for adding response headers
 - `ScanProxyInfo()` for CLI proxy discovery
 - `ScanMiddlewareInfo()` for CLI middleware discovery
-- `--with-proxy` flag for `fuego new` command
-- Proxy and middleware display in `fuego routes` output
+- `--with-proxy` flag for `nexo new` command
+- Proxy and middleware display in `nexo routes` output
 - Taskfile.yml for project automation
 - Documentation for proxy, middleware, and routing
 - Example project in `examples/basic/`
@@ -654,8 +654,8 @@ app.DisableLogger()
 
 ### Changed
 
-- Updated `fuego routes` to show proxy and middleware information
-- Enhanced `fuego new` with `--with-proxy` option
+- Updated `nexo routes` to show proxy and middleware information
+- Enhanced `nexo new` with `--with-proxy` option
 - Improved error handling in proxy execution
 - App.Listen now uses App as handler (was router) to enable proxy execution
 
@@ -676,10 +676,10 @@ app.DisableLogger()
 - Private folders `_folder` that are not routable
 - Route priority system (static > dynamic > catch-all)
 - CLI with commands:
-  - `fuego new` - Create new project
-  - `fuego dev` - Development server with hot reload
-  - `fuego build` - Production build
-  - `fuego routes` - List all routes
+  - `nexo new` - Create new project
+  - `nexo dev` - Development server with hot reload
+  - `nexo build` - Production build
+  - `nexo routes` - List all routes
 - Hot reload with fsnotify
 - Templ integration for HTML rendering
 - Built-in middleware:
@@ -702,12 +702,12 @@ app.DisableLogger()
 - Built on chi router
 - 137+ test cases
 
-[Unreleased]: https://github.com/abdul-hamid-achik/fuego/compare/v0.6.0...HEAD
-[0.6.0]: https://github.com/abdul-hamid-achik/fuego/compare/v0.5.0...v0.6.0
-[0.5.0]: https://github.com/abdul-hamid-achik/fuego/compare/v0.4.0...v0.5.0
-[0.4.0]: https://github.com/abdul-hamid-achik/fuego/compare/v0.3.6...v0.4.0
-[0.3.6]: https://github.com/abdul-hamid-achik/fuego/compare/v0.3.5...v0.3.6
-[0.3.5]: https://github.com/abdul-hamid-achik/fuego/compare/v0.3.0...v0.3.5
-[0.3.0]: https://github.com/abdul-hamid-achik/fuego/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/abdul-hamid-achik/fuego/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/abdul-hamid-achik/fuego/releases/tag/v0.1.0
+[Unreleased]: https://github.com/abdul-hamid-achik/nexo/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/abdul-hamid-achik/nexo/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/abdul-hamid-achik/nexo/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/abdul-hamid-achik/nexo/compare/v0.3.6...v0.4.0
+[0.3.6]: https://github.com/abdul-hamid-achik/nexo/compare/v0.3.5...v0.3.6
+[0.3.5]: https://github.com/abdul-hamid-achik/nexo/compare/v0.3.0...v0.3.5
+[0.3.0]: https://github.com/abdul-hamid-achik/nexo/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/abdul-hamid-achik/nexo/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/abdul-hamid-achik/nexo/releases/tag/v0.1.0

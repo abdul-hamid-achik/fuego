@@ -30,10 +30,10 @@ type pageTemplateData struct {
 // Note: Methods should be title case (Get, Post, Put, Delete) to match scanner expectations
 var routeTemplate = `package {{.Package}}
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 {{range .Methods}}
 // {{.FuncName}} handles {{.Method}} /api/{{$.Pattern}}
-func {{.FuncName}}(c *fuego.Context) error {
+func {{.FuncName}}(c *nexo.Context) error {
 {{- range $.Params}}
 	{{.Name}} := c.Param("{{.Name}}")
 	_ = {{.Name}} // TODO: use this parameter
@@ -51,11 +51,11 @@ func {{.FuncName}}(c *fuego.Context) error {
 var middlewareTemplates = map[string]string{
 	"blank": `package {{.Package}}
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // Middleware runs before all routes in {{.Path}}
-func Middleware(next fuego.HandlerFunc) fuego.HandlerFunc {
-	return func(c *fuego.Context) error {
+func Middleware(next nexo.HandlerFunc) nexo.HandlerFunc {
+	return func(c *nexo.Context) error {
 		// TODO: Add middleware logic here
 		return next(c)
 	}
@@ -63,11 +63,11 @@ func Middleware(next fuego.HandlerFunc) fuego.HandlerFunc {
 `,
 	"auth": `package {{.Package}}
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // Middleware provides authentication for routes in {{.Path}}
-func Middleware(next fuego.HandlerFunc) fuego.HandlerFunc {
-	return func(c *fuego.Context) error {
+func Middleware(next nexo.HandlerFunc) nexo.HandlerFunc {
+	return func(c *nexo.Context) error {
 		token := c.Header("Authorization")
 		if token == "" {
 			return c.JSON(401, map[string]string{
@@ -98,12 +98,12 @@ import (
 	"log"
 	"time"
 
-	"github.com/abdul-hamid-achik/fuego/pkg/fuego"
+	"github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // Middleware provides request logging for routes in {{.Path}}
-func Middleware(next fuego.HandlerFunc) fuego.HandlerFunc {
-	return func(c *fuego.Context) error {
+func Middleware(next nexo.HandlerFunc) nexo.HandlerFunc {
+	return func(c *nexo.Context) error {
 		start := time.Now()
 
 		// Log request
@@ -129,12 +129,12 @@ func Middleware(next fuego.HandlerFunc) fuego.HandlerFunc {
 import (
 	"time"
 
-	"github.com/abdul-hamid-achik/fuego/pkg/fuego"
+	"github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // Middleware adds timing headers for routes in {{.Path}}
-func Middleware(next fuego.HandlerFunc) fuego.HandlerFunc {
-	return func(c *fuego.Context) error {
+func Middleware(next nexo.HandlerFunc) nexo.HandlerFunc {
+	return func(c *nexo.Context) error {
 		start := time.Now()
 
 		// Call next handler
@@ -151,7 +151,7 @@ func Middleware(next fuego.HandlerFunc) fuego.HandlerFunc {
 `,
 	"cors": `package {{.Package}}
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // CORS configuration
 var (
@@ -161,8 +161,8 @@ var (
 )
 
 // Middleware provides CORS support for routes in {{.Path}}
-func Middleware(next fuego.HandlerFunc) fuego.HandlerFunc {
-	return func(c *fuego.Context) error {
+func Middleware(next nexo.HandlerFunc) nexo.HandlerFunc {
+	return func(c *nexo.Context) error {
 		origin := c.Header("Origin")
 
 		// Check if origin is allowed
@@ -208,13 +208,13 @@ func joinStrings(s []string) string {
 var proxyTemplates = map[string]string{
 	"blank": `package app
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // Proxy runs before route matching.
 // Use it for request interception, URL rewriting, or early responses.
-func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
 	// Continue with normal routing
-	return fuego.Continue(), nil
+	return nexo.Continue(), nil
 }
 `,
 	"auth-check": `package app
@@ -222,7 +222,7 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
 import (
 	"strings"
 
-	"github.com/abdul-hamid-achik/fuego/pkg/fuego"
+	"github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // Public paths that don't require authentication
@@ -235,25 +235,25 @@ var publicPaths = []string{
 }
 
 // Proxy runs before route matching to check authentication.
-func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
 	path := c.Path()
 
 	// Skip auth for public paths
 	for _, p := range publicPaths {
 		if path == p || strings.HasPrefix(path, p+"/") {
-			return fuego.Continue(), nil
+			return nexo.Continue(), nil
 		}
 	}
 
 	// Skip auth for static files
 	if strings.HasPrefix(path, "/static/") {
-		return fuego.Continue(), nil
+		return nexo.Continue(), nil
 	}
 
 	// Check for auth token
 	token := c.Header("Authorization")
 	if token == "" {
-		return fuego.ResponseJSON(401, map[string]string{
+		return nexo.ResponseJSON(401, map[string]string{
 			"error":   "unauthorized",
 			"message": "Authorization header required",
 		}), nil
@@ -261,7 +261,7 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
 
 	// TODO: Validate token
 	// if !isValidToken(token) {
-	//     return fuego.ResponseJSON(403, map[string]string{
+	//     return nexo.ResponseJSON(403, map[string]string{
 	//         "error": "forbidden",
 	//         "message": "Invalid or expired token",
 	//     }), nil
@@ -270,7 +270,7 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
 	// Add header to indicate proxy processed the request
 	c.SetHeader("X-Auth-Checked", "true")
 
-	return fuego.Continue(), nil
+	return nexo.Continue(), nil
 }
 `,
 	"rate-limit": `package app
@@ -280,7 +280,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/abdul-hamid-achik/fuego/pkg/fuego"
+	"github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // Rate limit configuration
@@ -292,7 +292,7 @@ var (
 )
 
 // Proxy implements simple IP-based rate limiting.
-func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
 	ip := c.ClientIP()
 
 	rateLimitMu.Lock()
@@ -316,7 +316,7 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
 		c.SetHeader("X-RateLimit-Limit", fmt.Sprintf("%d", maxRequests))
 		c.SetHeader("X-RateLimit-Remaining", "0")
 		
-		return fuego.ResponseJSON(429, map[string]string{
+		return nexo.ResponseJSON(429, map[string]string{
 			"error":   "too_many_requests",
 			"message": "Rate limit exceeded. Please try again later.",
 		}), nil
@@ -329,12 +329,12 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
 	c.SetHeader("X-RateLimit-Limit", fmt.Sprintf("%d", maxRequests))
 	c.SetHeader("X-RateLimit-Remaining", fmt.Sprintf("%d", maxRequests-len(recent)-1))
 
-	return fuego.Continue(), nil
+	return nexo.Continue(), nil
 }
 `,
 	"maintenance": `package app
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // Set to true to enable maintenance mode
 var maintenanceMode = false
@@ -346,9 +346,9 @@ var allowedIPs = []string{
 }
 
 // Proxy returns 503 for all requests when in maintenance mode.
-func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
 	if !maintenanceMode {
-		return fuego.Continue(), nil
+		return nexo.Continue(), nil
 	}
 
 	// Check if IP is allowed during maintenance
@@ -356,14 +356,14 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
 	for _, ip := range allowedIPs {
 		if ip == clientIP {
 			c.SetHeader("X-Maintenance-Bypass", "true")
-			return fuego.Continue(), nil
+			return nexo.Continue(), nil
 		}
 	}
 
 	// Return maintenance response
 	c.SetHeader("Retry-After", "3600") // Suggest retry in 1 hour
 
-	return fuego.ResponseJSON(503, map[string]string{
+	return nexo.ResponseJSON(503, map[string]string{
 		"error":   "service_unavailable",
 		"message": "Service is under maintenance. Please try again later.",
 	}), nil
@@ -374,7 +374,7 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
 import (
 	"strings"
 
-	"github.com/abdul-hamid-achik/fuego/pkg/fuego"
+	"github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // Configuration:
@@ -383,14 +383,14 @@ import (
 var redirectToWWW = false
 
 // Proxy handles www/non-www redirects.
-func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
 	host := c.Request.Host
 
 	// Skip for localhost/IP addresses
 	if strings.HasPrefix(host, "localhost") || 
 	   strings.HasPrefix(host, "127.0.0.1") ||
 	   strings.HasPrefix(host, "[::1]") {
-		return fuego.Continue(), nil
+		return nexo.Continue(), nil
 	}
 
 	scheme := "https"
@@ -402,18 +402,18 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
 		// Redirect non-www to www
 		if !strings.HasPrefix(host, "www.") {
 			newURL := scheme + "://www." + host + c.Request.RequestURI
-			return fuego.Redirect(newURL, 301), nil
+			return nexo.Redirect(newURL, 301), nil
 		}
 	} else {
 		// Redirect www to non-www
 		if strings.HasPrefix(host, "www.") {
 			newHost := strings.TrimPrefix(host, "www.")
 			newURL := scheme + "://" + newHost + c.Request.RequestURI
-			return fuego.Redirect(newURL, 301), nil
+			return nexo.Redirect(newURL, 301), nil
 		}
 	}
 
-	return fuego.Continue(), nil
+	return nexo.Continue(), nil
 }
 `,
 }
@@ -421,7 +421,7 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
 // Loader template
 var loaderTemplate = `package {{.Package}}
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // {{.DataType}} holds the data for this page.
 // Add your data fields here.
@@ -434,7 +434,7 @@ type {{.DataType}} struct {
 
 // Loader loads data for the page.
 // This function is automatically called before rendering the page.
-func Loader(c *fuego.Context) ({{.DataType}}, error) {
+func Loader(c *nexo.Context) ({{.DataType}}, error) {
 	// TODO: Load your data here
 	// Example:
 	// - Fetch from database
@@ -443,7 +443,7 @@ func Loader(c *fuego.Context) ({{.DataType}}, error) {
 	//
 	// Return an error to stop page rendering:
 	// if notFound {
-	//     return {{.DataType}}{}, fuego.NotFound("Resource not found")
+	//     return {{.DataType}}{}, nexo.NotFound("Resource not found")
 	// }
 
 	return {{.DataType}}{}, nil
@@ -490,36 +490,36 @@ templ Layout(title string) {
 
 // Routes generation templates
 
-var emptyRoutesTemplate = `// Code generated by fuego. DO NOT EDIT.
+var emptyRoutesTemplate = `// Code generated by nexo. DO NOT EDIT.
 // This file is automatically regenerated when routes change.
 
 package main
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // RegisterRoutes registers all file-based routes with the app.
 // This file is generated because no routes were found in the app directory.
-func RegisterRoutes(app *fuego.App) {
+func RegisterRoutes(app *nexo.App) {
 	// No routes found. Add route.go files in the app/api directory.
 	// Example: app/api/health/route.go with a Get function
 }
 `
 
-var routesGenTemplate = `// Code generated by fuego. DO NOT EDIT.
+var routesGenTemplate = `// Code generated by nexo. DO NOT EDIT.
 // This file is automatically regenerated when routes change.
 // Generator schema version: 1
 
 package main
 
 import (
-	"github.com/abdul-hamid-achik/fuego/pkg/fuego"
+	"github.com/abdul-hamid-achik/nexo/pkg/nexo"
 {{range .Imports}}
 	{{.Alias}} "{{.Path}}"
 {{- end}}
 )
 
 // RegisterRoutes registers all file-based routes with the app.
-func RegisterRoutes(app *fuego.App) {
+func RegisterRoutes(app *nexo.App) {
 {{- if .Proxy}}
 	// Register proxy (from {{.Proxy.FilePath}})
 	{{- if .Proxy.HasConfig}}
@@ -540,28 +540,28 @@ func RegisterRoutes(app *fuego.App) {
 {{- if .HasLoader}}
 	// Page: {{.Pattern}} (from {{.FilePath}})
 	// Data loaded by: {{.LoaderPackage}}.Loader()
-	app.Get("{{.Pattern}}", func(c *fuego.Context) error {
+	app.Get("{{.Pattern}}", func(c *nexo.Context) error {
 		data, err := {{.ImportAlias}}.Loader(c)
 		if err != nil {
 			return err
 		}
-		return fuego.TemplComponent(c, 200, {{.ImportAlias}}.Page(data))
+		return nexo.TemplComponent(c, 200, {{.ImportAlias}}.Page(data))
 	})
 {{- else if .HasParams}}
 	// Page: {{.Pattern}} (from {{.FilePath}})
 	// Dynamic page with signature: {{.ParamSignature}}
-	app.Get("{{.Pattern}}", func(c *fuego.Context) error {
+	app.Get("{{.Pattern}}", func(c *nexo.Context) error {
 		{{- range .Params}}
 		{{- if .FromPath}}
 		{{.Name}} := c.Param("{{.Name}}")
 		{{- end}}
 		{{- end}}
-		return fuego.TemplComponent(c, 200, {{.ImportAlias}}.Page({{paramArgs .Params}}))
+		return nexo.TemplComponent(c, 200, {{.ImportAlias}}.Page({{paramArgs .Params}}))
 	})
 {{- else}}
 	// Page: {{.Pattern}} (from {{.FilePath}})
-	app.Get("{{.Pattern}}", func(c *fuego.Context) error {
-		return fuego.TemplComponent(c, 200, {{.ImportAlias}}.Page())
+	app.Get("{{.Pattern}}", func(c *nexo.Context) error {
+		return nexo.TemplComponent(c, 200, {{.ImportAlias}}.Page())
 	})
 {{- end}}
 {{- end}}

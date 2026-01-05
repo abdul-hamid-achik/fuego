@@ -31,9 +31,9 @@ The proxy runs before route matching, so you cannot access route parameters (`c.
     Continue with normal routing.
 
     ```go
-    func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+    func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
         // Let the request proceed to the router
-        return fuego.Continue(), nil
+        return nexo.Continue(), nil
     }
     ```
 
@@ -44,7 +44,7 @@ The proxy runs before route matching, so you cannot access route parameters (`c.
     Redirect the client to a different URL.
 
     ```go
-    fuego.Redirect(url string, statusCode int) *ProxyResult
+    nexo.Redirect(url string, statusCode int) *ProxyResult
     ```
 
     **Parameters:**
@@ -65,25 +65,25 @@ The proxy runs before route matching, so you cannot access route parameters (`c.
 
     ```go
     // Redirect HTTP to HTTPS
-    func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+    func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
         if c.Request().TLS == nil {
             url := "https://" + c.Request().Host + c.Path()
-            return fuego.Redirect(url, 301), nil
+            return nexo.Redirect(url, 301), nil
         }
-        return fuego.Continue(), nil
+        return nexo.Continue(), nil
     }
     ```
 
     ```go
     // Redirect www to non-www
-    func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+    func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
         host := c.Request().Host
         if strings.HasPrefix(host, "www.") {
             newHost := strings.TrimPrefix(host, "www.")
             url := "https://" + newHost + c.Path()
-            return fuego.Redirect(url, 301), nil
+            return nexo.Redirect(url, 301), nil
         }
-        return fuego.Continue(), nil
+        return nexo.Continue(), nil
     }
     ```
   </Accordion>
@@ -92,7 +92,7 @@ The proxy runs before route matching, so you cannot access route parameters (`c.
     Internally rewrite the request path. The client doesn't see the change.
 
     ```go
-    fuego.Rewrite(path string) *ProxyResult
+    nexo.Rewrite(path string) *ProxyResult
     ```
 
     **Parameters:**
@@ -104,23 +104,23 @@ The proxy runs before route matching, so you cannot access route parameters (`c.
 
     ```go
     // Rewrite /v1/* to /api/*
-    func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+    func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
         path := c.Path()
         if strings.HasPrefix(path, "/v1/") {
             newPath := "/api/" + strings.TrimPrefix(path, "/v1/")
-            return fuego.Rewrite(newPath), nil
+            return nexo.Rewrite(newPath), nil
         }
-        return fuego.Continue(), nil
+        return nexo.Continue(), nil
     }
     ```
 
     ```go
     // A/B testing - route 10% of users to new UI
-    func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+    func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
         if c.Path() == "/" && rand.Float32() < 0.1 {
-            return fuego.Rewrite("/new-homepage"), nil
+            return nexo.Rewrite("/new-homepage"), nil
         }
-        return fuego.Continue(), nil
+        return nexo.Continue(), nil
     }
     ```
 
@@ -135,7 +135,7 @@ The proxy runs before route matching, so you cannot access route parameters (`c.
     ### Response(statusCode, body, contentType)
 
     ```go
-    fuego.Response(statusCode int, body []byte, contentType string) *ProxyResult
+    nexo.Response(statusCode int, body []byte, contentType string) *ProxyResult
     ```
 
     **Parameters:**
@@ -146,31 +146,31 @@ The proxy runs before route matching, so you cannot access route parameters (`c.
     | `contentType` | `string` | Content-Type header |
 
     ```go
-    return fuego.Response(503, []byte("Service Unavailable"), "text/plain"), nil
+    return nexo.Response(503, []byte("Service Unavailable"), "text/plain"), nil
     ```
 
     ### ResponseJSON(statusCode, json)
 
     ```go
-    fuego.ResponseJSON(statusCode int, json string) *ProxyResult
+    nexo.ResponseJSON(statusCode int, json string) *ProxyResult
     ```
 
     Return a JSON response.
 
     ```go
-    return fuego.ResponseJSON(401, `{"error":"unauthorized","message":"Invalid API key"}`), nil
+    return nexo.ResponseJSON(401, `{"error":"unauthorized","message":"Invalid API key"}`), nil
     ```
 
     ### ResponseHTML(statusCode, html)
 
     ```go
-    fuego.ResponseHTML(statusCode int, html string) *ProxyResult
+    nexo.ResponseHTML(statusCode int, html string) *ProxyResult
     ```
 
     Return an HTML response.
 
     ```go
-    return fuego.ResponseHTML(503, `
+    return nexo.ResponseHTML(503, `
         <!DOCTYPE html>
         <html>
         <head><title>Maintenance</title></head>
@@ -193,14 +193,14 @@ Chain methods to add headers to proxy responses:
 ### WithHeader(key, value)
 
 ```go
-return fuego.ResponseJSON(200, `{"status":"ok"}`).
+return nexo.ResponseJSON(200, `{"status":"ok"}`).
     WithHeader("X-Custom", "value"), nil
 ```
 
 ### WithHeaders(headers)
 
 ```go
-return fuego.Redirect("/login", 302).
+return nexo.Redirect("/login", 302).
     WithHeaders(map[string]string{
         "X-Redirect-Reason": "session-expired",
         "Cache-Control":     "no-store",
@@ -223,7 +223,7 @@ type ProxyConfig struct {
 ### Setting Proxy with Config
 
 ```go
-app.SetProxy(proxyFunc, &fuego.ProxyConfig{
+app.SetProxy(proxyFunc, &nexo.ProxyConfig{
     Matchers: []string{"/api/*", "/admin/*"},
     Excludes: []string{"/api/health", "/api/docs/*"},
 })
@@ -249,29 +249,29 @@ If no config is provided, the proxy runs on all requests.
 ### Authentication Check
 
 ```go
-func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
     path := c.Path()
     
     // Skip auth for public paths
     publicPaths := []string{"/", "/api/health", "/api/auth/login", "/static/"}
     for _, p := range publicPaths {
         if strings.HasPrefix(path, p) {
-            return fuego.Continue(), nil
+            return nexo.Continue(), nil
         }
     }
     
     // Check API key
     apiKey := c.Header("X-API-Key")
     if apiKey == "" {
-        return fuego.ResponseJSON(401, `{"error":"unauthorized","message":"API key required"}`), nil
+        return nexo.ResponseJSON(401, `{"error":"unauthorized","message":"API key required"}`), nil
     }
     
     // Validate API key
     if !isValidAPIKey(apiKey) {
-        return fuego.ResponseJSON(401, `{"error":"unauthorized","message":"Invalid API key"}`), nil
+        return nexo.ResponseJSON(401, `{"error":"unauthorized","message":"Invalid API key"}`), nil
     }
     
-    return fuego.Continue(), nil
+    return nexo.Continue(), nil
 }
 ```
 
@@ -283,7 +283,7 @@ var (
     mu            sync.Mutex
 )
 
-func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
     ip := c.ClientIP()
     
     mu.Lock()
@@ -292,11 +292,11 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
     mu.Unlock()
     
     if count > 100 { // 100 requests per window
-        return fuego.ResponseJSON(429, `{"error":"rate_limit_exceeded"}`).
+        return nexo.ResponseJSON(429, `{"error":"rate_limit_exceeded"}`).
             WithHeader("Retry-After", "60"), nil
     }
     
-    return fuego.Continue(), nil
+    return nexo.Continue(), nil
 }
 ```
 
@@ -306,20 +306,20 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
 var maintenanceMode = false
 var allowedIPs = []string{"192.168.1.100", "10.0.0.1"}
 
-func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
     if !maintenanceMode {
-        return fuego.Continue(), nil
+        return nexo.Continue(), nil
     }
     
     // Allow certain IPs during maintenance
     clientIP := c.ClientIP()
     for _, ip := range allowedIPs {
         if clientIP == ip {
-            return fuego.Continue(), nil
+            return nexo.Continue(), nil
         }
     }
     
-    return fuego.ResponseHTML(503, `
+    return nexo.ResponseHTML(503, `
         <!DOCTYPE html>
         <html>
         <head><title>Maintenance</title></head>
@@ -335,16 +335,16 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
 ### Geolocation Routing
 
 ```go
-func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
     country := c.Header("CF-IPCountry") // Cloudflare header
     
     switch country {
     case "DE", "FR", "IT", "ES":
-        return fuego.Rewrite("/eu" + c.Path()), nil
+        return nexo.Rewrite("/eu" + c.Path()), nil
     case "CN", "JP", "KR":
-        return fuego.Rewrite("/asia" + c.Path()), nil
+        return nexo.Rewrite("/asia" + c.Path()), nil
     default:
-        return fuego.Continue(), nil
+        return nexo.Continue(), nil
     }
 }
 ```
@@ -352,7 +352,7 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
 ### Legacy URL Support
 
 ```go
-func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
     path := c.Path()
     
     // Map old URLs to new ones
@@ -364,10 +364,10 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
     }
     
     if newPath, ok := redirects[path]; ok {
-        return fuego.Redirect(newPath, 301), nil
+        return nexo.Redirect(newPath, 301), nil
     }
     
-    return fuego.Continue(), nil
+    return nexo.Continue(), nil
 }
 ```
 
@@ -381,11 +381,11 @@ When using file-based routing, create `app/proxy.go`:
 // app/proxy.go
 package app
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
-func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
     // Your proxy logic here
-    return fuego.Continue(), nil
+    return nexo.Continue(), nil
 }
 ```
 
@@ -394,9 +394,9 @@ The proxy is automatically discovered and registered.
 <Tip>
 Use the CLI to generate a proxy with common patterns:
 ```bash
-fuego generate proxy --template auth-check
-fuego generate proxy --template rate-limit
-fuego generate proxy --template maintenance
+nexo generate proxy --template auth-check
+nexo generate proxy --template rate-limit
+nexo generate proxy --template maintenance
 ```
 </Tip>
 

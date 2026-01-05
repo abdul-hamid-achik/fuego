@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/abdul-hamid-achik/fuego/internal/version"
+	"github.com/abdul-hamid-achik/nexo/internal/version"
 )
 
-// Client is the Fuego Cloud API client.
+// Client is the Nexo Cloud API client.
 type Client struct {
 	BaseURL    string
 	Token      string
@@ -24,7 +24,7 @@ type Client struct {
 	UserAgent  string
 }
 
-// NewClient creates a new Fuego Cloud API client.
+// NewClient creates a new Nexo Cloud API client.
 func NewClient(token string) *Client {
 	return &Client{
 		BaseURL: DefaultAPIURL,
@@ -32,7 +32,7 @@ func NewClient(token string) *Client {
 		HTTPClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		UserAgent: "fuego-cli/" + version.GetVersion(),
+		UserAgent: "nexo-cli/" + version.GetVersion(),
 	}
 }
 

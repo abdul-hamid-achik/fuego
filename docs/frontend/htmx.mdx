@@ -3,7 +3,7 @@ title: HTMX Integration
 description: 'Build interactive UIs without writing JavaScript.'
 ---
 
-Fuego integrates seamlessly with [HTMX](https://htmx.org) for building interactive web applications without client-side JavaScript frameworks.
+Nexo integrates seamlessly with [HTMX](https://htmx.org) for building interactive web applications without client-side JavaScript frameworks.
 
 ## Why HTMX?
 
@@ -82,7 +82,7 @@ Use `hx-post` for forms:
 ### Detecting HTMX Requests
 
 ```go
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     if c.IsHTMX() {
         // Return partial HTML for HTMX
         return c.HTML(200, "<li>New item</li>")
@@ -95,7 +95,7 @@ func Get(c *fuego.Context) error {
 ### Returning HTML Fragments
 
 ```go
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     tasks := taskStore.List()
     
     html := "<ul>"
@@ -121,7 +121,7 @@ templ TaskList(tasks []Task) {
 }
 
 // route.go
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     tasks := taskStore.List()
     return c.Render(components.TaskList(tasks))
 }
@@ -261,16 +261,16 @@ templ Page() {
 // app/api/tasks/route.go
 package tasks
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // GET /api/tasks - List all tasks
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     tasks := taskStore.List()
     return c.HTML(200, renderTaskList(tasks))
 }
 
 // POST /api/tasks - Create a task
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     title := c.FormValue("title")
     if title == "" {
         return c.HTML(400, `<p class="text-red-500">Title required</p>`)
@@ -281,7 +281,7 @@ func Post(c *fuego.Context) error {
 }
 
 // DELETE /api/tasks - Delete a task
-func Delete(c *fuego.Context) error {
+func Delete(c *nexo.Context) error {
     id := c.QueryInt("id", 0)
     taskStore.Delete(id)
     return c.HTML(200, renderTaskList(taskStore.List()))
@@ -329,9 +329,9 @@ func renderTaskList(tasks []Task) string {
 // app/api/tasks/toggle/route.go
 package toggle
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     id := c.QueryInt("id", 0)
     taskStore.Toggle(id)
     return c.HTML(200, renderTaskList(taskStore.List()))

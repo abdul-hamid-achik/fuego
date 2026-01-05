@@ -1,9 +1,9 @@
 ---
 title: Authentication
-description: 'Secure your Fuego applications with JWT tokens, sessions, API keys, and middleware-based auth patterns.'
+description: 'Secure your Nexo applications with JWT tokens, sessions, API keys, and middleware-based auth patterns.'
 ---
 
-Authentication is a critical component of any web application. Fuego provides flexible patterns for implementing authentication using middleware, the proxy layer, and the Context API.
+Authentication is a critical component of any web application. Nexo provides flexible patterns for implementing authentication using middleware, the proxy layer, and the Context API.
 
 ## Authentication Strategies
 
@@ -40,7 +40,7 @@ import (
     "time"
     
     "github.com/golang-jwt/jwt/v5"
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 var jwtSecret = []byte("your-secret-key") // Use environment variable in production
@@ -62,7 +62,7 @@ func GenerateToken(userID, email, role string) (string, error) {
         RegisteredClaims: jwt.RegisteredClaims{
             ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
             IssuedAt:  jwt.NewNumericDate(time.Now()),
-            Issuer:    "fuego-app",
+            Issuer:    "nexo-app",
         },
     }
     
@@ -91,9 +91,9 @@ func ValidateToken(tokenString string) (*Claims, error) {
 }
 
 // JWTMiddleware validates JWT tokens and adds user info to context.
-func JWTMiddleware() fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func JWTMiddleware() nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             authHeader := c.Header("Authorization")
             if authHeader == "" {
                 return c.JSON(401, map[string]any{
@@ -158,7 +158,7 @@ package protected
 import "myapp/internal/auth"
 
 // Middleware applies JWT authentication to all routes under /api/protected
-func Middleware() fuego.MiddlewareFunc {
+func Middleware() nexo.MiddlewareFunc {
     return auth.JWTMiddleware()
 }
 ```
@@ -167,10 +167,10 @@ func Middleware() fuego.MiddlewareFunc {
 // app/api/protected/profile/route.go
 package profile
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // GET /api/protected/profile
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     // User info is available from the JWT middleware
     userID := c.GetString("user_id")
     email := c.GetString("user_email")
@@ -192,7 +192,7 @@ package auth
 
 import (
     "myapp/internal/auth"
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 type LoginRequest struct {
@@ -206,7 +206,7 @@ type LoginResponse struct {
 }
 
 // POST /api/auth - Login and get JWT token
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     var req LoginRequest
     if err := c.Bind(&req); err != nil {
         return c.JSON(400, map[string]string{"error": "invalid request body"})
@@ -245,7 +245,7 @@ import (
     "sync"
     "time"
     
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // Session represents a user session.
@@ -313,9 +313,9 @@ func (s *SessionStore) Delete(sessionID string) {
 }
 
 // SessionMiddleware validates session cookies.
-func SessionMiddleware() fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func SessionMiddleware() nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             sessionID := c.Cookie("session_id")
             if sessionID == "" {
                 return c.Redirect("/login", 302)
@@ -358,11 +358,11 @@ import (
     "net/http"
     
     "myapp/internal/auth"
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // POST /api/auth/login
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     email := c.FormValue("email")
     password := c.FormValue("password")
     
@@ -410,7 +410,7 @@ package auth
 import (
     "crypto/subtle"
     
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // API keys - in production, store in database or secrets manager
@@ -420,9 +420,9 @@ var validAPIKeys = map[string]string{
 }
 
 // APIKeyMiddleware validates API keys from the X-API-Key header.
-func APIKeyMiddleware() fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func APIKeyMiddleware() nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             apiKey := c.Header("X-API-Key")
             if apiKey == "" {
                 return c.JSON(401, map[string]string{
@@ -466,11 +466,11 @@ import (
     "strings"
     
     "myapp/internal/auth"
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // ProxyConfig limits which paths run through the proxy
-var ProxyConfig = &fuego.ProxyConfig{
+var ProxyConfig = &nexo.ProxyConfig{
     Matcher: []string{
         "/api/:path*",      // All API routes
         "/dashboard/:path*", // Dashboard routes
@@ -478,14 +478,14 @@ var ProxyConfig = &fuego.ProxyConfig{
 }
 
 // Proxy handles authentication before routing.
-func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
     path := c.Path()
     
     // Skip auth for public routes
     publicPaths := []string{"/api/auth", "/api/health", "/login", "/signup"}
     for _, public := range publicPaths {
         if strings.HasPrefix(path, public) {
-            return fuego.Continue(), nil
+            return nexo.Continue(), nil
         }
     }
     
@@ -496,7 +496,7 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
     if sessionID != "" {
         // Validate session
         if _, ok := auth.Store.Get(sessionID); ok {
-            return fuego.Continue(), nil
+            return nexo.Continue(), nil
         }
     }
     
@@ -504,16 +504,16 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
         // Validate JWT
         token := strings.TrimPrefix(authHeader, "Bearer ")
         if _, err := auth.ValidateToken(token); err == nil {
-            return fuego.Continue(), nil
+            return nexo.Continue(), nil
         }
     }
     
     // Not authenticated - redirect web requests, 401 for API
     if strings.HasPrefix(path, "/api/") {
-        return fuego.ResponseJSON(401, `{"error":"unauthorized"}`), nil
+        return nexo.ResponseJSON(401, `{"error":"unauthorized"}`), nil
     }
     
-    return fuego.Redirect("/login", 302), nil
+    return nexo.Redirect("/login", 302), nil
 }
 ```
 
@@ -525,7 +525,7 @@ Implement role-based permissions:
 // internal/auth/rbac.go
 package auth
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // Role represents a user role.
 type Role string
@@ -537,9 +537,9 @@ const (
 )
 
 // RequireRole creates middleware that checks for specific roles.
-func RequireRole(roles ...Role) fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func RequireRole(roles ...Role) nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             userRole := Role(c.GetString("user_role"))
             
             for _, role := range roles {
@@ -556,7 +556,7 @@ func RequireRole(roles ...Role) fuego.MiddlewareFunc {
 }
 
 // RequireAdmin is a shorthand for requiring admin role.
-func RequireAdmin() fuego.MiddlewareFunc {
+func RequireAdmin() nexo.MiddlewareFunc {
     return RequireRole(RoleAdmin, RoleSuper)
 }
 ```
@@ -583,12 +583,12 @@ package admin
 import "myapp/internal/auth"
 
 // Middleware requires admin role for all routes under /api/admin
-func Middleware() fuego.MiddlewareFunc {
+func Middleware() nexo.MiddlewareFunc {
     // Chain JWT auth + admin role requirement
     jwtMiddleware := auth.JWTMiddleware()
     adminMiddleware := auth.RequireAdmin()
     
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
         return jwtMiddleware(adminMiddleware(next))
     }
 }
@@ -663,11 +663,11 @@ import (
     "encoding/hex"
     
     "myapp/internal/auth"
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // GET /api/auth/google - Redirect to Google OAuth
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     // Generate state for CSRF protection
     bytes := make([]byte, 16)
     rand.Read(bytes)
@@ -693,11 +693,11 @@ package callback
 
 import (
     "myapp/internal/auth"
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // GET /api/auth/google/callback - Handle OAuth callback
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     // Verify state
     storedState := c.Cookie("oauth_state")
     receivedState := c.Query("state")

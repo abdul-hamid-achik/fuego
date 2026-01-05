@@ -3,7 +3,7 @@ title: Static Files
 description: 'Serve CSS, JavaScript, images, and other static assets.'
 ---
 
-Fuego serves static files from the `static/` directory by default.
+Nexo serves static files from the `static/` directory by default.
 
 ## Default Configuration
 
@@ -52,7 +52,7 @@ templ Layout(title string) {
 
 ## Configuration
 
-### fuego.yaml
+### nexo.yaml
 
 ```yaml
 static_dir: "static"    # Directory containing static files
@@ -61,7 +61,7 @@ static_path: "/static"  # URL path prefix
 
 ### Custom Static Path
 
-Change the URL path in `fuego.yaml`:
+Change the URL path in `nexo.yaml`:
 
 ```yaml
 static_dir: "public"
@@ -98,9 +98,9 @@ For production, set cache headers to improve performance:
 
 ```go
 // In main.go or middleware
-func CacheMiddleware() fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func CacheMiddleware() nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             if strings.HasPrefix(c.Path(), "/static/") {
                 c.SetHeader("Cache-Control", "public, max-age=31536000")
             }
@@ -122,7 +122,7 @@ func CacheMiddleware() fuego.MiddlewareFunc {
 - Files served from compiled binary
 
 <Tip>
-Use `fuego build` to create a production binary that embeds static files.
+Use `nexo build` to create a production binary that embeds static files.
 </Tip>
 
 ## Multiple Static Directories
@@ -131,7 +131,7 @@ You can serve multiple static directories:
 
 ```go
 // main.go
-app := fuego.New()
+app := nexo.New()
 app.Static("/static", "static")
 app.Static("/uploads", "uploads")
 app.Static("/vendor", "node_modules")

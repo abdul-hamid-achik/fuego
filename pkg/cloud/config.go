@@ -1,6 +1,6 @@
 package cloud
 
-// CloudConfig represents the cloud section of fuego.yaml.
+// CloudConfig represents the cloud section of nexo.yaml.
 type CloudConfig struct {
 	Region  string   `mapstructure:"region" json:"region,omitempty"`
 	Size    string   `mapstructure:"size" json:"size,omitempty"`

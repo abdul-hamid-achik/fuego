@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/schema.json",
-  "name": "Fuego",
+  "name": "Nexo",
   "logo": {
     "dark": "/docs/logo/dark.svg",
     "light": "/docs/logo/light.svg"
@@ -18,7 +18,7 @@
   "topbarLinks": [
     {
       "name": "GitHub",
-      "url": "https://github.com/abdul-hamid-achik/fuego"
+      "url": "https://github.com/abdul-hamid-achik/nexo"
     }
   ],
   "topbarCtaButton": {
@@ -39,12 +39,12 @@
     {
       "name": "GitHub",
       "icon": "github",
-      "url": "https://github.com/abdul-hamid-achik/fuego"
+      "url": "https://github.com/abdul-hamid-achik/nexo"
     },
     {
       "name": "Community",
       "icon": "discord",
-      "url": "https://github.com/abdul-hamid-achik/fuego/discussions"
+      "url": "https://github.com/abdul-hamid-achik/nexo/discussions"
     }
   ],
   "navigation": [
@@ -108,7 +108,7 @@
     }
   ],
   "footerSocials": {
-    "github": "https://github.com/abdul-hamid-achik/fuego"
+    "github": "https://github.com/abdul-hamid-achik/nexo"
   },
   "feedback": {
     "thumbsRating": true,

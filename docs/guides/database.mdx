@@ -1,9 +1,9 @@
 ---
 title: Database Integration
-description: 'Connect your Fuego application to databases using GORM, sqlc, or raw SQL with the repository pattern.'
+description: 'Connect your Nexo application to databases using GORM, sqlc, or raw SQL with the repository pattern.'
 ---
 
-Fuego is database-agnostic and works with any Go database library. This guide covers the most popular approaches: GORM (ORM), sqlc (type-safe SQL), and the standard `database/sql` package.
+Nexo is database-agnostic and works with any Go database library. This guide covers the most popular approaches: GORM (ORM), sqlc (type-safe SQL), and the standard `database/sql` package.
 
 ## Choosing a Database Approach
 
@@ -88,7 +88,7 @@ var DB *gorm.DB
 func Connect() error {
     dsn := os.Getenv("DATABASE_URL")
     if dsn == "" {
-        dsn = "host=localhost user=postgres password=postgres dbname=fuego_app port=5432 sslmode=disable"
+        dsn = "host=localhost user=postgres password=postgres dbname=nexo_app port=5432 sslmode=disable"
     }
     
     // Configure GORM logger
@@ -299,11 +299,11 @@ package users
 import (
     "myapp/internal/models"
     "myapp/internal/repository"
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // GET /api/users - List all users with pagination
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     page := c.QueryInt("page", 1)
     pageSize := c.QueryInt("page_size", 20)
     
@@ -321,7 +321,7 @@ func Get(c *fuego.Context) error {
 }
 
 // POST /api/users - Create a new user
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     var input struct {
         Email    string `json:"email"`
         Name     string `json:"name"`
@@ -361,11 +361,11 @@ package id
 
 import (
     "myapp/internal/repository"
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // GET /api/users/:id
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     id := c.ParamInt("id", 0)
     if id == 0 {
         return c.JSON(400, map[string]string{"error": "invalid user id"})
@@ -383,7 +383,7 @@ func Get(c *fuego.Context) error {
 }
 
 // PUT /api/users/:id
-func Put(c *fuego.Context) error {
+func Put(c *nexo.Context) error {
     id := c.ParamInt("id", 0)
     
     user, err := repository.Users.FindByID(uint(id))
@@ -415,7 +415,7 @@ func Put(c *fuego.Context) error {
 }
 
 // DELETE /api/users/:id
-func Delete(c *fuego.Context) error {
+func Delete(c *nexo.Context) error {
     id := c.ParamInt("id", 0)
     
     if err := repository.Users.Delete(uint(id)); err != nil {
@@ -573,11 +573,11 @@ package users
 import (
     "myapp/internal/database"
     "myapp/internal/database/db"
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 // GET /api/users
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     page := c.QueryInt("page", 1)
     pageSize := int32(c.QueryInt("page_size", 20))
     offset := int32((page - 1)) * pageSize
@@ -600,7 +600,7 @@ func Get(c *fuego.Context) error {
 }
 
 // POST /api/users
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     var input struct {
         Email    string `json:"email"`
         Name     string `json:"name"`
@@ -689,12 +689,12 @@ package api
 
 import (
     "myapp/internal/database"
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
-func Middleware() fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func Middleware() nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             // Add database connection to context
             c.Set("db", database.DB)
             c.Set("queries", database.Queries)
@@ -790,7 +790,7 @@ import (
     "syscall"
     
     "myapp/internal/database"
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 func main() {
@@ -805,8 +805,8 @@ func main() {
         log.Fatal("failed to run migrations:", err)
     }
     
-    // Create Fuego app
-    app := fuego.New()
+    // Create Nexo app
+    app := nexo.New()
     
     // Graceful shutdown
     ctx, cancel := signal.NotifyContext(context.Background(), 

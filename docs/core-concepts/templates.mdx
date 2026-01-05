@@ -3,7 +3,7 @@ title: Templates
 description: 'Build type-safe HTML pages with templ templates.'
 ---
 
-Fuego uses [templ](https://templ.guide) for type-safe HTML templates. Templ provides compile-time validation and excellent Go integration.
+Nexo uses [templ](https://templ.guide) for type-safe HTML templates. Templ provides compile-time validation and excellent Go integration.
 
 ## Why templ?
 
@@ -160,7 +160,7 @@ This maps to `/posts/:slug`. The `slug` parameter is automatically extracted fro
 
 ### Parameter Matching
 
-Fuego matches URL parameters to `Page()` parameters **by name**. Your parameter names should match the directory names (without the underscore prefix):
+Nexo matches URL parameters to `Page()` parameters **by name**. Your parameter names should match the directory names (without the underscore prefix):
 
 | Directory | Page Signature | Match |
 |-----------|---------------|-------|
@@ -169,7 +169,7 @@ Fuego matches URL parameters to `Page()` parameters **by name**. Your parameter 
 | `_id` | `Page(userId string)` | ⚠️ Warning |
 
 <Warning>
-If parameter names don't match, Fuego shows a warning during route generation. The page still renders, but mismatched parameters receive zero values.
+If parameter names don't match, Nexo shows a warning during route generation. The page still renders, but mismatched parameters receive zero values.
 </Warning>
 
 ### Multiple Parameters
@@ -386,13 +386,13 @@ Use the CLI to generate pages:
 
 ```bash
 # Basic page
-fuego generate page dashboard
+nexo generate page dashboard
 
 # Page with layout
-fuego generate page admin/settings --with-layout
+nexo generate page admin/settings --with-layout
 
 # Nested page
-fuego generate page users/profile
+nexo generate page users/profile
 ```
 
 ## Best Practices

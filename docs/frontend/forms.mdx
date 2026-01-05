@@ -3,7 +3,7 @@ title: Forms
 description: 'Handle form submissions with validation and file uploads.'
 ---
 
-Learn how to handle HTML forms in Fuego, including validation, HTMX integration, and file uploads.
+Learn how to handle HTML forms in Nexo, including validation, HTMX integration, and file uploads.
 
 ## Basic Form Handling
 
@@ -20,12 +20,12 @@ Learn how to handle HTML forms in Fuego, including validation, HTMX integration,
 ### Handler
 
 ```go
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     name := c.FormValue("name")
     email := c.FormValue("email")
     
     if name == "" || email == "" {
-        return fuego.BadRequest("name and email are required")
+        return nexo.BadRequest("name and email are required")
     }
     
     // Create user...
@@ -54,7 +54,7 @@ For a better UX, use HTMX to submit forms without page reload:
 ### Handler with HTML Response
 
 ```go
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     name := c.FormValue("name")
     email := c.FormValue("email")
     
@@ -98,13 +98,13 @@ type CreateUserInput struct {
     Age   int    `json:"age"`
 }
 
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     var input CreateUserInput
     
     // For JSON body
     if c.IsJSON() {
         if err := c.Bind(&input); err != nil {
-            return fuego.BadRequest("invalid JSON")
+            return nexo.BadRequest("invalid JSON")
         }
     } else {
         // For form data
@@ -146,7 +146,7 @@ Validate individual fields as the user types:
 
 ```go
 // app/api/validate/email/route.go
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     email := c.FormValue("email")
     if !isValidEmail(email) {
         return c.HTML(200, `<span class="text-red-500">Invalid email</span>`)
@@ -167,28 +167,28 @@ func Post(c *fuego.Context) error {
 ```
 
 ```go
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     file, header, err := c.FormFile("avatar")
     if err != nil {
-        return fuego.BadRequest("file required")
+        return nexo.BadRequest("file required")
     }
     defer file.Close()
     
     // Validate file type
     contentType := header.Header.Get("Content-Type")
     if !strings.HasPrefix(contentType, "image/") {
-        return fuego.BadRequest("only images allowed")
+        return nexo.BadRequest("only images allowed")
     }
     
     // Validate file size (e.g., 5MB max)
     if header.Size > 5*1024*1024 {
-        return fuego.BadRequest("file too large (max 5MB)")
+        return nexo.BadRequest("file too large (max 5MB)")
     }
     
     // Save file
     dst, err := os.Create("uploads/" + header.Filename)
     if err != nil {
-        return fuego.InternalServerError("could not save file")
+        return nexo.InternalServerError("could not save file")
     }
     defer dst.Close()
     
@@ -211,10 +211,10 @@ func Post(c *fuego.Context) error {
 ```
 
 ```go
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     form, err := c.MultipartForm()
     if err != nil {
-        return fuego.BadRequest("invalid form")
+        return nexo.BadRequest("invalid form")
     }
     
     files := form.File["files"]
@@ -313,7 +313,7 @@ templ Page() {
 ## Error Display Pattern
 
 ```go
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     name := c.FormValue("name")
     email := c.FormValue("email")
     

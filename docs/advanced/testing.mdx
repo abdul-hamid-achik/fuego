@@ -1,20 +1,20 @@
 ---
 title: Testing
-description: 'Write comprehensive tests for your Fuego applications with built-in testing utilities.'
+description: 'Write comprehensive tests for your Nexo applications with built-in testing utilities.'
 ---
 
-Fuego applications are easy to test using Go's standard `testing` package and `net/http/httptest`. This guide covers testing patterns for handlers, middleware, and full integration tests.
+Nexo applications are easy to test using Go's standard `testing` package and `net/http/httptest`. This guide covers testing patterns for handlers, middleware, and full integration tests.
 
 ## Testing Setup
 
-Fuego provides utilities that work seamlessly with Go's testing infrastructure:
+Nexo provides utilities that work seamlessly with Go's testing infrastructure:
 
 ```go
 import (
     "net/http/httptest"
     "testing"
     
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 ```
 
@@ -25,10 +25,10 @@ import (
 ```go
 func TestGetUsers(t *testing.T) {
     // Create app instance
-    app := fuego.New()
+    app := nexo.New()
     
     // Register the handler
-    app.Get("/api/users", func(c *fuego.Context) error {
+    app.Get("/api/users", func(c *nexo.Context) error {
         return c.JSON(200, map[string]any{
             "users": []string{"alice", "bob"},
         })
@@ -61,15 +61,15 @@ func TestGetUsers(t *testing.T) {
 
 ```go
 func TestCreateUser(t *testing.T) {
-    app := fuego.New()
+    app := nexo.New()
     
-    app.Post("/api/users", func(c *fuego.Context) error {
+    app.Post("/api/users", func(c *nexo.Context) error {
         var input struct {
             Name  string `json:"name"`
             Email string `json:"email"`
         }
         if err := c.Bind(&input); err != nil {
-            return fuego.BadRequest("invalid JSON")
+            return nexo.BadRequest("invalid JSON")
         }
         return c.JSON(201, map[string]any{
             "id":    "user-123",
@@ -108,9 +108,9 @@ func TestCreateUser(t *testing.T) {
 
 ```go
 func TestGetUserByID(t *testing.T) {
-    app := fuego.New()
+    app := nexo.New()
     
-    app.Get("/api/users/{id}", func(c *fuego.Context) error {
+    app.Get("/api/users/{id}", func(c *nexo.Context) error {
         id := c.Param("id")
         return c.JSON(200, map[string]string{"id": id})
     })
@@ -139,9 +139,9 @@ func TestGetUserByID(t *testing.T) {
 
 ```go
 func TestListUsersWithPagination(t *testing.T) {
-    app := fuego.New()
+    app := nexo.New()
     
-    app.Get("/api/users", func(c *fuego.Context) error {
+    app.Get("/api/users", func(c *nexo.Context) error {
         page := c.QueryInt("page", 1)
         limit := c.QueryInt("limit", 10)
         return c.JSON(200, map[string]int{
@@ -175,18 +175,18 @@ Use table-driven tests for comprehensive coverage:
 
 ```go
 func TestUserEndpoints(t *testing.T) {
-    app := fuego.New()
+    app := nexo.New()
     
-    app.Get("/api/users", func(c *fuego.Context) error {
+    app.Get("/api/users", func(c *nexo.Context) error {
         return c.JSON(200, map[string]string{"action": "list"})
     })
-    app.Post("/api/users", func(c *fuego.Context) error {
+    app.Post("/api/users", func(c *nexo.Context) error {
         return c.JSON(201, map[string]string{"action": "create"})
     })
-    app.Put("/api/users/{id}", func(c *fuego.Context) error {
+    app.Put("/api/users/{id}", func(c *nexo.Context) error {
         return c.JSON(200, map[string]string{"action": "update"})
     })
-    app.Delete("/api/users/{id}", func(c *fuego.Context) error {
+    app.Delete("/api/users/{id}", func(c *nexo.Context) error {
         return c.NoContent()
     })
     
@@ -235,14 +235,14 @@ func TestUserEndpoints(t *testing.T) {
 
 ```go
 func TestAuthMiddleware(t *testing.T) {
-    authMiddleware := func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+    authMiddleware := func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             token := c.Header("Authorization")
             if token == "" {
-                return fuego.Unauthorized("missing token")
+                return nexo.Unauthorized("missing token")
             }
             if token != "Bearer valid-token" {
-                return fuego.Forbidden("invalid token")
+                return nexo.Forbidden("invalid token")
             }
             c.Set("user_id", "user-123")
             return next(c)
@@ -261,9 +261,9 @@ func TestAuthMiddleware(t *testing.T) {
     
     for _, tt := range tests {
         t.Run(tt.name, func(t *testing.T) {
-            app := fuego.New()
+            app := nexo.New()
             app.Use(authMiddleware)
-            app.Get("/api/protected", func(c *fuego.Context) error {
+            app.Get("/api/protected", func(c *nexo.Context) error {
                 userID := c.GetString("user_id")
                 return c.JSON(200, map[string]string{"user_id": userID})
             })
@@ -291,8 +291,8 @@ func TestAuthMiddleware(t *testing.T) {
 func TestMiddlewareOrder(t *testing.T) {
     var order []string
     
-    mw1 := func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+    mw1 := func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             order = append(order, "mw1-before")
             err := next(c)
             order = append(order, "mw1-after")
@@ -300,8 +300,8 @@ func TestMiddlewareOrder(t *testing.T) {
         }
     }
     
-    mw2 := func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+    mw2 := func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             order = append(order, "mw2-before")
             err := next(c)
             order = append(order, "mw2-after")
@@ -309,10 +309,10 @@ func TestMiddlewareOrder(t *testing.T) {
         }
     }
     
-    app := fuego.New()
+    app := nexo.New()
     app.Use(mw1)
     app.Use(mw2)
-    app.Get("/test", func(c *fuego.Context) error {
+    app.Get("/test", func(c *nexo.Context) error {
         order = append(order, "handler")
         return c.String(200, "ok")
     })
@@ -340,21 +340,21 @@ func TestMiddlewareOrder(t *testing.T) {
 
 ```go
 func TestErrorResponses(t *testing.T) {
-    app := fuego.New()
+    app := nexo.New()
     
-    app.Get("/api/bad-request", func(c *fuego.Context) error {
-        return fuego.BadRequest("invalid input")
+    app.Get("/api/bad-request", func(c *nexo.Context) error {
+        return nexo.BadRequest("invalid input")
     })
     
-    app.Get("/api/not-found", func(c *fuego.Context) error {
-        return fuego.NotFound("resource not found")
+    app.Get("/api/not-found", func(c *nexo.Context) error {
+        return nexo.NotFound("resource not found")
     })
     
-    app.Get("/api/panic", func(c *fuego.Context) error {
+    app.Get("/api/panic", func(c *nexo.Context) error {
         panic("something went wrong")
     })
     
-    app.Use(fuego.Recover()) // Add recover middleware
+    app.Use(nexo.Recover()) // Add recover middleware
     app.Mount()
     
     tests := []struct {
@@ -396,25 +396,25 @@ func TestUserCRUD_Integration(t *testing.T) {
     db := setupTestDB(t)
     defer cleanupTestDB(t, db)
     
-    app := fuego.New()
+    app := nexo.New()
     userStore := NewUserStore(db)
     
-    app.Get("/api/users/{id}", func(c *fuego.Context) error {
+    app.Get("/api/users/{id}", func(c *nexo.Context) error {
         user, err := userStore.Find(c.Param("id"))
         if err != nil {
-            return fuego.NotFound("user not found")
+            return nexo.NotFound("user not found")
         }
         return c.JSON(200, user)
     })
     
-    app.Post("/api/users", func(c *fuego.Context) error {
+    app.Post("/api/users", func(c *nexo.Context) error {
         var input CreateUserInput
         if err := c.Bind(&input); err != nil {
-            return fuego.BadRequest("invalid input")
+            return nexo.BadRequest("invalid input")
         }
         user, err := userStore.Create(input)
         if err != nil {
-            return fuego.InternalServerError("failed to create user")
+            return nexo.InternalServerError("failed to create user")
         }
         return c.JSON(201, user)
     })
@@ -462,18 +462,18 @@ import (
     "strings"
     "testing"
     
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
-// TestApp wraps fuego.App with testing utilities
+// TestApp wraps nexo.App with testing utilities
 type TestApp struct {
-    *fuego.App
+    *nexo.App
     t *testing.T
 }
 
 func NewTestApp(t *testing.T) *TestApp {
     return &TestApp{
-        App: fuego.New(),
+        App: nexo.New(),
         t:   t,
     }
 }
@@ -521,7 +521,7 @@ Usage:
 func TestWithHelpers(t *testing.T) {
     app := testutil.NewTestApp(t)
     
-    app.Get("/api/users", func(c *fuego.Context) error {
+    app.Get("/api/users", func(c *nexo.Context) error {
         return c.JSON(200, map[string]string{"status": "ok"})
     })
     
@@ -535,9 +535,9 @@ func TestWithHelpers(t *testing.T) {
 
 ```go
 func TestHTMXHandler(t *testing.T) {
-    app := fuego.New()
+    app := nexo.New()
     
-    app.Get("/api/items", func(c *fuego.Context) error {
+    app.Get("/api/items", func(c *nexo.Context) error {
         if c.IsHTMX() {
             // Return HTML fragment for HTMX
             return c.HTML(200, "<li>New Item</li>")
@@ -585,9 +585,9 @@ func TestFileBasedRoutes(t *testing.T) {
     
     routeContent := `package health
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     return c.JSON(200, map[string]string{"status": "healthy"})
 }
 `
@@ -595,7 +595,7 @@ func Get(c *fuego.Context) error {
         t.Fatalf("failed to write route.go: %v", err)
     }
     
-    app := fuego.New(fuego.WithAppDir(filepath.Join(tmpDir, "app")))
+    app := nexo.New(nexo.WithAppDir(filepath.Join(tmpDir, "app")))
     
     if err := app.Scan(); err != nil {
         t.Fatalf("scan failed: %v", err)
@@ -618,7 +618,7 @@ go test ./...
   </Tab>
   <Tab title="Specific Package">
 ```bash
-go test ./pkg/fuego/...
+go test ./pkg/nexo/...
 ```
   </Tab>
   <Tab title="With Coverage">

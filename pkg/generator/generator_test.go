@@ -431,7 +431,7 @@ func TestExtractParams(t *testing.T) {
 func TestGenerateRoutesFile(t *testing.T) {
 	t.Run("empty routes", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		outputPath := filepath.Join(tmpDir, "fuego_routes.go")
+		outputPath := filepath.Join(tmpDir, "nexo_routes.go")
 
 		result, err := GenerateRoutesFile(RoutesGenConfig{
 			OutputPath: outputPath,
@@ -457,7 +457,7 @@ func TestGenerateRoutesFile(t *testing.T) {
 
 	t.Run("with routes", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		outputPath := filepath.Join(tmpDir, "fuego_routes.go")
+		outputPath := filepath.Join(tmpDir, "nexo_routes.go")
 
 		result, err := GenerateRoutesFile(RoutesGenConfig{
 			ModuleName: "testapp",
@@ -527,7 +527,7 @@ func TestGenerateRoutesFile(t *testing.T) {
 
 	t.Run("with middleware", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		outputPath := filepath.Join(tmpDir, "fuego_routes.go")
+		outputPath := filepath.Join(tmpDir, "nexo_routes.go")
 
 		result, err := GenerateRoutesFile(RoutesGenConfig{
 			ModuleName: "testapp",
@@ -573,7 +573,7 @@ func TestGenerateRoutesFile(t *testing.T) {
 
 	t.Run("with proxy", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		outputPath := filepath.Join(tmpDir, "fuego_routes.go")
+		outputPath := filepath.Join(tmpDir, "nexo_routes.go")
 
 		result, err := GenerateRoutesFile(RoutesGenConfig{
 			ModuleName: "testapp",
@@ -889,7 +889,7 @@ func TestValidatePageParams(t *testing.T) {
 func TestGenerateRoutesFile_WithDynamicPages(t *testing.T) {
 	t.Run("page with params", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		outputPath := filepath.Join(tmpDir, "fuego_routes.go")
+		outputPath := filepath.Join(tmpDir, "nexo_routes.go")
 
 		result, err := GenerateRoutesFile(RoutesGenConfig{
 			ModuleName: "testapp",
@@ -942,7 +942,7 @@ func TestGenerateRoutesFile_WithDynamicPages(t *testing.T) {
 
 	t.Run("page without params", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		outputPath := filepath.Join(tmpDir, "fuego_routes.go")
+		outputPath := filepath.Join(tmpDir, "nexo_routes.go")
 
 		result, err := GenerateRoutesFile(RoutesGenConfig{
 			ModuleName: "testapp",
@@ -988,7 +988,7 @@ func TestGenerateRoutesFile_WithDynamicPages(t *testing.T) {
 
 	t.Run("multiple params", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		outputPath := filepath.Join(tmpDir, "fuego_routes.go")
+		outputPath := filepath.Join(tmpDir, "nexo_routes.go")
 
 		result, err := GenerateRoutesFile(RoutesGenConfig{
 			ModuleName: "testapp",
@@ -1083,9 +1083,9 @@ func TestScanAndGenerateRoutesWithDeeplyNestedDynamicDirs(t *testing.T) {
 
 	routeTemplate := `package %s
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
 	return c.JSON(200, nil)
 }
 `
@@ -1104,13 +1104,13 @@ func Get(c *fuego.Context) error {
 	// Add POST handler to verify route
 	verifyContent := `package verify
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
 	return c.JSON(200, nil)
 }
 
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
 	return c.JSON(201, nil)
 }
 `
@@ -1133,7 +1133,7 @@ func Post(c *fuego.Context) error {
 	defer func() { _ = os.Chdir(origDir) }()
 
 	// Run the generator with relative path
-	result, err := ScanAndGenerateRoutes("app", "fuego_routes.go")
+	result, err := ScanAndGenerateRoutes("app", "nexo_routes.go")
 	if err != nil {
 		t.Fatalf("ScanAndGenerateRoutes() error = %v", err)
 	}
@@ -1143,7 +1143,7 @@ func Post(c *fuego.Context) error {
 	}
 
 	// Read generated file
-	content, err := os.ReadFile("fuego_routes.go")
+	content, err := os.ReadFile("nexo_routes.go")
 	if err != nil {
 		t.Fatalf("Failed to read generated file: %v", err)
 	}
@@ -1257,7 +1257,7 @@ func TestGenerateLoader(t *testing.T) {
 			}
 
 			// Check Loader function is present
-			if !strings.Contains(contentStr, "func Loader(c *fuego.Context)") {
+			if !strings.Contains(contentStr, "func Loader(c *nexo.Context)") {
 				t.Error("Expected Loader function, but not found")
 			}
 
@@ -1433,17 +1433,17 @@ func TestRouteFileHasGetHandler(t *testing.T) {
 	}{
 		{
 			name:     "has Get handler",
-			content:  "package test\n\nfunc Get(c *fuego.Context) error { return nil }",
+			content:  "package test\n\nfunc Get(c *nexo.Context) error { return nil }",
 			expected: true,
 		},
 		{
 			name:     "has Get with newlines",
-			content:  "package test\n\nfunc Get(\n\tc *fuego.Context,\n) error { return nil }",
+			content:  "package test\n\nfunc Get(\n\tc *nexo.Context,\n) error { return nil }",
 			expected: true,
 		},
 		{
 			name:     "only Post handler",
-			content:  "package test\n\nfunc Post(c *fuego.Context) error { return nil }",
+			content:  "package test\n\nfunc Post(c *nexo.Context) error { return nil }",
 			expected: false,
 		},
 		{
@@ -1453,7 +1453,7 @@ func TestRouteFileHasGetHandler(t *testing.T) {
 		},
 		{
 			name:     "GetSomething is not Get",
-			content:  "package test\n\nfunc GetUser(c *fuego.Context) error { return nil }",
+			content:  "package test\n\nfunc GetUser(c *nexo.Context) error { return nil }",
 			expected: false,
 		},
 	}

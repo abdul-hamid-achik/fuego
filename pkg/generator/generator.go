@@ -1,4 +1,4 @@
-// Package generator provides code generation for Fuego projects.
+// Package generator provides code generation for Nexo projects.
 package generator
 
 import (
@@ -721,7 +721,7 @@ type LayoutRegistration struct {
 type RoutesGenConfig struct {
 	ModuleName  string                   // Go module name (from go.mod)
 	AppDir      string                   // App directory (default: "app")
-	OutputPath  string                   // Output file path (default: "fuego_routes.go")
+	OutputPath  string                   // Output file path (default: "nexo_routes.go")
 	Routes      []RouteRegistration      // Discovered routes
 	Middlewares []MiddlewareRegistration // Discovered middlewares
 	Proxy       *ProxyRegistration       // Discovered proxy (optional)
@@ -730,10 +730,10 @@ type RoutesGenConfig struct {
 	Loaders     []LoaderRegistration     // Discovered data loaders
 }
 
-// GenerateRoutesFile generates the fuego_routes.go file that registers all routes.
+// GenerateRoutesFile generates the nexo_routes.go file that registers all routes.
 func GenerateRoutesFile(cfg RoutesGenConfig) (*Result, error) {
 	if cfg.OutputPath == "" {
-		cfg.OutputPath = "fuego_routes.go"
+		cfg.OutputPath = "nexo_routes.go"
 	}
 
 	// Check if we have any routes to register
@@ -1122,7 +1122,7 @@ func scanLoaderFile(fset *token.FileSet, filePath, appDir, moduleName string) (*
 	}
 
 	// Check for Loader function
-	loaderRe := regexp.MustCompile(`func\s+Loader\s*\([^)]*\*fuego\.Context\s*\)\s*\(([^,]+),\s*error\)`)
+	loaderRe := regexp.MustCompile(`func\s+Loader\s*\([^)]*\*nexo\.Context\s*\)\s*\(([^,]+),\s*error\)`)
 	matches := loaderRe.FindSubmatch(content)
 	if len(matches) < 2 {
 		return nil, nil // No Loader function found
@@ -1185,7 +1185,7 @@ func printConflictWarning(c RouteConflict) {
 	fmt.Println("  1. Remove Get() from route.go (it will still handle POST, PUT, DELETE, etc.)")
 	fmt.Println("  2. Move API logic to app/api/ directory")
 	fmt.Println("  3. Use the data loader pattern: create loader.go with Loader() function")
-	fmt.Println("     See: https://fuego.build/docs/routing/data-loaders")
+	fmt.Println("     See: https://nexo.build/docs/routing/data-loaders")
 	fmt.Println()
 }
 
@@ -1430,7 +1430,7 @@ func scanLayoutFile(filePath, appDir, moduleName string) (*LayoutRegistration, e
 	if err != nil {
 		return nil, err
 	}
-	// Get import path (uses .fuego/imports/ if sanitization is needed)
+	// Get import path (uses .nexo/imports/ if sanitization is needed)
 	importPath := getImportPath(moduleName, relDir)
 	pathPrefix := layoutPathToPrefix(filepath.Dir(filePath), appDir)
 	pkgName := packageNameFromDir(filepath.Dir(filePath))
@@ -1615,7 +1615,7 @@ func scanRouteFile(fset *token.FileSet, filePath, appDir, moduleName string) ([]
 	if err != nil {
 		return nil, err
 	}
-	// Get import path (uses .fuego/imports/ if sanitization is needed)
+	// Get import path (uses .nexo/imports/ if sanitization is needed)
 	importPath := getImportPath(moduleName, relDir)
 	pattern := dirToPattern(filepath.Dir(filePath), appDir)
 	pkgName := file.Name.Name
@@ -1662,7 +1662,7 @@ func scanMiddlewareFile(fset *token.FileSet, filePath, appDir, moduleName string
 	if err != nil {
 		return nil, err
 	}
-	// Get import path (uses .fuego/imports/ if sanitization is needed)
+	// Get import path (uses .nexo/imports/ if sanitization is needed)
 	importPath := getImportPath(moduleName, relDir)
 	pathPrefix := dirToPattern(filepath.Dir(filePath), appDir)
 	pkgName := file.Name.Name
@@ -1804,7 +1804,7 @@ func dirToPattern(dir, appDir string) string {
 	return "/" + strings.Join(routeSegments, "/")
 }
 
-// isValidHandlerSignature checks if a function has the signature: func(c *fuego.Context) error
+// isValidHandlerSignature checks if a function has the signature: func(c *nexo.Context) error
 func isValidHandlerSignature(fn *ast.FuncDecl) bool {
 	if fn.Type.Params == nil || len(fn.Type.Params.List) != 1 {
 		return false
@@ -1819,7 +1819,7 @@ func isValidHandlerSignature(fn *ast.FuncDecl) bool {
 	switch x := starExpr.X.(type) {
 	case *ast.SelectorExpr:
 		if ident, ok := x.X.(*ast.Ident); ok {
-			if ident.Name == "fuego" && x.Sel.Name == "Context" {
+			if ident.Name == "nexo" && x.Sel.Name == "Context" {
 				goto checkReturn
 			}
 		}
@@ -1845,7 +1845,7 @@ checkReturn:
 
 // isValidMiddlewareSignature checks if a function has the correct middleware signature
 func isValidMiddlewareSignature(fn *ast.FuncDecl) bool {
-	// Check for: func(next fuego.HandlerFunc) fuego.HandlerFunc
+	// Check for: func(next nexo.HandlerFunc) nexo.HandlerFunc
 	if fn.Type.Params == nil || len(fn.Type.Params.List) != 1 {
 		return false
 	}
@@ -1855,7 +1855,7 @@ func isValidMiddlewareSignature(fn *ast.FuncDecl) bool {
 	switch x := param.Type.(type) {
 	case *ast.SelectorExpr:
 		if ident, ok := x.X.(*ast.Ident); ok {
-			if ident.Name != "fuego" || x.Sel.Name != "HandlerFunc" {
+			if ident.Name != "nexo" || x.Sel.Name != "HandlerFunc" {
 				return false
 			}
 		} else {
@@ -1878,7 +1878,7 @@ func isValidMiddlewareSignature(fn *ast.FuncDecl) bool {
 	switch x := result.Type.(type) {
 	case *ast.SelectorExpr:
 		if ident, ok := x.X.(*ast.Ident); ok {
-			return ident.Name == "fuego" && x.Sel.Name == "HandlerFunc"
+			return ident.Name == "nexo" && x.Sel.Name == "HandlerFunc"
 		}
 	case *ast.Ident:
 		return x.Name == "HandlerFunc"
@@ -1902,7 +1902,7 @@ func isValidProxySignature(fn *ast.FuncDecl) bool {
 	switch x := starExpr.X.(type) {
 	case *ast.SelectorExpr:
 		if ident, ok := x.X.(*ast.Ident); ok {
-			if ident.Name != "fuego" || x.Sel.Name != "Context" {
+			if ident.Name != "nexo" || x.Sel.Name != "Context" {
 				return false
 			}
 		} else {
@@ -1931,7 +1931,7 @@ func isValidProxySignature(fn *ast.FuncDecl) bool {
 	switch x := starResult.X.(type) {
 	case *ast.SelectorExpr:
 		if ident, ok := x.X.(*ast.Ident); ok {
-			if ident.Name != "fuego" || x.Sel.Name != "ProxyResult" {
+			if ident.Name != "nexo" || x.Sel.Name != "ProxyResult" {
 				return false
 			}
 		} else {

@@ -251,9 +251,9 @@ func TestHandleListRoutes_WithRoutes(t *testing.T) {
 
 	routeContent := `package health
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
 	return c.JSON(200, map[string]string{"status": "ok"})
 }
 `
@@ -282,9 +282,9 @@ func Get(c *fuego.Context) error {
 func TestHandleInfo(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// Create fuego.yaml
-	if err := os.WriteFile(filepath.Join(tmpDir, "fuego.yaml"), []byte("name: test\n"), 0644); err != nil {
-		t.Fatalf("Failed to write fuego.yaml: %v", err)
+	// Create nexo.yaml
+	if err := os.WriteFile(filepath.Join(tmpDir, "nexo.yaml"), []byte("name: test\n"), 0644); err != nil {
+		t.Fatalf("Failed to write nexo.yaml: %v", err)
 	}
 
 	// Create go.mod

@@ -3,7 +3,7 @@ title: Middleware
 description: 'Built-in middleware functions and custom middleware patterns'
 ---
 
-Middleware in Fuego wraps handlers to add cross-cutting functionality like logging, authentication, and error recovery.
+Middleware in Nexo wraps handlers to add cross-cutting functionality like logging, authentication, and error recovery.
 
 ## Middleware Signature
 
@@ -14,9 +14,9 @@ type MiddlewareFunc func(next HandlerFunc) HandlerFunc
 Middleware receives the next handler and returns a new handler that wraps it:
 
 ```go
-func MyMiddleware() fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func MyMiddleware() nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             // Before handler
             start := time.Now()
             
@@ -44,7 +44,7 @@ func MyMiddleware() fuego.MiddlewareFunc {
     ### Logger()
 
     ```go
-    app.Use(fuego.Logger())
+    app.Use(nexo.Logger())
     ```
 
     Output:
@@ -56,7 +56,7 @@ func MyMiddleware() fuego.MiddlewareFunc {
     ### LoggerWithConfig(config)
 
     ```go
-    app.Use(fuego.LoggerWithConfig(fuego.LoggerConfig{
+    app.Use(nexo.LoggerWithConfig(nexo.LoggerConfig{
         Format:     "${time} ${method} ${path} ${status} ${latency}",
         TimeFormat: "15:04:05",
         Output:     os.Stdout,
@@ -89,7 +89,7 @@ func MyMiddleware() fuego.MiddlewareFunc {
     ### Recover()
 
     ```go
-    app.Use(fuego.Recover())
+    app.Use(nexo.Recover())
     ```
 
     When a panic occurs:
@@ -100,10 +100,10 @@ func MyMiddleware() fuego.MiddlewareFunc {
     ### RecoverWithConfig(config)
 
     ```go
-    app.Use(fuego.RecoverWithConfig(fuego.RecoverConfig{
+    app.Use(nexo.RecoverWithConfig(nexo.RecoverConfig{
         EnableStackTrace: true,
-        LogLevel:         fuego.LogLevelError,
-        PanicHandler: func(c *fuego.Context, err any) {
+        LogLevel:         nexo.LogLevelError,
+        PanicHandler: func(c *nexo.Context, err any) {
             // Custom panic handling
             log.Printf("PANIC: %v", err)
             c.JSON(500, map[string]string{"error": "something went wrong"})
@@ -130,13 +130,13 @@ func MyMiddleware() fuego.MiddlewareFunc {
     ### RequestID()
 
     ```go
-    app.Use(fuego.RequestID())
+    app.Use(nexo.RequestID())
     ```
 
     Adds `X-Request-ID` header to responses. Access in handlers:
 
     ```go
-    func handler(c *fuego.Context) error {
+    func handler(c *nexo.Context) error {
         requestID := c.Header("X-Request-ID")
         log.Printf("[%s] Processing request", requestID)
         return c.JSON(200, data)
@@ -146,7 +146,7 @@ func MyMiddleware() fuego.MiddlewareFunc {
     ### RequestIDWithConfig(config)
 
     ```go
-    app.Use(fuego.RequestIDWithConfig(fuego.RequestIDConfig{
+    app.Use(nexo.RequestIDWithConfig(nexo.RequestIDConfig{
         Header:    "X-Correlation-ID",
         Generator: func() string {
             return uuid.New().String()
@@ -168,7 +168,7 @@ func MyMiddleware() fuego.MiddlewareFunc {
     ### CORS()
 
     ```go
-    app.Use(fuego.CORS())
+    app.Use(nexo.CORS())
     ```
 
     Uses default configuration allowing common origins and methods.
@@ -176,7 +176,7 @@ func MyMiddleware() fuego.MiddlewareFunc {
     ### CORSWithConfig(config)
 
     ```go
-    app.Use(fuego.CORSWithConfig(fuego.CORSConfig{
+    app.Use(nexo.CORSWithConfig(nexo.CORSConfig{
         AllowOrigins:     []string{"https://example.com", "https://app.example.com"},
         AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
         AllowHeaders:     []string{"Authorization", "Content-Type"},
@@ -188,9 +188,9 @@ func MyMiddleware() fuego.MiddlewareFunc {
     ### DefaultCORSConfig()
 
     ```go
-    config := fuego.DefaultCORSConfig()
+    config := nexo.DefaultCORSConfig()
     config.AllowOrigins = []string{"https://myapp.com"}
-    app.Use(fuego.CORSWithConfig(config))
+    app.Use(nexo.CORSWithConfig(config))
     ```
 
     <Expandable title="CORSConfig Options">
@@ -215,7 +215,7 @@ func MyMiddleware() fuego.MiddlewareFunc {
     ### Timeout(duration)
 
     ```go
-    app.Use(fuego.Timeout(30 * time.Second))
+    app.Use(nexo.Timeout(30 * time.Second))
     ```
 
     If the handler doesn't complete within the timeout:
@@ -230,14 +230,14 @@ func MyMiddleware() fuego.MiddlewareFunc {
     **Example with context:**
 
     ```go
-    func handler(c *fuego.Context) error {
+    func handler(c *nexo.Context) error {
         ctx := c.Request().Context()
         
         select {
         case result := <-doSlowOperation(ctx):
             return c.JSON(200, result)
         case <-ctx.Done():
-            return fuego.InternalServerError("operation cancelled")
+            return nexo.InternalServerError("operation cancelled")
         }
     }
     ```
@@ -249,7 +249,7 @@ func MyMiddleware() fuego.MiddlewareFunc {
     ### BasicAuth(validator)
 
     ```go
-    app.Use(fuego.BasicAuth(func(username, password string) bool {
+    app.Use(nexo.BasicAuth(func(username, password string) bool {
         return username == "admin" && password == "secret"
     }))
     ```
@@ -257,7 +257,7 @@ func MyMiddleware() fuego.MiddlewareFunc {
     ### BasicAuthWithConfig(config)
 
     ```go
-    app.Use(fuego.BasicAuthWithConfig(fuego.BasicAuthConfig{
+    app.Use(nexo.BasicAuthWithConfig(nexo.BasicAuthConfig{
         Validator: func(username, password string) bool {
             user, err := db.FindUser(username)
             if err != nil {
@@ -289,7 +289,7 @@ func MyMiddleware() fuego.MiddlewareFunc {
     ### Compress()
 
     ```go
-    app.Use(fuego.Compress())
+    app.Use(nexo.Compress())
     ```
 
     Automatically compresses responses when:
@@ -309,7 +309,7 @@ func MyMiddleware() fuego.MiddlewareFunc {
 
     ```go
     // 100 requests per minute per IP
-    app.Use(fuego.RateLimiter(100, time.Minute))
+    app.Use(nexo.RateLimiter(100, time.Minute))
     ```
 
     When rate limit is exceeded:
@@ -335,10 +335,10 @@ func MyMiddleware() fuego.MiddlewareFunc {
     **Custom key function:**
 
     ```go
-    app.Use(fuego.RateLimiterWithConfig(fuego.RateLimiterConfig{
+    app.Use(nexo.RateLimiterWithConfig(nexo.RateLimiterConfig{
         Max:    1000,
         Window: time.Hour,
-        KeyFunc: func(c *fuego.Context) string {
+        KeyFunc: func(c *nexo.Context) string {
             // Rate limit by API key instead of IP
             return c.Header("X-API-Key")
         },
@@ -352,7 +352,7 @@ func MyMiddleware() fuego.MiddlewareFunc {
     ### SecureHeaders()
 
     ```go
-    app.Use(fuego.SecureHeaders())
+    app.Use(nexo.SecureHeaders())
     ```
 
     **Headers added:**
@@ -378,9 +378,9 @@ func MyMiddleware() fuego.MiddlewareFunc {
 ### Basic Pattern
 
 ```go
-func MyMiddleware() fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func MyMiddleware() nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             // Pre-processing
             log.Println("Before handler")
             
@@ -401,16 +401,16 @@ func MyMiddleware() fuego.MiddlewareFunc {
 ```go
 type AuthConfig struct {
     TokenHeader string
-    Skipper     func(*fuego.Context) bool
+    Skipper     func(*nexo.Context) bool
 }
 
-func Auth(config AuthConfig) fuego.MiddlewareFunc {
+func Auth(config AuthConfig) nexo.MiddlewareFunc {
     if config.TokenHeader == "" {
         config.TokenHeader = "Authorization"
     }
     
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             // Skip if configured
             if config.Skipper != nil && config.Skipper(c) {
                 return next(c)
@@ -418,12 +418,12 @@ func Auth(config AuthConfig) fuego.MiddlewareFunc {
             
             token := c.Header(config.TokenHeader)
             if token == "" {
-                return fuego.Unauthorized("missing token")
+                return nexo.Unauthorized("missing token")
             }
             
             user, err := validateToken(token)
             if err != nil {
-                return fuego.Unauthorized("invalid token")
+                return nexo.Unauthorized("invalid token")
             }
             
             c.Set("user", user)
@@ -436,9 +436,9 @@ func Auth(config AuthConfig) fuego.MiddlewareFunc {
 ### Early Return (Short-Circuit)
 
 ```go
-func MaintenanceMode(enabled bool) fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func MaintenanceMode(enabled bool) nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             if enabled {
                 // Don't call next - return immediately
                 return c.JSON(503, map[string]string{
@@ -454,11 +454,11 @@ func MaintenanceMode(enabled bool) fuego.MiddlewareFunc {
 ### Modifying Response
 
 ```go
-func AddHeaders() fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func AddHeaders() nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             // Set headers before handler
-            c.SetHeader("X-Powered-By", "Fuego")
+            c.SetHeader("X-Powered-By", "Nexo")
             
             // Call handler
             err := next(c)
@@ -479,10 +479,10 @@ func AddHeaders() fuego.MiddlewareFunc {
 Middleware executes in the order it's added:
 
 ```go
-app.Use(fuego.Logger())      // 1st - logs all requests
-app.Use(fuego.Recover())     // 2nd - catches panics
-app.Use(fuego.RequestID())   // 3rd - adds request ID
-app.Use(fuego.CORS())        // 4th - handles CORS
+app.Use(nexo.Logger())      // 1st - logs all requests
+app.Use(nexo.Recover())     // 2nd - catches panics
+app.Use(nexo.RequestID())   // 3rd - adds request ID
+app.Use(nexo.CORS())        // 4th - handles CORS
 app.Use(authMiddleware)      // 5th - authentication
 ```
 
@@ -512,14 +512,14 @@ Response ← Logger ← Recover ← RequestID ← CORS ← Auth ← Handler
 Apply middleware to specific routes using groups:
 
 ```go
-app.Use(fuego.Logger()) // Global
+app.Use(nexo.Logger()) // Global
 
-app.Group("/api", func(api *fuego.RouteGroup) {
-    api.Use(fuego.RateLimiter(100, time.Minute))
+app.Group("/api", func(api *nexo.RouteGroup) {
+    api.Use(nexo.RateLimiter(100, time.Minute))
     
     api.Get("/public", publicHandler) // Has rate limiting
     
-    api.Group("/admin", func(admin *fuego.RouteGroup) {
+    api.Group("/admin", func(admin *nexo.RouteGroup) {
         admin.Use(adminAuthMiddleware)
         admin.Get("/users", listUsers) // Has rate limiting + admin auth
     })

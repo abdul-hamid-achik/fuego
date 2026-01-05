@@ -1,6 +1,6 @@
-# Contributing to Fuego
+# Contributing to Nexo
 
-Thank you for your interest in contributing to Fuego! This document provides guidelines and information for contributors.
+Thank you for your interest in contributing to Nexo! This document provides guidelines and information for contributors.
 
 ## Code of Conduct
 
@@ -19,12 +19,12 @@ Please be respectful and constructive in all interactions. We welcome contributo
 1. Fork the repository on GitHub
 2. Clone your fork:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/fuego.git
-   cd fuego
+   git clone https://github.com/YOUR_USERNAME/nexo.git
+   cd nexo
    ```
 3. Add the upstream remote:
    ```bash
-   git remote add upstream https://github.com/abdul-hamid-achik/fuego.git
+   git remote add upstream https://github.com/abdul-hamid-achik/nexo.git
    ```
 4. Install dependencies:
    ```bash
@@ -136,8 +136,8 @@ func TestFeature(t *testing.T) {
 
 ### Package Organization
 
-- `cmd/fuego/` - CLI commands
-- `pkg/fuego/` - Public API (the framework)
+- `cmd/nexo/` - CLI commands
+- `pkg/nexo/` - Public API (the framework)
 - `internal/` - Internal packages not for public use
 - `examples/` - Example projects
 
@@ -151,11 +151,11 @@ func TestFeature(t *testing.T) {
 ## Project Structure
 
 ```
-fuego/
-├── cmd/fuego/           # CLI entry point
+nexo/
+├── cmd/nexo/           # CLI entry point
 │   ├── main.go
 │   └── commands/        # CLI commands
-├── pkg/fuego/           # Main framework package
+├── pkg/nexo/           # Main framework package
 │   ├── app.go           # App struct
 │   ├── context.go       # Request context
 │   ├── router.go        # Route tree
@@ -199,4 +199,4 @@ By contributing, you agree that your contributions will be licensed under the MI
 
 ---
 
-Thank you for contributing to Fuego!
+Thank you for contributing to Nexo!

@@ -3,11 +3,11 @@ title: Error Handling
 description: 'Structured error handling patterns for consistent API responses and debugging.'
 ---
 
-Fuego provides a structured error handling system that makes it easy to return consistent error responses and handle errors gracefully throughout your application.
+Nexo provides a structured error handling system that makes it easy to return consistent error responses and handle errors gracefully throughout your application.
 
 ## HTTPError Type
 
-The foundation of Fuego's error handling is the `HTTPError` type:
+The foundation of Nexo's error handling is the `HTTPError` type:
 
 ```go
 type HTTPError struct {
@@ -17,7 +17,7 @@ type HTTPError struct {
 }
 ```
 
-When you return an `HTTPError` from a handler, Fuego automatically serializes it to a consistent JSON response:
+When you return an `HTTPError` from a handler, Nexo automatically serializes it to a consistent JSON response:
 
 ```json
 {
@@ -30,34 +30,34 @@ When you return an `HTTPError` from a handler, Fuego automatically serializes it
 
 ## Error Helper Functions
 
-Fuego provides convenience functions for common HTTP errors:
+Nexo provides convenience functions for common HTTP errors:
 
 <Tabs>
   <Tab title="Client Errors (4xx)">
 ```go
 // 400 Bad Request
-return fuego.BadRequest("invalid input")
+return nexo.BadRequest("invalid input")
 
 // 401 Unauthorized
-return fuego.Unauthorized("authentication required")
+return nexo.Unauthorized("authentication required")
 
 // 403 Forbidden
-return fuego.Forbidden("insufficient permissions")
+return nexo.Forbidden("insufficient permissions")
 
 // 404 Not Found
-return fuego.NotFound("user not found")
+return nexo.NotFound("user not found")
 
 // 409 Conflict
-return fuego.Conflict("email already exists")
+return nexo.Conflict("email already exists")
 ```
   </Tab>
   <Tab title="Server Errors (5xx)">
 ```go
 // 500 Internal Server Error
-return fuego.InternalServerError("database connection failed")
+return nexo.InternalServerError("database connection failed")
 
 // Custom error with any status code
-return fuego.NewHTTPError(503, "service temporarily unavailable")
+return nexo.NewHTTPError(503, "service temporarily unavailable")
 ```
   </Tab>
 </Tabs>
@@ -71,31 +71,31 @@ Here's a complete example of proper error handling in a route handler:
 package id
 
 import (
-    "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
     "myapp/internal/db"
 )
 
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     id := c.Param("id")
     if id == "" {
-        return fuego.BadRequest("user ID is required")
+        return nexo.BadRequest("user ID is required")
     }
 
     user, err := db.FindUser(id)
     if err != nil {
         // Check if it's a not-found error
         if errors.Is(err, db.ErrNotFound) {
-            return fuego.NotFound("user not found")
+            return nexo.NotFound("user not found")
         }
         // Log the actual error, return generic message
         log.Printf("database error: %v", err)
-        return fuego.InternalServerError("failed to fetch user")
+        return nexo.InternalServerError("failed to fetch user")
     }
 
     return c.JSON(200, user)
 }
 
-func Put(c *fuego.Context) error {
+func Put(c *nexo.Context) error {
     id := c.Param("id")
     
     var input struct {
@@ -104,26 +104,26 @@ func Put(c *fuego.Context) error {
     }
     
     if err := c.Bind(&input); err != nil {
-        return fuego.BadRequest("invalid JSON body")
+        return nexo.BadRequest("invalid JSON body")
     }
 
     // Validate input
     if input.Name == "" {
-        return fuego.BadRequest("name is required")
+        return nexo.BadRequest("name is required")
     }
     if !isValidEmail(input.Email) {
-        return fuego.BadRequest("invalid email format")
+        return nexo.BadRequest("invalid email format")
     }
 
     // Check for conflicts
     existing, _ := db.FindUserByEmail(input.Email)
     if existing != nil && existing.ID != id {
-        return fuego.Conflict("email already in use")
+        return nexo.Conflict("email already in use")
     }
 
     user, err := db.UpdateUser(id, input)
     if err != nil {
-        return fuego.InternalServerError("failed to update user")
+        return nexo.InternalServerError("failed to update user")
     }
 
     return c.JSON(200, user)
@@ -135,14 +135,14 @@ func Put(c *fuego.Context) error {
 Use `WrapError` to add context to errors while preserving the original:
 
 ```go
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     data, err := fetchFromExternalAPI()
     if err != nil {
         // Wrap with context for logging
-        wrappedErr := fuego.WrapError(err, "failed to fetch external data")
+        wrappedErr := nexo.WrapError(err, "failed to fetch external data")
         log.Printf("error: %v", wrappedErr)
         
-        return fuego.InternalServerError("external service unavailable")
+        return nexo.InternalServerError("external service unavailable")
     }
     return c.JSON(200, data)
 }
@@ -153,11 +153,11 @@ func Get(c *fuego.Context) error {
 Create errors with underlying causes for debugging:
 
 ```go
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     user, err := db.FindUser(id)
     if err != nil {
         // Create error with cause (cause is logged but not sent to client)
-        return fuego.NewHTTPErrorWithCause(
+        return nexo.NewHTTPErrorWithCause(
             500,
             "failed to fetch user",
             err, // Original error preserved for logging
@@ -173,7 +173,7 @@ Use `IsHTTPError` to check if an error is an `HTTPError`:
 
 ```go
 func handleError(err error) {
-    if httpErr, ok := fuego.IsHTTPError(err); ok {
+    if httpErr, ok := nexo.IsHTTPError(err); ok {
         // Handle HTTPError specifically
         log.Printf("HTTP %d: %s", httpErr.Code, httpErr.Message)
         
@@ -196,11 +196,11 @@ Middleware can catch and transform errors:
 // app/api/middleware.go
 package api
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
-func Middleware() fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func Middleware() nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             err := next(c)
             
             if err != nil {
@@ -208,7 +208,7 @@ func Middleware() fuego.MiddlewareFunc {
                 log.Printf("[%s %s] error: %v", c.Method(), c.Path(), err)
                 
                 // Transform panic recovery errors
-                if httpErr, ok := fuego.IsHTTPError(err); ok {
+                if httpErr, ok := nexo.IsHTTPError(err); ok {
                     // Add request ID to error response
                     return c.JSON(httpErr.Code, map[string]any{
                         "error": map[string]any{
@@ -240,8 +240,8 @@ Always use the `Recover` middleware in production to catch panics:
 
 ```go
 // main.go
-app := fuego.New()
-app.Use(fuego.Recover()) // Catches panics, returns 500
+app := nexo.New()
+app.Use(nexo.Recover()) // Catches panics, returns 500
 ```
 
 <Warning>
@@ -261,24 +261,24 @@ type CreateUserInput struct {
 
 func (i *CreateUserInput) Validate() error {
     if i.Name == "" {
-        return fuego.BadRequest("name is required")
+        return nexo.BadRequest("name is required")
     }
     if len(i.Name) < 2 {
-        return fuego.BadRequest("name must be at least 2 characters")
+        return nexo.BadRequest("name must be at least 2 characters")
     }
     if !isValidEmail(i.Email) {
-        return fuego.BadRequest("invalid email format")
+        return nexo.BadRequest("invalid email format")
     }
     if len(i.Password) < 8 {
-        return fuego.BadRequest("password must be at least 8 characters")
+        return nexo.BadRequest("password must be at least 8 characters")
     }
     return nil
 }
 
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     var input CreateUserInput
     if err := c.Bind(&input); err != nil {
-        return fuego.BadRequest("invalid JSON body")
+        return nexo.BadRequest("invalid JSON body")
     }
     
     if err := input.Validate(); err != nil {
@@ -318,10 +318,10 @@ func validateInput(input CreateUserInput) *ValidationErrors {
     return nil
 }
 
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     var input CreateUserInput
     if err := c.Bind(&input); err != nil {
-        return fuego.BadRequest("invalid JSON body")
+        return nexo.BadRequest("invalid JSON body")
     }
     
     if validationErrors := validateInput(input); validationErrors != nil {
@@ -380,7 +380,7 @@ Log the actual error for debugging, but return a generic message to clients:
 ```go
 if err != nil {
     log.Printf("database error: %v", err) // Log the real error
-    return fuego.InternalServerError("failed to process request") // Generic message
+    return nexo.InternalServerError("failed to process request") // Generic message
 }
 ```
   </Accordion>

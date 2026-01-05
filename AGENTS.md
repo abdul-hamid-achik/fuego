@@ -1,16 +1,16 @@
-# Fuego - Guide for LLM Agents
+# Nexo - Guide for LLM Agents
 
-This document provides detailed guidance for LLM agents working with Fuego projects.
+This document provides detailed guidance for LLM agents working with Nexo projects.
 
-**Documentation:** https://fuego.build
+**Documentation:** https://nexo.build
 
 ## Overview
 
-Fuego is a file-system based Go framework inspired by Next.js App Router. Routes are defined by the file structure under the `app/` directory.
+Nexo is a file-system based Go framework inspired by Next.js App Router. Routes are defined by the file structure under the `app/` directory.
 
 ## Documentation Structure
 
-The documentation at https://fuego.build is organized into two main tabs:
+The documentation at https://nexo.build is organized into two main tabs:
 
 ### Guides Tab (`/docs`)
 - **Getting Started** - Introduction, Quickstart, Familiar Patterns
@@ -23,7 +23,7 @@ The documentation at https://fuego.build is organized into two main tabs:
 - **Overview** (`/docs/api/overview`) - Quick reference tables for all types and functions
 - **App** (`/docs/api/app`) - Application struct, routing methods, server lifecycle
 - **Context** (`/docs/api/context`) - Request/response methods, context storage
-- **Config** (`/docs/api/config`) - Configuration options, environment variables, fuego.yaml
+- **Config** (`/docs/api/config`) - Configuration options, environment variables, nexo.yaml
 - **Middleware** (`/docs/api/middleware`) - All 9 built-in middleware with configuration options
 - **Proxy** (`/docs/api/proxy`) - ProxyResult actions and common patterns
 - **Errors** (`/docs/api/errors`) - HTTPError struct and error helper functions
@@ -35,7 +35,7 @@ The documentation at https://fuego.build is organized into two main tabs:
 myproject/
 ├── main.go           # Entry point
 ├── go.mod            # Go module
-├── fuego.yaml        # Configuration (optional)
+├── nexo.yaml        # Configuration (optional)
 └── app/
     ├── proxy.go      # Request interceptor (optional)
     ├── page.templ    # Home page (optional)
@@ -51,9 +51,9 @@ myproject/
 ### Create a New Project
 
 ```bash
-fuego new myapp
+nexo new myapp
 cd myapp
-fuego dev
+nexo dev
 ```
 
 ### Using MCP (for LLM agents)
@@ -63,8 +63,8 @@ Configure your MCP client:
 ```json
 {
   "mcpServers": {
-    "fuego": {
-      "command": "fuego",
+    "nexo": {
+      "command": "nexo",
       "args": ["mcp", "serve", "--workdir", "/path/to/project"]
     }
   }
@@ -72,14 +72,14 @@ Configure your MCP client:
 ```
 
 Available MCP tools:
-- `fuego_new` - Create a new project
-- `fuego_generate_route` - Generate route file
-- `fuego_generate_middleware` - Generate middleware
-- `fuego_generate_proxy` - Generate proxy
-- `fuego_generate_page` - Generate page template
-- `fuego_list_routes` - List all routes
-- `fuego_info` - Get project info
-- `fuego_validate` - Validate project
+- `nexo_new` - Create a new project
+- `nexo_generate_route` - Generate route file
+- `nexo_generate_middleware` - Generate middleware
+- `nexo_generate_proxy` - Generate proxy
+- `nexo_generate_page` - Generate page template
+- `nexo_list_routes` - List all routes
+- `nexo_info` - Get project info
+- `nexo_validate` - Validate project
 
 ## Common Tasks
 
@@ -87,13 +87,13 @@ Available MCP tools:
 
 **Using CLI:**
 ```bash
-fuego generate route users --methods GET,POST
+nexo generate route users --methods GET,POST
 ```
 
 **Using MCP:**
 ```json
 {
-  "tool": "fuego_generate_route",
+  "tool": "nexo_generate_route",
   "arguments": {
     "path": "users",
     "methods": "GET,POST"
@@ -106,15 +106,15 @@ Create `app/api/users/route.go`:
 ```go
 package users
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/fuego"
 
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     return c.JSON(200, map[string]any{
         "users": []string{"Alice", "Bob"},
     })
 }
 
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     var body map[string]any
     if err := c.Bind(&body); err != nil {
         return c.JSON(400, map[string]string{"error": "invalid body"})
@@ -127,7 +127,7 @@ func Post(c *fuego.Context) error {
 
 **Using CLI:**
 ```bash
-fuego generate route users/_id --methods GET,PUT,DELETE
+nexo generate route users/_id --methods GET,PUT,DELETE
 ```
 
 **Result:** Creates `app/api/users/_id/route.go` mapping to `/api/users/:id`
@@ -135,7 +135,7 @@ fuego generate route users/_id --methods GET,PUT,DELETE
 ### 3. Add Catch-All Route
 
 ```bash
-fuego generate route docs/__slug --methods GET
+nexo generate route docs/__slug --methods GET
 ```
 
 **Result:** Creates `app/api/docs/__slug/route.go` mapping to `/api/docs/*`
@@ -144,13 +144,13 @@ fuego generate route docs/__slug --methods GET
 
 **Using CLI:**
 ```bash
-fuego generate middleware auth --path api/protected --template auth
+nexo generate middleware auth --path api/protected --template auth
 ```
 
 **Using MCP:**
 ```json
 {
-  "tool": "fuego_generate_middleware",
+  "tool": "nexo_generate_middleware",
   "arguments": {
     "name": "auth",
     "path": "api/protected",
@@ -162,7 +162,7 @@ fuego generate middleware auth --path api/protected --template auth
 ### 5. Add Request Interception (Proxy)
 
 ```bash
-fuego generate proxy --template auth-check
+nexo generate proxy --template auth-check
 ```
 
 **Available templates:**
@@ -175,7 +175,7 @@ fuego generate proxy --template auth-check
 ### 6. List All Routes
 
 ```bash
-fuego routes --json
+nexo routes --json
 ```
 
 **Output:**
@@ -201,99 +201,99 @@ fuego routes --json
 ### 7. Add a Page
 
 ```bash
-fuego generate page dashboard
-fuego generate page admin/settings --with-layout
+nexo generate page dashboard
+nexo generate page admin/settings --with-layout
 ```
 
-### 8. Deploy to Fuego Cloud
+### 8. Deploy to Nexo Cloud
 
-Deploy your app to [cloud.fuego.build](https://cloud.fuego.build):
+Deploy your app to [cloud.nexo.build](https://cloud.nexo.build):
 
 ```bash
 # Login (opens browser for OAuth)
-fuego login
+nexo login
 
 # Deploy current directory
-fuego deploy
+nexo deploy
 
 # View logs
-fuego logs my-app -f
+nexo logs my-app -f
 
 # Check status
-fuego status my-app
+nexo status my-app
 ```
 
 **Full Cloud CLI:**
 ```bash
 # Authentication
-fuego login              # Browser OAuth
-fuego login --token XXX  # API token
-fuego login --device     # Device flow (headless)
-fuego logout
+nexo login              # Browser OAuth
+nexo login --token XXX  # API token
+nexo login --device     # Device flow (headless)
+nexo logout
 
 # App Management
-fuego apps                            # List apps
-fuego apps create my-app              # Create app
-fuego apps create my-app --region gdl --size starter
-fuego apps delete my-app              # Delete (with confirmation)
-fuego apps delete my-app --force
+nexo apps                            # List apps
+nexo apps create my-app              # Create app
+nexo apps create my-app --region gdl --size starter
+nexo apps delete my-app              # Delete (with confirmation)
+nexo apps delete my-app --force
 
 # Deployment
-fuego deploy                    # Build and deploy
-fuego deploy --no-build         # Skip build
-fuego deploy --env KEY=value    # Set env vars
-fuego rollback my-app           # Rollback to previous
-fuego rollback my-app abc123    # Rollback to specific
+nexo deploy                    # Build and deploy
+nexo deploy --no-build         # Skip build
+nexo deploy --env KEY=value    # Set env vars
+nexo rollback my-app           # Rollback to previous
+nexo rollback my-app abc123    # Rollback to specific
 
 # Logs & Status
-fuego logs my-app               # View recent logs
-fuego logs my-app -f            # Stream logs
-fuego logs my-app --tail 100    # Last 100 lines
-fuego logs my-app --since 1h    # Last hour
-fuego status my-app             # App status & metrics
+nexo logs my-app               # View recent logs
+nexo logs my-app -f            # Stream logs
+nexo logs my-app --tail 100    # Last 100 lines
+nexo logs my-app --since 1h    # Last hour
+nexo status my-app             # App status & metrics
 
 # Environment Variables
-fuego env my-app                # List (redacted)
-fuego env my-app --show         # Show values
-fuego env my-app set KEY=value  # Set variable
-fuego env my-app unset KEY      # Remove variable
+nexo env my-app                # List (redacted)
+nexo env my-app --show         # Show values
+nexo env my-app set KEY=value  # Set variable
+nexo env my-app unset KEY      # Remove variable
 
 # Custom Domains
-fuego domains my-app                    # List domains
-fuego domains my-app add example.com    # Add domain
-fuego domains my-app verify example.com # Verify DNS
-fuego domains my-app remove example.com # Remove domain
+nexo domains my-app                    # List domains
+nexo domains my-app add example.com    # Add domain
+nexo domains my-app verify example.com # Verify DNS
+nexo domains my-app remove example.com # Remove domain
 ```
 
-### 9. Upgrade Fuego CLI
+### 9. Upgrade Nexo CLI
 
 Check for and install the latest version:
 
 ```bash
 # Upgrade to latest stable version
-fuego upgrade
+nexo upgrade
 
 # Check for updates without installing
-fuego upgrade --check
+nexo upgrade --check
 
 # Install specific version
-fuego upgrade --version v0.5.0
+nexo upgrade --version v0.5.0
 
 # Include prereleases
-fuego upgrade --prerelease
+nexo upgrade --prerelease
 
 # Rollback to previous version
-fuego upgrade --rollback
+nexo upgrade --rollback
 ```
 
-The CLI automatically checks for updates in the background when running `fuego dev` (once every 24 hours) and displays a notification if a new version is available.
+The CLI automatically checks for updates in the background when running `nexo dev` (once every 24 hours) and displays a notification if a new version is available.
 
 ## Handler Signatures
 
 ### Route Handler
 
 ```go
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     // Access URL parameters
     id := c.Param("id")
     
@@ -318,8 +318,8 @@ func Get(c *fuego.Context) error {
 ### Middleware
 
 ```go
-func Middleware(next fuego.HandlerFunc) fuego.HandlerFunc {
-    return func(c *fuego.Context) error {
+func Middleware(next nexo.HandlerFunc) nexo.HandlerFunc {
+    return func(c *nexo.Context) error {
         // Before handler
         start := time.Now()
         
@@ -337,46 +337,46 @@ func Middleware(next fuego.HandlerFunc) fuego.HandlerFunc {
 ### Proxy
 
 ```go
-func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
     // Continue with normal routing
-    return fuego.Continue(), nil
+    return nexo.Continue(), nil
     
     // Redirect
-    return fuego.Redirect("/new-url", 301), nil
+    return nexo.Redirect("/new-url", 301), nil
     
     // Rewrite URL (internal)
-    return fuego.Rewrite("/internal-path"), nil
+    return nexo.Rewrite("/internal-path"), nil
     
     // Return response immediately
-    return fuego.ResponseJSON(403, map[string]string{"error": "forbidden"}), nil
+    return nexo.ResponseJSON(403, map[string]string{"error": "forbidden"}), nil
 }
 ```
 
 ## Error Handling
 
-Use the built-in error helpers for semantic HTTP errors. See https://fuego.build/docs/api/errors for details.
+Use the built-in error helpers for semantic HTTP errors. See https://nexo.build/docs/api/errors for details.
 
 ```go
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     // Client errors (4xx)
-    return fuego.BadRequest("invalid input")           // 400
-    return fuego.Unauthorized("invalid token")         // 401
-    return fuego.Forbidden("access denied")            // 403
-    return fuego.NotFound("user not found")            // 404
-    return fuego.Conflict("email already exists")      // 409
+    return nexo.BadRequest("invalid input")           // 400
+    return nexo.Unauthorized("invalid token")         // 401
+    return nexo.Forbidden("access denied")            // 403
+    return nexo.NotFound("user not found")            // 404
+    return nexo.Conflict("email already exists")      // 409
     
     // Server errors (5xx)
-    return fuego.InternalServerError("server error")   // 500
+    return nexo.InternalServerError("server error")   // 500
     
     // Custom status codes
-    return fuego.NewHTTPError(429, "rate limit exceeded")
-    return fuego.NewHTTPErrorWithCause(500, "message", err) // with cause
+    return nexo.NewHTTPError(429, "rate limit exceeded")
+    return nexo.NewHTTPErrorWithCause(500, "message", err) // with cause
 }
 ```
 
 ## Route Patterns Reference
 
-Fuego uses an underscore-based convention for dynamic routes that are valid Go package names:
+Nexo uses an underscore-based convention for dynamic routes that are valid Go package names:
 
 | Pattern | Directory | URL Pattern | Matches |
 |---------|-----------|-------------|---------|
@@ -486,19 +486,19 @@ app/
 
 ## Built-in Middleware
 
-Fuego provides 9 built-in middleware functions. See https://fuego.build/docs/api/middleware for full configuration options.
+Nexo provides 9 built-in middleware functions. See https://nexo.build/docs/api/middleware for full configuration options.
 
 | Middleware | Usage | Description |
 |------------|-------|-------------|
-| `Logger()` | `app.Use(fuego.Logger())` | Request/response logging |
-| `Recover()` | `app.Use(fuego.Recover())` | Panic recovery, returns 500 |
-| `RequestID()` | `app.Use(fuego.RequestID())` | Add unique X-Request-ID header |
-| `CORS()` | `app.Use(fuego.CORS())` | Cross-origin resource sharing |
-| `Timeout(d)` | `app.Use(fuego.Timeout(30*time.Second))` | Request timeout |
-| `BasicAuth(fn)` | `app.Use(fuego.BasicAuth(validator))` | HTTP Basic authentication |
-| `Compress()` | `app.Use(fuego.Compress())` | Gzip response compression |
-| `RateLimiter(n, d)` | `app.Use(fuego.RateLimiter(100, time.Minute))` | Rate limiting per IP |
-| `SecureHeaders()` | `app.Use(fuego.SecureHeaders())` | Security headers (CSP, X-Frame-Options) |
+| `Logger()` | `app.Use(nexo.Logger())` | Request/response logging |
+| `Recover()` | `app.Use(nexo.Recover())` | Panic recovery, returns 500 |
+| `RequestID()` | `app.Use(nexo.RequestID())` | Add unique X-Request-ID header |
+| `CORS()` | `app.Use(nexo.CORS())` | Cross-origin resource sharing |
+| `Timeout(d)` | `app.Use(nexo.Timeout(30*time.Second))` | Request timeout |
+| `BasicAuth(fn)` | `app.Use(nexo.BasicAuth(validator))` | HTTP Basic authentication |
+| `Compress()` | `app.Use(nexo.Compress())` | Gzip response compression |
+| `RateLimiter(n, d)` | `app.Use(nexo.RateLimiter(100, time.Minute))` | Rate limiting per IP |
+| `SecureHeaders()` | `app.Use(nexo.SecureHeaders())` | Security headers (CSP, X-Frame-Options) |
 
 **Configurable variants:**
 - `LoggerWithConfig(config)` - Custom format, output, skip function
@@ -509,19 +509,19 @@ Fuego provides 9 built-in middleware functions. See https://fuego.build/docs/api
 
 **Recommended middleware order:**
 ```go
-app.Use(fuego.Logger())       // 1. Log all requests
-app.Use(fuego.Recover())      // 2. Catch panics
-app.Use(fuego.RequestID())    // 3. Request correlation
-app.Use(fuego.Timeout(30*time.Second)) // 4. Timeouts
-app.Use(fuego.CORS())         // 5. CORS
-app.Use(fuego.SecureHeaders()) // 6. Security
-app.Use(fuego.Compress())     // 7. Compression
+app.Use(nexo.Logger())       // 1. Log all requests
+app.Use(nexo.Recover())      // 2. Catch panics
+app.Use(nexo.RequestID())    // 3. Request correlation
+app.Use(nexo.Timeout(30*time.Second)) // 4. Timeouts
+app.Use(nexo.CORS())         // 5. CORS
+app.Use(nexo.SecureHeaders()) // 6. Security
+app.Use(nexo.Compress())     // 7. Compression
 // 8. Business middleware (auth, rate limiting)
 ```
 
 ## Request Logging
 
-Fuego includes an app-level request logger that is **enabled by default** and captures ALL requests, including those handled by the proxy layer.
+Nexo includes an app-level request logger that is **enabled by default** and captures ALL requests, including those handled by the proxy layer.
 
 ### Default Output
 
@@ -535,15 +535,15 @@ Fuego includes an app-level request logger that is **enabled by default** and ca
 ### Configuration
 
 ```go
-app := fuego.New() // Logger enabled by default!
+app := nexo.New() // Logger enabled by default!
 
 // Customize logging
-app.SetLogger(fuego.RequestLoggerConfig{
+app.SetLogger(nexo.RequestLoggerConfig{
     ShowIP:        true,   // Show client IP
     ShowUserAgent: true,   // Show user agent
     SkipStatic:    true,   // Don't log static files
     SkipPaths:     []string{"/health", "/metrics"},
-    Level:         fuego.LogLevelInfo, // debug, info, warn, error
+    Level:         nexo.LogLevelInfo, // debug, info, warn, error
 })
 
 // Disable logging
@@ -552,8 +552,8 @@ app.DisableLogger()
 
 ### Environment Variables
 
-- `FUEGO_LOG_LEVEL` - Set log level: `debug`, `info`, `warn`, `error`, `off`
-- `FUEGO_DEV=true` - Auto-set debug level
+- `NEXO_LOG_LEVEL` - Set log level: `debug`, `info`, `warn`, `error`, `off`
+- `NEXO_DEV=true` - Auto-set debug level
 - `GO_ENV=production` - Auto-set warn level
 
 ### Log Levels
@@ -607,7 +607,7 @@ defer file.Close()  // This will trigger errcheck warning
 
 ## Validation
 
-Use MCP's `fuego_validate` tool or parse the project structure to check:
+Use MCP's `nexo_validate` tool or parse the project structure to check:
 - `app/` directory exists
 - `go.mod` exists
 - Route files have valid handler signatures
@@ -616,7 +616,7 @@ Use MCP's `fuego_validate` tool or parse the project structure to check:
 
 ## Templ Pages and Layouts
 
-Fuego supports file-based page routing with templ templates, similar to Next.js.
+Nexo supports file-based page routing with templ templates, similar to Next.js.
 
 ### Page Files
 
@@ -703,17 +703,17 @@ templ Layout(title string) {
 ### Generating Pages
 
 ```bash
-fuego generate page dashboard
-fuego generate page admin/settings --with-layout
+nexo generate page dashboard
+nexo generate page admin/settings --with-layout
 ```
 
 ## Tailwind CSS Integration
 
-Fuego uses the **standalone Tailwind CSS v4 binary** - no Node.js required!
+Nexo uses the **standalone Tailwind CSS v4 binary** - no Node.js required!
 
 ### Setup
 
-When creating a new project with `fuego new myapp`:
+When creating a new project with `nexo new myapp`:
 - Answer "Yes" to "Would you like to use templ for pages?"
 - Tailwind is automatically set up with `styles/input.css`
 
@@ -721,16 +721,16 @@ When creating a new project with `fuego new myapp`:
 
 ```bash
 # Build CSS for production (minified)
-fuego tailwind build
+nexo tailwind build
 
 # Watch mode for development
-fuego tailwind watch
+nexo tailwind watch
 
 # Install Tailwind binary (auto-downloaded if missing)
-fuego tailwind install
+nexo tailwind install
 
 # Show installation info
-fuego tailwind info
+nexo tailwind info
 ```
 
 ### File Structure
@@ -759,42 +759,42 @@ myproject/
 
 ### Dev Mode
 
-When running `fuego dev`:
+When running `nexo dev`:
 1. Tailwind watcher starts automatically if `styles/input.css` exists
 2. CSS rebuilds on any file change
 3. No manual rebuild needed
 
 ### Build Mode
 
-When running `fuego build`:
+When running `nexo build`:
 1. Tailwind builds minified CSS automatically
 2. Output goes to `static/css/output.css`
 
 ## OpenAPI Generation
 
-Fuego automatically generates OpenAPI 3.1 specifications from your routes.
+Nexo automatically generates OpenAPI 3.1 specifications from your routes.
 
 ### CLI Commands
 
 ```bash
 # Generate openapi.json
-fuego openapi generate
+nexo openapi generate
 
 # Generate YAML format
-fuego openapi generate --format yaml --output api.yaml
+nexo openapi generate --format yaml --output api.yaml
 
 # Serve Swagger UI at localhost:8080
-fuego openapi serve
+nexo openapi serve
 
 # Custom port
-fuego openapi serve --port 9000
+nexo openapi serve --port 9000
 ```
 
 ### Runtime Integration
 
 ```go
-app := fuego.New()
-app.ServeOpenAPI(fuego.OpenAPIOptions{
+app := nexo.New()
+app.ServeOpenAPI(nexo.OpenAPIOptions{
     Title:   "My API",
     Version: "1.0.0",
 })
@@ -812,7 +812,7 @@ app.ServeOpenAPI(fuego.OpenAPIOptions{
 // Get retrieves a user by ID
 //
 // Returns detailed user information including profile and preferences.
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     id := c.Param("id")
     // ...
 }
@@ -826,7 +826,7 @@ Generated OpenAPI:
 
 ## HTMX Integration
 
-Fuego includes HTMX out of the box for interactive UIs without JavaScript.
+Nexo includes HTMX out of the box for interactive UIs without JavaScript.
 
 ### Setup
 
@@ -929,10 +929,10 @@ title := c.FormValue("title")
 
 ### Server-Sent Events (SSE)
 
-Fuego provides built-in SSE support for real-time streaming:
+Nexo provides built-in SSE support for real-time streaming:
 
 ```go
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     sse, err := c.SSE()
     if err != nil {
         return err
@@ -968,11 +968,11 @@ func Get(c *fuego.Context) error {
 
 ## Context7 Integration
 
-Fuego is registered with [Context7](https://context7.com), which provides up-to-date documentation to AI coding assistants. This ensures developers always get current, accurate information when using tools like Cursor, Claude, or other AI assistants.
+Nexo is registered with [Context7](https://context7.com), which provides up-to-date documentation to AI coding assistants. This ensures developers always get current, accurate information when using tools like Cursor, Claude, or other AI assistants.
 
 ### Maintaining context7.json
 
-**IMPORTANT**: When making changes to Fuego's documentation, code structure, or best practices, you MUST update the `context7.json` file in the repository root.
+**IMPORTANT**: When making changes to Nexo's documentation, code structure, or best practices, you MUST update the `context7.json` file in the repository root.
 
 #### When to Update context7.json
 
@@ -990,7 +990,7 @@ Update `context7.json` whenever you:
 ```json
 {
   "$schema": "https://context7.com/schema/context7.json",
-  "projectTitle": "Fuego",
+  "projectTitle": "Nexo",
   "description": "A file-system based Go framework for APIs and websites, inspired by Next.js App Router",
   "folders": ["docs"],
   "excludeFolders": [
@@ -1009,7 +1009,7 @@ Update `context7.json` whenever you:
   "rules": [
     "Always use file-based routing under the app/ directory",
     "Route handlers must be named after HTTP methods (Get, Post, Put, Delete, etc.)",
-    "Use fuego.Context for handling requests and responses"
+    "Use nexo.Context for handling requests and responses"
   ],
   "previousVersions": [
     {
@@ -1030,19 +1030,19 @@ Update `context7.json` whenever you:
 
 1. Commit and push the changes
 2. Go to [Context7 Dashboard](https://context7.com/dashboard)
-3. Find "Fuego" and click "Refresh" to re-index the documentation
+3. Find "Nexo" and click "Refresh" to re-index the documentation
 4. Verify the changes appear in the indexed content
 
 ### How Developers Use Context7
 
-Developers can get Fuego documentation in their AI assistants by adding `use context7` to their prompts:
+Developers can get Nexo documentation in their AI assistants by adding `use context7` to their prompts:
 
 ```
-Create a new API route with authentication middleware using Fuego. use context7
+Create a new API route with authentication middleware using Nexo. use context7
 ```
 
 ```
-Set up a full-stack page with HTMX and Tailwind using Fuego. use context7
+Set up a full-stack page with HTMX and Tailwind using Nexo. use context7
 ```
 
 The AI assistant will automatically receive:

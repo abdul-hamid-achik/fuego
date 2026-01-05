@@ -6,17 +6,17 @@ description: 'File-based routing for Go. Fast to write. Faster to run.'
 <img
   className="block dark:hidden"
   src="/docs/images/hero-light.svg"
-  alt="Fuego - File-based routing for Go"
+  alt="Nexo - File-based routing for Go"
 />
 <img
   className="hidden dark:block"
   src="/docs/images/hero-dark.svg"
-  alt="Fuego - File-based routing for Go"
+  alt="Nexo - File-based routing for Go"
 />
 
-## What is Fuego?
+## What is Nexo?
 
-Fuego is a file-based routing framework for Go, inspired by Next.js App Router. Your file structure *is* your router - no manual route registration required.
+Nexo is a file-based routing framework for Go, inspired by Next.js App Router. Your file structure *is* your router - no manual route registration required.
 
 <CardGroup cols={2}>
   <Card
@@ -49,7 +49,7 @@ Fuego is a file-based routing framework for Go, inspired by Next.js App Router. 
   </Card>
 </CardGroup>
 
-## Why Fuego?
+## Why Nexo?
 
 Traditional Go routing requires manual registration:
 
@@ -61,7 +61,7 @@ r.HandleFunc("/api/posts", postsHandler)
 // ...repeat for every route
 ```
 
-With Fuego, your file structure is your router:
+With Nexo, your file structure is your router:
 
 <FileTree>
   <Folder name="app" defaultOpen>
@@ -132,11 +132,11 @@ This maps to:
 <CodeGroup>
 
 ```bash Homebrew
-brew install abdul-hamid-achik/tap/fuego-cli
+brew install abdul-hamid-achik/tap/nexo-cli
 ```
 
 ```bash Go Install
-go install github.com/abdul-hamid-achik/fuego/cmd/fuego@latest
+go install github.com/abdul-hamid-achik/nexo/cmd/fuego@latest
 ```
 
 </CodeGroup>
@@ -147,22 +147,22 @@ go install github.com/abdul-hamid-achik/fuego/cmd/fuego@latest
 // app/api/users/route.go
 package users
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // GET /api/users
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     return c.JSON(200, map[string]any{
         "users": []string{"alice", "bob"},
     })
 }
 
 // POST /api/users
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     var input struct {
         Name string `json:"name"`
     }
     if err := c.Bind(&input); err != nil {
-        return fuego.BadRequest("invalid input")
+        return nexo.BadRequest("invalid input")
     }
     return c.JSON(201, map[string]string{"created": input.Name})
 }
@@ -170,7 +170,7 @@ func Post(c *fuego.Context) error {
 
 ## Request Logging
 
-Fuego includes a built-in request logger that captures ALL requests:
+Nexo includes a built-in request logger that captures ALL requests:
 
 ```
 [12:34:56] GET /api/users 200 in 45ms (1.2KB)
@@ -184,7 +184,7 @@ The logger is enabled by default and shows color-coded HTTP methods, status code
 
 ## Coming From Other Frameworks?
 
-If you've used Next.js, Nuxt, SvelteKit, or similar frameworks, Fuego's patterns will feel familiar:
+If you've used Next.js, Nuxt, SvelteKit, or similar frameworks, Nexo's patterns will feel familiar:
 
 | Pattern | File | Route |
 |---------|------|-------|
@@ -196,7 +196,7 @@ If you've used Next.js, Nuxt, SvelteKit, or similar frameworks, Fuego's patterns
 | Layouts | `app/layout.templ` | Wraps child pages |
 
 <Card title="Familiar Patterns Guide" icon="book" href="/docs/getting-started/familiar-patterns">
-  Learn how Fuego compares to frameworks you already know
+  Learn how Nexo compares to frameworks you already know
 </Card>
 
 ## Explore More

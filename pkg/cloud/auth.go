@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 )
 
-// DefaultAPIURL is the default Fuego Cloud API URL.
-const DefaultAPIURL = "https://cloud.fuego.build"
+// DefaultAPIURL is the default Nexo Cloud API URL.
+const DefaultAPIURL = "https://cloud.nexo.build"
 
 // Credentials stores the user's authentication credentials.
 type Credentials struct {
@@ -21,9 +21,9 @@ type Credentials struct {
 func CredentialsDir() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return filepath.Join(os.TempDir(), ".fuego")
+		return filepath.Join(os.TempDir(), ".nexo")
 	}
-	return filepath.Join(home, ".fuego")
+	return filepath.Join(home, ".nexo")
 }
 
 // CredentialsPath returns the path to the credentials file.
@@ -127,7 +127,7 @@ func RequireAuth() (*Credentials, error) {
 		return nil, fmt.Errorf("failed to load credentials: %w", err)
 	}
 	if creds == nil || creds.APIToken == "" {
-		return nil, fmt.Errorf("not logged in. Run 'fuego login' first")
+		return nil, fmt.Errorf("not logged in. Run 'nexo login' first")
 	}
 	return creds, nil
 }

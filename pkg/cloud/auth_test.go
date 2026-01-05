@@ -24,9 +24,9 @@ func TestCredentialsDir(t *testing.T) {
 		t.Error("CredentialsDir returned empty string")
 	}
 
-	// Should end with .fuego
-	if filepath.Base(dir) != ".fuego" {
-		t.Errorf("CredentialsDir should end with .fuego, got %s", filepath.Base(dir))
+	// Should end with .nexo
+	if filepath.Base(dir) != ".nexo" {
+		t.Errorf("CredentialsDir should end with .nexo, got %s", filepath.Base(dir))
 	}
 }
 
@@ -40,7 +40,7 @@ func TestSaveAndLoadCredentials(t *testing.T) {
 	// Test saving credentials
 	creds := &Credentials{
 		APIToken: "test-token-123",
-		APIURL:   "https://test.fuego.build",
+		APIURL:   "https://test.nexo.build",
 		User: &User{
 			ID:       "user-123",
 			Username: "testuser",
@@ -54,7 +54,7 @@ func TestSaveAndLoadCredentials(t *testing.T) {
 	}
 
 	// Check file was created with correct permissions
-	path := filepath.Join(tmpDir, ".fuego", "credentials.json")
+	path := filepath.Join(tmpDir, ".nexo", "credentials.json")
 	info, err := os.Stat(path)
 	if err != nil {
 		t.Fatalf("Credentials file not created: %v", err)
@@ -134,7 +134,7 @@ func TestClearCredentials(t *testing.T) {
 	}
 
 	// Verify file is gone
-	path := filepath.Join(tmpDir, ".fuego", "credentials.json")
+	path := filepath.Join(tmpDir, ".nexo", "credentials.json")
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
 		t.Error("Credentials file should be removed")
 	}
@@ -227,7 +227,7 @@ func TestGetAPIURL(t *testing.T) {
 	// Save credentials with custom URL
 	creds := &Credentials{
 		APIToken: "test-token-123",
-		APIURL:   "https://custom.fuego.build",
+		APIURL:   "https://custom.nexo.build",
 	}
 	err := SaveCredentials(creds)
 	if err != nil {
@@ -235,8 +235,8 @@ func TestGetAPIURL(t *testing.T) {
 	}
 
 	// Should return custom URL
-	if url := GetAPIURL(); url != "https://custom.fuego.build" {
-		t.Errorf("GetAPIURL mismatch: got %s, want https://custom.fuego.build", url)
+	if url := GetAPIURL(); url != "https://custom.nexo.build" {
+		t.Errorf("GetAPIURL mismatch: got %s, want https://custom.nexo.build", url)
 	}
 }
 

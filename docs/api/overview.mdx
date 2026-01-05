@@ -1,9 +1,9 @@
 ---
 title: API Reference
-description: 'Complete API documentation for the Fuego framework'
+description: 'Complete API documentation for the Nexo framework'
 ---
 
-The Fuego framework provides a clean, intuitive API for building web applications and APIs in Go. This reference documents all public types, functions, and methods.
+The Nexo framework provides a clean, intuitive API for building web applications and APIs in Go. This reference documents all public types, functions, and methods.
 
 <CardGroup cols={2}>
   <Card title="App" icon="rocket" href="/docs/api/app">
@@ -51,7 +51,7 @@ The Fuego framework provides a clean, intuitive API for building web application
 
 | Method | Description |
 |--------|-------------|
-| `fuego.New(opts...)` | Create a new App with optional configuration |
+| `nexo.New(opts...)` | Create a new App with optional configuration |
 | `app.Get/Post/Put/Delete(pattern, handler)` | Register route handlers |
 | `app.Use(middleware)` | Add global middleware |
 | `app.Group(pattern, fn)` | Create a route group with shared middleware |
@@ -116,7 +116,7 @@ The Fuego framework provides a clean, intuitive API for building web application
 ## Import
 
 ```go
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 ```
 
 ## Basic Example
@@ -124,15 +124,15 @@ import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
 ```go
 package main
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 func main() {
-    app := fuego.New()
+    app := nexo.New()
     
-    app.Use(fuego.Logger())
-    app.Use(fuego.Recover())
+    app.Use(nexo.Logger())
+    app.Use(nexo.Recover())
     
-    app.Get("/", func(c *fuego.Context) error {
+    app.Get("/", func(c *nexo.Context) error {
         return c.JSON(200, map[string]string{"message": "Hello, World!"})
     })
     
@@ -141,5 +141,5 @@ func main() {
 ```
 
 <Info>
-For Go documentation with full type details, see the [pkg.go.dev documentation](https://pkg.go.dev/github.com/abdul-hamid-achik/fuego/pkg/fuego).
+For Go documentation with full type details, see the [pkg.go.dev documentation](https://pkg.go.dev/github.com/abdul-hamid-achik/nexo/pkg/nexo).
 </Info>

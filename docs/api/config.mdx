@@ -3,7 +3,7 @@ title: Configuration
 description: 'Application configuration and options'
 ---
 
-Fuego applications can be configured through the options pattern, configuration files, or environment variables.
+Nexo applications can be configured through the options pattern, configuration files, or environment variables.
 
 ## Config Struct
 
@@ -28,7 +28,7 @@ type Config struct {
     Directory containing route files, middleware, pages, and proxy.
 
     ```go
-    app := fuego.New(fuego.WithAppDir("routes"))
+    app := nexo.New(nexo.WithAppDir("routes"))
     ```
 
     <FileTree>
@@ -53,7 +53,7 @@ type Config struct {
     Directory for static files (CSS, JS, images).
 
     ```go
-    app := fuego.New(fuego.WithStaticDir("public"))
+    app := nexo.New(nexo.WithStaticDir("public"))
     ```
 
     Files are served at `/static/*` by default.
@@ -66,7 +66,7 @@ type Config struct {
     Directory for Go templates (if using `html/template` instead of templ).
 
     ```go
-    app := fuego.New(fuego.WithTemplateDir("templates"))
+    app := nexo.New(fuego.WithTemplateDir("templates"))
     ```
   </Accordion>
 
@@ -77,7 +77,7 @@ type Config struct {
     Port to listen on. Can be overridden by `PORT` environment variable.
 
     ```go
-    app := fuego.New(fuego.WithPort("8080"))
+    app := nexo.New(nexo.WithPort("8080"))
     ```
   </Accordion>
 
@@ -88,7 +88,7 @@ type Config struct {
     Host to bind to.
 
     ```go
-    app := fuego.New(fuego.WithHost("127.0.0.1"))
+    app := nexo.New(nexo.WithHost("127.0.0.1"))
     ```
   </Accordion>
 
@@ -99,10 +99,10 @@ type Config struct {
     Enable development mode with debug logging.
 
     ```go
-    app := fuego.New(fuego.WithDev(true))
+    app := nexo.New(nexo.WithDev(true))
     ```
 
-    Can be set via `FUEGO_DEV=true` environment variable.
+    Can be set via `NEXO_DEV=true` environment variable.
   </Accordion>
 </AccordionGroup>
 
@@ -113,12 +113,12 @@ type Config struct {
 Use option functions when creating an app:
 
 ```go
-app := fuego.New(
-    fuego.WithAppDir("routes"),
-    fuego.WithStaticDir("public"),
-    fuego.WithPort("8080"),
-    fuego.WithHost("127.0.0.1"),
-    fuego.WithDev(true),
+app := nexo.New(
+    nexo.WithAppDir("routes"),
+    nexo.WithStaticDir("public"),
+    nexo.WithPort("8080"),
+    nexo.WithHost("127.0.0.1"),
+    nexo.WithDev(true),
 )
 ```
 
@@ -135,12 +135,12 @@ app := fuego.New(
 
 ---
 
-## fuego.yaml Configuration
+## nexo.yaml Configuration
 
-Create a `fuego.yaml` file in your project root for persistent configuration:
+Create a `nexo.yaml` file in your project root for persistent configuration:
 
 ```yaml
-# fuego.yaml
+# nexo.yaml
 app_dir: app
 static_dir: static
 port: 3000
@@ -150,9 +150,9 @@ dev: false
 
 <Info>
 Configuration precedence (highest to lowest):
-1. Option functions passed to `fuego.New()`
+1. Option functions passed to `nexo.New()`
 2. Environment variables
-3. `fuego.yaml` file
+3. `nexo.yaml` file
 4. Default values
 </Info>
 
@@ -164,13 +164,13 @@ Configuration precedence (highest to lowest):
 |----------|-------------|---------|
 | `PORT` | Server port | `3000` |
 | `HOST` | Server host | `0.0.0.0` |
-| `FUEGO_DEV` | Development mode (`true`/`false`) | `false` |
-| `FUEGO_LOG_LEVEL` | Log level (`debug`, `info`, `warn`, `error`, `off`) | `info` |
+| `NEXO_DEV` | Development mode (`true`/`false`) | `false` |
+| `NEXO_LOG_LEVEL` | Log level (`debug`, `info`, `warn`, `error`, `off`) | `info` |
 | `GO_ENV` | Environment (`development`, `production`, `test`) | - |
 
 ### Log Level Behavior
 
-| `GO_ENV` | `FUEGO_DEV` | Default Log Level |
+| `GO_ENV` | `NEXO_DEV` | Default Log Level |
 |----------|-------------|-------------------|
 | `production` | `false` | `warn` |
 | `development` | `true` | `debug` |
@@ -183,8 +183,8 @@ Configuration precedence (highest to lowest):
 Configure the built-in request logger:
 
 ```go
-app.SetLogger(fuego.RequestLoggerConfig{
-    Level:         fuego.LogLevelInfo,
+app.SetLogger(nexo.RequestLoggerConfig{
+    Level:         nexo.LogLevelInfo,
     ShowIP:        true,
     ShowUserAgent: false,
     SkipPaths:     []string{"/health", "/metrics"},
@@ -210,8 +210,8 @@ app.SetLogger(fuego.RequestLoggerConfig{
     | `LogLevelOff` | Nothing |
 
     ```go
-    app.SetLogger(fuego.RequestLoggerConfig{
-        Level: fuego.LogLevelWarn, // Only log errors
+    app.SetLogger(nexo.RequestLoggerConfig{
+        Level: nexo.LogLevelWarn, // Only log errors
     })
     ```
   </Accordion>
@@ -241,7 +241,7 @@ app.SetLogger(fuego.RequestLoggerConfig{
     Paths to exclude from logging.
 
     ```go
-    app.SetLogger(fuego.RequestLoggerConfig{
+    app.SetLogger(nexo.RequestLoggerConfig{
         SkipPaths: []string{"/health", "/metrics", "/favicon.ico"},
     })
     ```
@@ -254,7 +254,7 @@ app.SetLogger(fuego.RequestLoggerConfig{
     Skip logging for static file requests.
 
     ```go
-    app.SetLogger(fuego.RequestLoggerConfig{
+    app.SetLogger(nexo.RequestLoggerConfig{
         SkipStatic: true, // Don't log /static/* requests
     })
     ```
@@ -268,13 +268,13 @@ app.SetLogger(fuego.RequestLoggerConfig{
 <Tabs>
   <Tab title="Development">
     ```go
-    app := fuego.New(
-        fuego.WithDev(true),
-        fuego.WithPort("3000"),
+    app := nexo.New(
+        nexo.WithDev(true),
+        nexo.WithPort("3000"),
     )
     
-    app.SetLogger(fuego.RequestLoggerConfig{
-        Level:         fuego.LogLevelDebug,
+    app.SetLogger(nexo.RequestLoggerConfig{
+        Level:         nexo.LogLevelDebug,
         ShowIP:        true,
         ShowUserAgent: true,
     })
@@ -282,13 +282,13 @@ app.SetLogger(fuego.RequestLoggerConfig{
   </Tab>
   <Tab title="Production">
     ```go
-    app := fuego.New(
-        fuego.WithHost("0.0.0.0"),
-        fuego.WithPort(os.Getenv("PORT")),
+    app := nexo.New(
+        nexo.WithHost("0.0.0.0"),
+        nexo.WithPort(os.Getenv("PORT")),
     )
     
-    app.SetLogger(fuego.RequestLoggerConfig{
-        Level:      fuego.LogLevelWarn,
+    app.SetLogger(nexo.RequestLoggerConfig{
+        Level:      nexo.LogLevelWarn,
         ShowIP:     true,
         SkipPaths:  []string{"/health"},
         SkipStatic: true,
@@ -297,8 +297,8 @@ app.SetLogger(fuego.RequestLoggerConfig{
   </Tab>
   <Tab title="Testing">
     ```go
-    app := fuego.New(
-        fuego.WithDev(false),
+    app := nexo.New(
+        nexo.WithDev(false),
     )
     
     app.DisableLogger() // No logging during tests

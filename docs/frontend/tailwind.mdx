@@ -3,14 +3,14 @@ title: Tailwind CSS
 description: 'Style your apps with Tailwind CSS v4 - no Node.js required.'
 ---
 
-Fuego includes a standalone Tailwind CSS v4 binary, so you can use Tailwind without Node.js or npm.
+Nexo includes a standalone Tailwind CSS v4 binary, so you can use Tailwind without Node.js or npm.
 
 ## Setup
 
-When creating a new project with `fuego new`:
+When creating a new project with `nexo new`:
 
 ```bash
-fuego new myapp
+nexo new myapp
 # Answer "Yes" to "Would you like to use templ for pages?"
 ```
 
@@ -62,7 +62,7 @@ The source CSS file:
 ### Build for Production
 
 ```bash
-fuego tailwind build
+nexo tailwind build
 ```
 
 Generates minified CSS at `static/css/output.css`.
@@ -70,7 +70,7 @@ Generates minified CSS at `static/css/output.css`.
 ### Watch for Development
 
 ```bash
-fuego tailwind watch
+nexo tailwind watch
 ```
 
 Rebuilds CSS when files change.
@@ -78,7 +78,7 @@ Rebuilds CSS when files change.
 ### Install Binary
 
 ```bash
-fuego tailwind install
+nexo tailwind install
 ```
 
 Downloads the Tailwind binary if not present.
@@ -86,28 +86,28 @@ Downloads the Tailwind binary if not present.
 ### Check Installation
 
 ```bash
-fuego tailwind info
+nexo tailwind info
 ```
 
 Shows installation status and version.
 
 ## Development Workflow
 
-When running `fuego dev`:
+When running `nexo dev`:
 
 1. Tailwind watcher starts automatically (if `styles/input.css` exists)
 2. CSS rebuilds on any file change
 3. No manual rebuild needed
 
 ```bash
-fuego dev
+nexo dev
 ```
 
 You'll see:
 ```
-[fuego] Starting development server...
+[nexo] Starting development server...
 [tailwind] Watching for changes...
-[fuego] Server running at http://localhost:3000
+[nexo] Server running at http://localhost:3000
 ```
 
 ## Using in Templates
@@ -262,13 +262,13 @@ Include Tailwind build in Docker:
 FROM golang:1.23-alpine AS builder
 WORKDIR /app
 
-# Install Fuego for Tailwind
-RUN go install github.com/abdul-hamid-achik/fuego/cmd/fuego@latest
+# Install Nexo for Tailwind
+RUN go install github.com/abdul-hamid-achik/nexo/cmd/fuego@latest
 
 COPY . .
 
 # Build CSS
-RUN fuego tailwind build
+RUN nexo tailwind build
 
 # Build Go
 RUN go build -o server .
@@ -284,13 +284,13 @@ CMD ["./server"]
 
 <AccordionGroup>
   <Accordion title="CSS not updating">
-    Make sure `fuego tailwind watch` is running, or run `fuego tailwind build` after changes.
+    Make sure `nexo tailwind watch` is running, or run `nexo tailwind build` after changes.
   </Accordion>
   <Accordion title="Classes not working">
     Check that `styles/input.css` has `@import "tailwindcss";` at the top.
   </Accordion>
   <Accordion title="Binary not found">
-    Run `fuego tailwind install` to download the Tailwind binary.
+    Run `nexo tailwind install` to download the Tailwind binary.
   </Accordion>
 </AccordionGroup>
 

@@ -1,20 +1,20 @@
 ---
 title: CLI Reference
-description: 'Complete reference for all Fuego CLI commands, flags, and options.'
+description: 'Complete reference for all Nexo CLI commands, flags, and options.'
 ---
 
-This page documents all available Fuego CLI commands with their flags, examples, and best practices.
+This page documents all available Nexo CLI commands with their flags, examples, and best practices.
 
 ## Installation
 
 <CodeGroup>
 
 ```bash Homebrew (macOS/Linux)
-brew install abdul-hamid-achik/tap/fuego-cli
+brew install abdul-hamid-achik/tap/nexo-cli
 ```
 
 ```bash Go Install
-go install github.com/abdul-hamid-achik/fuego/cmd/fuego@latest
+go install github.com/abdul-hamid-achik/nexo/cmd/fuego@latest
 ```
 
 </CodeGroup>
@@ -22,17 +22,17 @@ go install github.com/abdul-hamid-achik/fuego/cmd/fuego@latest
 Verify installation:
 
 ```bash
-fuego --version
+nexo --version
 ```
 
 ---
 
-## fuego new
+## nexo new
 
-Create a new Fuego project with the recommended directory structure.
+Create a new Nexo project with the recommended directory structure.
 
 ```bash
-fuego new <name> [flags]
+nexo new <name> [flags]
 ```
 
 ### Arguments
@@ -52,13 +52,13 @@ fuego new <name> [flags]
 
 ```bash
 # Interactive mode (prompts for options)
-fuego new myapp
+nexo new myapp
 
 # Full-stack project with templ, Tailwind, and HTMX
-fuego new myapp --skip-prompts
+nexo new myapp --skip-prompts
 
 # API-only project (no frontend)
-fuego new myapp --api-only
+nexo new myapp --api-only
 ```
 
 ### Output Structure
@@ -83,7 +83,7 @@ fuego new myapp --api-only
           <File name="input.css" />
         </Folder>
         <File name="main.go" />
-        <File name="fuego.yaml" />
+        <File name="nexo.yaml" />
         <File name="go.mod" />
         <File name=".gitignore" />
       </Folder>
@@ -101,7 +101,7 @@ fuego new myapp --api-only
         </Folder>
         <Folder name="static" />
         <File name="main.go" />
-        <File name="fuego.yaml" />
+        <File name="nexo.yaml" />
         <File name="go.mod" />
         <File name=".gitignore" />
       </Folder>
@@ -115,12 +115,12 @@ After creating a project, the CLI automatically initializes a git repository and
 
 ---
 
-## fuego dev
+## nexo dev
 
 Start the development server with hot reload. Automatically rebuilds when Go or templ files change.
 
 ```bash
-fuego dev [flags]
+nexo dev [flags]
 ```
 
 ### Flags
@@ -134,13 +134,13 @@ fuego dev [flags]
 
 ```bash
 # Default (port 3000)
-fuego dev
+nexo dev
 
 # Custom port
-fuego dev --port 8080
+nexo dev --port 8080
 
 # Bind to localhost only
-fuego dev --host 127.0.0.1 --port 3000
+nexo dev --host 127.0.0.1 --port 3000
 ```
 
 ### What It Does
@@ -166,7 +166,7 @@ fuego dev --host 127.0.0.1 --port 3000
 ### Output
 
 ```
-  Fuego Development Server
+  Nexo Development Server
 
   → Generating routes...
   ✓ Routes generated
@@ -180,17 +180,17 @@ fuego dev --host 127.0.0.1 --port 3000
 ```
 
 <Info>
-The development server automatically detects and uses a local Fuego installation if the published module isn't available yet.
+The development server automatically detects and uses a local Nexo installation if the published module isn't available yet.
 </Info>
 
 ---
 
-## fuego build
+## nexo build
 
 Build the application as an optimized production binary.
 
 ```bash
-fuego build [flags]
+nexo build [flags]
 ```
 
 ### Flags
@@ -206,19 +206,19 @@ fuego build [flags]
 
 ```bash
 # Default build
-fuego build
+nexo build
 
 # Custom output path
-fuego build --output ./dist/server
+nexo build --output ./dist/server
 
 # Cross-compile for Linux
-fuego build --os linux --arch amd64
+nexo build --os linux --arch amd64
 
 # Cross-compile for ARM (e.g., Raspberry Pi, AWS Graviton)
-fuego build --os linux --arch arm64
+nexo build --os linux --arch arm64
 
 # JSON output for CI/CD
-fuego build --json
+nexo build --json
 ```
 
 ### Build Process
@@ -238,7 +238,7 @@ fuego build --json
 ### Output
 
 ```
-  Fuego Production Build
+  Nexo Production Build
 
   → Running templ generate...
   ✓ Templates generated
@@ -259,12 +259,12 @@ The production binary includes stripped debug information for smaller size. Typi
 
 ---
 
-## fuego routes
+## nexo routes
 
 List all registered routes discovered in the app directory.
 
 ```bash
-fuego routes [flags]
+nexo routes [flags]
 ```
 
 ### Flags
@@ -278,19 +278,19 @@ fuego routes [flags]
 
 ```bash
 # List all routes
-fuego routes
+nexo routes
 
 # JSON output (for tooling)
-fuego routes --json
+nexo routes --json
 
 # Custom app directory
-fuego routes --app-dir custom/app
+nexo routes --app-dir custom/app
 ```
 
 ### Output
 
 ```
-  Fuego Routes
+  Nexo Routes
 
   PROXY   Proxy enabled
           Matchers: all paths
@@ -334,12 +334,12 @@ fuego routes --app-dir custom/app
 
 ---
 
-## fuego generate route
+## nexo generate route
 
 Generate a new route file with handler functions.
 
 ```bash
-fuego generate route <path> [flags]
+nexo generate route <path> [flags]
 ```
 
 ### Arguments
@@ -369,19 +369,19 @@ fuego generate route <path> [flags]
 
 ```bash
 # Simple route (GET only)
-fuego generate route users
+nexo generate route users
 
 # Multiple methods
-fuego generate route users --methods GET,POST
+nexo generate route users --methods GET,POST
 
 # Dynamic route
-fuego generate route users/_id --methods GET,PUT,DELETE
+nexo generate route users/_id --methods GET,PUT,DELETE
 
 # Catch-all route
-fuego generate route docs/__slug --methods GET
+nexo generate route docs/__slug --methods GET
 
 # Route in a group (doesn't affect URL)
-fuego generate route _group_admin/settings --methods GET,PUT
+nexo generate route _group_admin/settings --methods GET,PUT
 ```
 
 ### Generated Code
@@ -390,10 +390,10 @@ fuego generate route _group_admin/settings --methods GET,PUT
 // app/api/users/_id/route.go
 package _id
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // Get handles GET /api/users/:id
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     id := c.Param("id")
     return c.JSON(200, map[string]any{
         "id": id,
@@ -401,7 +401,7 @@ func Get(c *fuego.Context) error {
 }
 
 // Put handles PUT /api/users/:id
-func Put(c *fuego.Context) error {
+func Put(c *nexo.Context) error {
     id := c.Param("id")
     var body map[string]any
     if err := c.Bind(&body); err != nil {
@@ -414,7 +414,7 @@ func Put(c *fuego.Context) error {
 }
 
 // Delete handles DELETE /api/users/:id
-func Delete(c *fuego.Context) error {
+func Delete(c *nexo.Context) error {
     id := c.Param("id")
     return c.JSON(200, map[string]string{
         "message": "deleted " + id,
@@ -424,12 +424,12 @@ func Delete(c *fuego.Context) error {
 
 ---
 
-## fuego generate middleware
+## nexo generate middleware
 
 Generate a middleware file with common patterns.
 
 ```bash
-fuego generate middleware <name> [flags]
+nexo generate middleware <name> [flags]
 ```
 
 ### Arguments
@@ -460,16 +460,16 @@ fuego generate middleware <name> [flags]
 
 ```bash
 # Root middleware (applies to all routes)
-fuego generate middleware global --template logging
+nexo generate middleware global --template logging
 
 # API middleware
-fuego generate middleware api --path api --template timing
+nexo generate middleware api --path api --template timing
 
 # Auth middleware for protected routes
-fuego generate middleware auth --path api/protected --template auth
+nexo generate middleware auth --path api/protected --template auth
 
 # CORS middleware
-fuego generate middleware cors --path api --template cors
+nexo generate middleware cors --path api --template cors
 ```
 
 ### Generated Code (auth template)
@@ -478,11 +478,11 @@ fuego generate middleware cors --path api --template cors
 // app/api/protected/middleware.go
 package protected
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
-func Middleware() fuego.MiddlewareFunc {
-    return func(next fuego.HandlerFunc) fuego.HandlerFunc {
-        return func(c *fuego.Context) error {
+func Middleware() nexo.MiddlewareFunc {
+    return func(next nexo.HandlerFunc) nexo.HandlerFunc {
+        return func(c *nexo.Context) error {
             token := c.Header("Authorization")
             if token == "" {
                 return c.JSON(401, map[string]string{
@@ -506,12 +506,12 @@ Middleware files automatically apply to all routes in their directory and subdir
 
 ---
 
-## fuego generate proxy
+## nexo generate proxy
 
 Generate a proxy file for request interception.
 
 ```bash
-fuego generate proxy [flags]
+nexo generate proxy [flags]
 ```
 
 ### Flags
@@ -535,16 +535,16 @@ fuego generate proxy [flags]
 
 ```bash
 # Empty proxy
-fuego generate proxy
+nexo generate proxy
 
 # Auth checking
-fuego generate proxy --template auth-check
+nexo generate proxy --template auth-check
 
 # Rate limiting
-fuego generate proxy --template rate-limit
+nexo generate proxy --template rate-limit
 
 # Maintenance mode
-fuego generate proxy --template maintenance
+nexo generate proxy --template maintenance
 ```
 
 ### Generated Code (auth-check template)
@@ -553,25 +553,25 @@ fuego generate proxy --template maintenance
 // app/proxy.go
 package app
 
-import "github.com/abdul-hamid-achik/fuego/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
-func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
+func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
     // Skip auth for public paths
     path := c.Path()
     if path == "/api/health" || path == "/api/auth/login" {
-        return fuego.Continue(), nil
+        return nexo.Continue(), nil
     }
 
     // Check authentication
     token := c.Header("Authorization")
     if token == "" {
-        return fuego.ResponseJSON(401, map[string]string{
+        return nexo.ResponseJSON(401, map[string]string{
             "error": "unauthorized",
         }), nil
     }
 
     // Continue to router
-    return fuego.Continue(), nil
+    return nexo.Continue(), nil
 }
 ```
 
@@ -579,10 +579,10 @@ func Proxy(c *fuego.Context) (*fuego.ProxyResult, error) {
 
 | Action | Description |
 |--------|-------------|
-| `fuego.Continue()` | Continue with normal routing |
-| `fuego.Redirect(url, code)` | Redirect to another URL |
-| `fuego.Rewrite(path)` | Rewrite URL internally |
-| `fuego.ResponseJSON(code, data)` | Return response immediately |
+| `nexo.Continue()` | Continue with normal routing |
+| `nexo.Redirect(url, code)` | Redirect to another URL |
+| `nexo.Rewrite(path)` | Rewrite URL internally |
+| `nexo.ResponseJSON(code, data)` | Return response immediately |
 
 <Info>
 The proxy runs **before** route matching, so it cannot access route parameters. Use middleware for route-specific logic.
@@ -590,12 +590,12 @@ The proxy runs **before** route matching, so it cannot access route parameters. 
 
 ---
 
-## fuego generate page
+## nexo generate page
 
 Generate a page template file for rendering HTML pages.
 
 ```bash
-fuego generate page <path> [flags]
+nexo generate page <path> [flags]
 ```
 
 ### Arguments
@@ -615,13 +615,13 @@ fuego generate page <path> [flags]
 
 ```bash
 # Simple page
-fuego generate page dashboard
+nexo generate page dashboard
 
 # Nested page
-fuego generate page admin/settings
+nexo generate page admin/settings
 
 # Page with section-specific layout
-fuego generate page blog/posts --with-layout
+nexo generate page blog/posts --with-layout
 ```
 
 ### Generated Code
@@ -662,12 +662,12 @@ Pages automatically inherit from the nearest parent `layout.templ`. Use `--with-
 
 ---
 
-## fuego tailwind build
+## nexo tailwind build
 
 Build Tailwind CSS for production with minification.
 
 ```bash
-fuego tailwind build [flags]
+nexo tailwind build [flags]
 ```
 
 ### Flags
@@ -682,19 +682,19 @@ fuego tailwind build [flags]
 
 ```bash
 # Default paths
-fuego tailwind build
+nexo tailwind build
 
 # Custom paths
-fuego tailwind build --input src/styles/main.css --output public/css/app.css
+nexo tailwind build --input src/styles/main.css --output public/css/app.css
 
 # JSON output for CI
-fuego tailwind build --json
+nexo tailwind build --json
 ```
 
 ### Output
 
 ```
-  Fuego Tailwind Build
+  Nexo Tailwind Build
 
   → Building CSS...
   ✓ CSS built successfully
@@ -705,17 +705,17 @@ fuego tailwind build --json
 ```
 
 <Info>
-Fuego uses the standalone Tailwind CSS v4 binary. No Node.js required!
+Nexo uses the standalone Tailwind CSS v4 binary. No Node.js required!
 </Info>
 
 ---
 
-## fuego tailwind watch
+## nexo tailwind watch
 
 Watch CSS files and rebuild on changes during development.
 
 ```bash
-fuego tailwind watch [flags]
+nexo tailwind watch [flags]
 ```
 
 ### Flags
@@ -729,16 +729,16 @@ fuego tailwind watch [flags]
 
 ```bash
 # Default paths
-fuego tailwind watch
+nexo tailwind watch
 
 # Custom paths
-fuego tailwind watch --input src/styles/main.css --output public/css/app.css
+nexo tailwind watch --input src/styles/main.css --output public/css/app.css
 ```
 
 ### Output
 
 ```
-  Fuego Tailwind Watch
+  Nexo Tailwind Watch
 
   → Starting Tailwind watch mode...
   ✓ Watching for changes
@@ -748,35 +748,35 @@ fuego tailwind watch --input src/styles/main.css --output public/css/app.css
 ```
 
 <Tip>
-You don't usually need to run this manually. `fuego dev` automatically starts the Tailwind watcher.
+You don't usually need to run this manually. `nexo dev` automatically starts the Tailwind watcher.
 </Tip>
 
 ---
 
-## fuego tailwind install
+## nexo tailwind install
 
 Download the Tailwind CSS standalone binary.
 
 ```bash
-fuego tailwind install
+nexo tailwind install
 ```
 
 ### Behavior
 
 - Downloads the appropriate Tailwind binary for your OS/architecture
-- Caches it at `~/.cache/fuego/bin/`
-- Shared across all Fuego projects
+- Caches it at `~/.cache/nexo/bin/`
+- Shared across all Nexo projects
 
 ### Output
 
 ```
-  Fuego Tailwind Install
+  Nexo Tailwind Install
 
   → Downloading Tailwind v4.0.0...
   ✓ Tailwind installed successfully
 
   Version: v4.0.0
-  Path:    /Users/you/.cache/fuego/bin/tailwindcss
+  Path:    /Users/you/.cache/nexo/bin/tailwindcss
 ```
 
 <Info>
@@ -785,12 +785,12 @@ The binary is automatically downloaded when needed. Use this command to pre-inst
 
 ---
 
-## fuego tailwind info
+## nexo tailwind info
 
 Show information about the Tailwind CSS installation.
 
 ```bash
-fuego tailwind info [flags]
+nexo tailwind info [flags]
 ```
 
 ### Flags
@@ -802,20 +802,20 @@ fuego tailwind info [flags]
 ### Examples
 
 ```bash
-fuego tailwind info
-fuego tailwind info --json
+nexo tailwind info
+nexo tailwind info --json
 ```
 
 ### Output
 
 ```
-  Fuego Tailwind Info
+  Nexo Tailwind Info
 
   ✓ Installed
   Version: v4.0.0
 
-  Binary:   /Users/you/.cache/fuego/bin/tailwindcss
-  Cache:    /Users/you/.cache/fuego
+  Binary:   /Users/you/.cache/nexo/bin/tailwindcss
+  Cache:    /Users/you/.cache/nexo
 
   Project:
   ✓ styles/input.css found
@@ -824,12 +824,12 @@ fuego tailwind info --json
 
 ---
 
-## fuego openapi generate
+## nexo openapi generate
 
 Generate an OpenAPI specification file from your routes.
 
 ```bash
-fuego openapi generate [flags]
+nexo openapi generate [flags]
 ```
 
 ### Flags
@@ -850,28 +850,28 @@ fuego openapi generate [flags]
 
 ```bash
 # Default (outputs openapi.json)
-fuego openapi generate
+nexo openapi generate
 
 # YAML format
-fuego openapi generate --format yaml --output api.yaml
+nexo openapi generate --format yaml --output api.yaml
 
 # Custom title and version
-fuego openapi generate --title "User Service" --version "2.0.0"
+nexo openapi generate --title "User Service" --version "2.0.0"
 
 # With server URL
-fuego openapi generate --server "https://api.example.com"
+nexo openapi generate --server "https://api.example.com"
 
 # OpenAPI 3.0 compatibility
-fuego openapi generate --openapi30
+nexo openapi generate --openapi30
 
 # JSON output for CI/CD
-fuego openapi generate --json
+nexo openapi generate --json
 ```
 
 ### Output
 
 ```
-  Fuego OpenAPI Generator
+  Nexo OpenAPI Generator
 
   → Scanning routes...
   ✓ Found 12 routes
@@ -890,12 +890,12 @@ Documentation is automatically extracted from comments above your handler functi
 
 ---
 
-## fuego openapi serve
+## nexo openapi serve
 
 Start a local server with Swagger UI for interactive API exploration.
 
 ```bash
-fuego openapi serve [flags]
+nexo openapi serve [flags]
 ```
 
 ### Flags
@@ -912,19 +912,19 @@ fuego openapi serve [flags]
 
 ```bash
 # Generate and serve
-fuego openapi serve
+nexo openapi serve
 
 # Serve existing spec file
-fuego openapi serve --spec openapi.json
+nexo openapi serve --spec openapi.json
 
 # Custom port
-fuego openapi serve --port 9000
+nexo openapi serve --port 9000
 ```
 
 ### Output
 
 ```
-  Fuego OpenAPI Server
+  Nexo OpenAPI Server
 
   → Generating spec from routes...
   ✓ Spec generated
@@ -941,12 +941,12 @@ The server provides a Swagger UI interface for testing your API directly in the 
 
 ---
 
-## fuego mcp serve
+## nexo mcp serve
 
 Start an MCP (Model Context Protocol) server for AI assistant integration.
 
 ```bash
-fuego mcp serve [flags]
+nexo mcp serve [flags]
 ```
 
 ### Flags
@@ -959,14 +959,14 @@ fuego mcp serve [flags]
 
 | Tool | Description |
 |------|-------------|
-| `fuego_new` | Create a new Fuego project |
-| `fuego_generate_route` | Generate a route file |
-| `fuego_generate_middleware` | Generate middleware |
-| `fuego_generate_proxy` | Generate proxy file |
-| `fuego_generate_page` | Generate page template |
-| `fuego_list_routes` | List all routes |
-| `fuego_info` | Get project information |
-| `fuego_validate` | Validate project structure |
+| `nexo_new` | Create a new Nexo project |
+| `nexo_generate_route` | Generate a route file |
+| `nexo_generate_middleware` | Generate middleware |
+| `nexo_generate_proxy` | Generate proxy file |
+| `nexo_generate_page` | Generate page template |
+| `nexo_list_routes` | List all routes |
+| `nexo_info` | Get project information |
+| `nexo_validate` | Validate project structure |
 
 ### Configuration
 
@@ -976,8 +976,8 @@ fuego mcp serve [flags]
     ```json
     {
       "mcpServers": {
-        "fuego": {
-          "command": "fuego",
+        "nexo": {
+          "command": "nexo",
           "args": ["mcp", "serve", "--workdir", "/path/to/project"]
         }
       }
@@ -987,7 +987,7 @@ fuego mcp serve [flags]
   <Tab title="OpenCode / Claude Code">
     Configure your MCP settings to run:
     ```bash
-    fuego mcp serve --workdir /path/to/project
+    nexo mcp serve --workdir /path/to/project
     ```
   </Tab>
 </Tabs>
@@ -1004,12 +1004,12 @@ Once configured, AI assistants can use natural language:
 
 ---
 
-## fuego upgrade
+## nexo upgrade
 
-Check for and install new versions of Fuego CLI. The upgrade command supports automatic updates from GitHub releases with checksum verification and rollback capability.
+Check for and install new versions of Nexo CLI. The upgrade command supports automatic updates from GitHub releases with checksum verification and rollback capability.
 
 ```bash
-fuego upgrade [flags]
+nexo upgrade [flags]
 ```
 
 ### Flags
@@ -1027,43 +1027,43 @@ fuego upgrade [flags]
 
 ```bash
 # Upgrade to latest stable version
-fuego upgrade
+nexo upgrade
 
 # Check for updates without installing
-fuego upgrade --check
+nexo upgrade --check
 
 # Install a specific version
-fuego upgrade --version v0.5.0
+nexo upgrade --version v0.5.0
 
 # Include prereleases
-fuego upgrade --prerelease
+nexo upgrade --prerelease
 
 # Force reinstall current version
-fuego upgrade --force
+nexo upgrade --force
 
 # Rollback to previous version
-fuego upgrade --rollback
+nexo upgrade --rollback
 
 # JSON output for scripting
-fuego upgrade --json
+nexo upgrade --json
 ```
 
 ### Output
 
 ```
-  Fuego Upgrade
+  Nexo Upgrade
 
   Current version: v0.4.3
   Latest version:  v0.5.0 (released 2 days ago)
 
-  -> Downloading fuego_0.5.0_darwin_arm64.tar.gz...
+  -> Downloading nexo_0.5.0_darwin_arm64.tar.gz...
   -> Verifying checksum...
   -> Extracting binary...
   -> Installing...
   OK Upgraded successfully to v0.5.0!
 
-  Backup saved to: ~/.cache/fuego/fuego.backup
-  To rollback: fuego upgrade --rollback
+  Backup saved to: ~/.cache/nexo/fuego.backup
+  To rollback: nexo upgrade --rollback
 
   Release notes:
     - Added self-update command
@@ -1073,26 +1073,26 @@ fuego upgrade --json
 
 ### Automatic Update Notifications
 
-When running `fuego dev`, Fuego checks for updates in the background (once every 24 hours) and displays a notification if a new version is available:
+When running `nexo dev`, Nexo checks for updates in the background (once every 24 hours) and displays a notification if a new version is available:
 
 ```
-  Fuego Development Server
+  Nexo Development Server
 
-  Update: A new version of Fuego is available: v0.4.3 -> v0.5.0
-  Run 'fuego upgrade' to upgrade.
+  Update: A new version of Nexo is available: v0.4.3 -> v0.5.0
+  Run 'nexo upgrade' to upgrade.
 
   -> Generating routes...
 ```
 
 ### Rollback
 
-Fuego automatically backs up your current binary before upgrading. If something goes wrong, you can restore it:
+Nexo automatically backs up your current binary before upgrading. If something goes wrong, you can restore it:
 
 ```bash
-fuego upgrade --rollback
+nexo upgrade --rollback
 ```
 
-The backup is stored at `~/.cache/fuego/fuego.backup`.
+The backup is stored at `~/.cache/nexo/fuego.backup`.
 
 <Info>
 The self-update feature downloads binaries directly from GitHub releases. No additional package managers are required.
@@ -1114,13 +1114,13 @@ These flags are available on all commands:
 
 ```bash
 # Get help for any command
-fuego new --help
-fuego generate route --help
+nexo new --help
+nexo generate route --help
 
 # JSON output
-fuego routes --json
-fuego build --json
-fuego tailwind info --json
+nexo routes --json
+nexo build --json
+nexo tailwind info --json
 ```
 
 ---
@@ -1129,9 +1129,9 @@ fuego tailwind info --json
 
 | Variable | Description |
 |----------|-------------|
-| `PORT` | Default port for `fuego dev` (overridden by `--port`) |
-| `FUEGO_LOG_LEVEL` | Log level: `debug`, `info`, `warn`, `error`, `off` |
-| `FUEGO_DEV` | Set to `true` for debug logging |
+| `PORT` | Default port for `nexo dev` (overridden by `--port`) |
+| `NEXO_LOG_LEVEL` | Log level: `debug`, `info`, `warn`, `error`, `off` |
+| `NEXO_DEV` | Set to `true` for debug logging |
 | `GO_ENV` | Set to `production` for warn-level logging |
 
 ---

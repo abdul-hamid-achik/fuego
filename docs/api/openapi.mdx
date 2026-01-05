@@ -1,16 +1,16 @@
 ---
 title: OpenAPI
-description: 'Automatic OpenAPI specification generation for your Fuego APIs'
+description: 'Automatic OpenAPI specification generation for your Nexo APIs'
 ---
 
-Fuego automatically generates OpenAPI 3.1 specifications from your file-based routes, enabling interactive API documentation with Swagger UI.
+Nexo automatically generates OpenAPI 3.1 specifications from your file-based routes, enabling interactive API documentation with Swagger UI.
 
 ## Quick Start
 
 ### Generate Spec File
 
 ```bash
-fuego openapi generate
+nexo openapi generate
 ```
 
 This scans your `app/` directory and generates `openapi.json`.
@@ -18,7 +18,7 @@ This scans your `app/` directory and generates `openapi.json`.
 ### Serve Swagger UI
 
 ```bash
-fuego openapi serve
+nexo openapi serve
 ```
 
 Opens interactive API documentation at `http://localhost:8080/docs`.
@@ -26,10 +26,10 @@ Opens interactive API documentation at `http://localhost:8080/docs`.
 ### Runtime Integration
 
 ```go
-app := fuego.New()
+app := nexo.New()
 
 // Enable OpenAPI endpoints
-app.ServeOpenAPI(fuego.OpenAPIOptions{
+app.ServeOpenAPI(nexo.OpenAPIOptions{
     Title:       "My API",
     Version:     "1.0.0",
     Description: "My awesome API",
@@ -46,13 +46,13 @@ app.Listen(":3000")
 
 ## CLI Commands
 
-### fuego openapi generate
+### nexo openapi generate
 
 Generate an OpenAPI specification file from your routes.
 
 **Usage:**
 ```bash
-fuego openapi generate [flags]
+nexo openapi generate [flags]
 ```
 
 **Flags:**
@@ -73,25 +73,25 @@ fuego openapi generate [flags]
 
 ```bash
 # Default (outputs openapi.json)
-fuego openapi generate
+nexo openapi generate
 
 # YAML format
-fuego openapi generate --format yaml --output api.yaml
+nexo openapi generate --format yaml --output api.yaml
 
 # Custom title and version
-fuego openapi generate --title "User Service" --version "2.0.0"
+nexo openapi generate --title "User Service" --version "2.0.0"
 
 # With server URL
-fuego openapi generate --server "https://api.example.com"
+nexo openapi generate --server "https://api.example.com"
 
 # OpenAPI 3.0 compatibility
-fuego openapi generate --openapi30
+nexo openapi generate --openapi30
 ```
 
 **Output:**
 
 ```
-  Fuego OpenAPI Generator
+  Nexo OpenAPI Generator
 
   → Scanning routes...
   ✓ Found 12 routes
@@ -106,13 +106,13 @@ fuego openapi generate --openapi30
 
 ---
 
-### fuego openapi serve
+### nexo openapi serve
 
 Start a local server with Swagger UI for interactive API exploration.
 
 **Usage:**
 ```bash
-fuego openapi serve [flags]
+nexo openapi serve [flags]
 ```
 
 **Flags:**
@@ -129,19 +129,19 @@ fuego openapi serve [flags]
 
 ```bash
 # Generate and serve
-fuego openapi serve
+nexo openapi serve
 
 # Serve existing spec file
-fuego openapi serve --spec openapi.json
+nexo openapi serve --spec openapi.json
 
 # Custom port
-fuego openapi serve --port 9000
+nexo openapi serve --port 9000
 ```
 
 **Output:**
 
 ```
-  Fuego OpenAPI Server
+  Nexo OpenAPI Server
 
   → Generating spec from routes...
   ✓ Spec generated
@@ -181,9 +181,9 @@ func (a *App) ServeOpenAPI(opts OpenAPIOptions)
 **Example:**
 
 ```go
-app := fuego.New()
+app := nexo.New()
 
-app.ServeOpenAPI(fuego.OpenAPIOptions{
+app.ServeOpenAPI(nexo.OpenAPIOptions{
     Title:       "E-Commerce API",
     Version:     "1.0.0",
     Description: "API for managing products and orders",
@@ -199,7 +199,7 @@ app.Listen(":3000")
 **Custom Paths:**
 
 ```go
-app.ServeOpenAPI(fuego.OpenAPIOptions{
+app.ServeOpenAPI(nexo.OpenAPIOptions{
     Title:    "My API",
     Version:  "2.0.0",
     SpecPath: "/api/openapi.json",  // Custom spec path
@@ -211,7 +211,7 @@ app.ServeOpenAPI(fuego.OpenAPIOptions{
 
 ## Automatic Documentation
 
-Fuego extracts documentation from your code automatically:
+Nexo extracts documentation from your code automatically:
 
 ### From Comments
 
@@ -222,7 +222,7 @@ Add comments above handler functions for operation summaries and descriptions:
 //
 // Retrieves a single user from the database by their unique identifier.
 // Returns 404 if the user is not found.
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     id := c.Param("id")
     // ...
 }
@@ -258,7 +258,7 @@ Path parameters are automatically detected from dynamic segments:
 // File: app/api/users/_id/route.go
 
 // Get retrieves a user by ID
-func Get(c *fuego.Context) error {
+func Get(c *nexo.Context) error {
     id := c.Param("id")
     // ...
 }
@@ -280,14 +280,14 @@ func Get(c *fuego.Context) error {
 
 ### Request Bodies
 
-For POST, PUT, and PATCH methods, Fuego automatically adds request body schemas:
+For POST, PUT, and PATCH methods, Nexo automatically adds request body schemas:
 
 ```go
 // Post creates a new user
-func Post(c *fuego.Context) error {
+func Post(c *nexo.Context) error {
     var req CreateUserRequest
     if err := c.Bind(&req); err != nil {
-        return fuego.BadRequest("invalid request body")
+        return nexo.BadRequest("invalid request body")
     }
     // ...
 }
@@ -343,10 +343,10 @@ With this code:
 package users
 
 // Get lists all users
-func Get(c *fuego.Context) error { ... }
+func Get(c *nexo.Context) error { ... }
 
 // Post creates a new user
-func Post(c *fuego.Context) error { ... }
+func Post(c *nexo.Context) error { ... }
 ```
 
 ```go
@@ -356,7 +356,7 @@ package id
 // Get retrieves a user by ID
 //
 // Returns detailed information about a specific user.
-func Get(c *fuego.Context) error { ... }
+func Get(c *nexo.Context) error { ... }
 ```
 
 **Generated `openapi.json`:**
@@ -454,7 +454,7 @@ Many API gateways support OpenAPI import:
 
 Host documentation with tools like:
 
-- **Swagger UI** - Interactive API explorer (built-in with `fuego openapi serve`)
+- **Swagger UI** - Interactive API explorer (built-in with `nexo openapi serve`)
 - **Redoc** - Clean, responsive documentation
 - **Stoplight** - API design and documentation platform
 
@@ -462,7 +462,7 @@ Host documentation with tools like:
 
 ## Configuration File
 
-You can also configure OpenAPI generation in `fuego.yaml`:
+You can also configure OpenAPI generation in `nexo.yaml`:
 
 ```yaml
 openapi:
@@ -486,7 +486,7 @@ openapi:
 Then generate with:
 
 ```bash
-fuego openapi generate  # Reads from fuego.yaml
+nexo openapi generate  # Reads from nexo.yaml
 ```
 
 ---
@@ -500,14 +500,14 @@ fuego openapi generate  # Reads from fuego.yaml
     ```go
     // ❌ Bad
     // Get user
-    func Get(c *fuego.Context) error { ... }
+    func Get(c *nexo.Context) error { ... }
     
     // ✅ Good
     // Get retrieves a user by ID
     //
     // This endpoint returns detailed user information including
     // profile data, preferences, and account status.
-    func Get(c *fuego.Context) error { ... }
+    func Get(c *nexo.Context) error { ... }
     ```
   </Accordion>
 
@@ -520,7 +520,7 @@ fuego openapi generate  # Reads from fuego.yaml
     
     ```bash
     # In CI/CD pipeline
-    fuego openapi generate
+    nexo openapi generate
     git diff openapi.json  # Review changes
     ```
   </Accordion>
@@ -529,7 +529,7 @@ fuego openapi generate  # Reads from fuego.yaml
     Use semantic versioning and update the version in your spec:
     
     ```bash
-    fuego openapi generate --version 2.0.0
+    nexo openapi generate --version 2.0.0
     ```
   </Accordion>
 
@@ -538,7 +538,7 @@ fuego openapi generate  # Reads from fuego.yaml
     
     ```go
     if os.Getenv("GO_ENV") != "production" {
-        app.ServeOpenAPI(fuego.OpenAPIOptions{
+        app.ServeOpenAPI(nexo.OpenAPIOptions{
             Title:   "My API (Dev)",
             Version: "1.0.0",
         })
@@ -559,7 +559,7 @@ fuego openapi generate  # Reads from fuego.yaml
     - Ensure `app/` directory exists
     - Check that route files are named `route.go`
     - Verify handler functions match HTTP method names (Get, Post, etc.)
-    - Run `fuego routes` to see if routes are detected
+    - Run `nexo routes` to see if routes are detected
   </Accordion>
 
   <Accordion title="Comments not appearing">
