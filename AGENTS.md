@@ -394,6 +394,47 @@ Fuego uses an underscore-based convention for dynamic routes that are valid Go p
 - `_group_name` - Route group (doesn't affect URL)
 - `_name_` - Route group with trailing underscore (alternative syntax, doesn't affect URL)
 
+### Route Groups In-Depth
+
+Route groups let you organize files without affecting URLs. Both syntaxes are equivalent:
+
+**Syntax 1: `_group_name`**
+```
+app/_group_auth/login/route.go    → /login
+app/_group_auth/callback/route.go → /callback
+app/_group_admin/users/route.go   → /users
+```
+
+**Syntax 2: `_name_` (trailing underscore)**
+```
+app/_auth_/login/route.go    → /login
+app/_auth_/callback/route.go → /callback
+app/_admin_/users/route.go   → /users
+```
+
+**Common Use Cases:**
+- `_auth_/` or `_group_auth/` - Authentication routes (login, logout, callback)
+- `_dashboard_/` or `_group_dashboard/` - Dashboard pages
+- `_admin_/` or `_group_admin/` - Admin-only routes
+- `_marketing_/` or `_group_marketing/` - Marketing pages (about, contact, blog)
+
+**You can nest and mix both syntaxes:**
+```
+app/_auth_/_group_admin/users/route.go → /users
+```
+
+**Common Mistake:**
+Folder names like `auth_routes`, `admin_pages`, or `user_dashboard` are NOT route groups:
+```
+app/auth_routes/login/route.go → /auth_routes/login  (WRONG - literal URL)
+app/_auth_/login/route.go      → /login              (CORRECT - route group)
+app/_group_auth/login/route.go → /login              (CORRECT - route group)
+```
+
+Route groups MUST match one of these regex patterns:
+- `^_group_([a-zA-Z][a-zA-Z0-9_]*)$` - e.g., `_group_auth`, `_group_admin`
+- `^_([a-zA-Z][a-zA-Z0-9]*)_$` - e.g., `_auth_`, `_admin_`, `_dashboard_`
+
 ## Private Folders (Not Routable)
 
 The following underscore-prefixed folders are private and NOT routable:

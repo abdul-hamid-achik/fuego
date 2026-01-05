@@ -238,6 +238,68 @@ Creates:
 Route groups are great for organizing code and applying shared middleware without affecting URLs.
 </Tip>
 
+### Alternative Syntax: `_name_`
+
+You can also use the **trailing underscore syntax** `_name_` as a shorter alternative to `_group_name`:
+
+<FileTree>
+  <Folder name="app" defaultOpen>
+    <Folder name="_auth_" defaultOpen>
+      <Folder name="login">
+        <File name="page.templ" />
+      </Folder>
+      <Folder name="callback">
+        <File name="route.go" />
+      </Folder>
+      <Folder name="logout">
+        <File name="route.go" />
+      </Folder>
+    </Folder>
+  </Folder>
+</FileTree>
+
+Creates:
+- `/login` (not `/auth/login`)
+- `/callback`
+- `/logout`
+
+**Both syntaxes are equivalent:**
+
+| Syntax | Example | URL Result |
+|--------|---------|------------|
+| `_group_name` | `_group_auth/login/route.go` | `/login` |
+| `_name_` | `_auth_/login/route.go` | `/login` |
+
+<Tip>
+The `_name_` syntax is shorter and works well for common groupings like `_auth_`, `_dashboard_`, or `_admin_`.
+</Tip>
+
+**Mixing syntaxes:**
+
+You can combine both syntaxes in nested structures:
+
+<FileTree>
+  <Folder name="app" defaultOpen>
+    <Folder name="_auth_" defaultOpen>
+      <Folder name="_group_admin" defaultOpen>
+        <Folder name="users">
+          <File name="route.go" />
+        </Folder>
+      </Folder>
+    </Folder>
+  </Folder>
+</FileTree>
+
+Creates: `/users` (both `_auth_` and `_group_admin` are stripped from the URL)
+
+<Warning>
+**Common mistake:** Folder names like `auth_routes` or `admin_pages` are NOT route groups. They will appear literally in the URL as `/auth_routes/...` or `/admin_pages/...`.
+
+Route groups must match one of these patterns:
+- `_group_name` (prefix with `_group_`)
+- `_name_` (wrap with underscores: starts with `_`, ends with `_`)
+</Warning>
+
 ## Private Folders
 
 Certain folders with specific underscore-prefixed names are private (not routable):
