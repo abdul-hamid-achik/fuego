@@ -21,8 +21,8 @@
     <path d="M50 50C50 50 60 65 60 80C60 95 50 110 50 110C50 110 75 95 75 80C75 65 50 50 50 50Z" fill="#FDBA74" opacity="0.6"/>
   </g>
   
-  <!-- Text: fuego -->
-  <text x="400" y="130" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="72" font-weight="800" fill="url(#textGradient)" text-anchor="middle">fuego</text>
+  <!-- Text: nexo -->
+  <text x="400" y="130" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="72" font-weight="800" fill="url(#textGradient)" text-anchor="middle">nexo</text>
   
   <!-- Tagline -->
   <text x="400" y="170" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="18" fill="#71717A" text-anchor="middle">File-based routing for Go. Fast to write. Faster to run.</text>

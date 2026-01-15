@@ -20,10 +20,10 @@ var tailwindCmd = &cobra.Command{
 Nexo uses the standalone Tailwind CSS v4 binary, which requires no Node.js.
 
 Commands:
-  fuego tailwind build    Build CSS for production
-  fuego tailwind watch    Watch and rebuild CSS on changes
-  fuego tailwind install  Download the Tailwind binary
-  fuego tailwind info     Show Tailwind installation info`,
+  nexo tailwind build    Build CSS for production
+  nexo tailwind watch    Watch and rebuild CSS on changes
+  nexo tailwind install  Download the Tailwind binary
+  nexo tailwind info     Show Tailwind installation info`,
 }
 
 var tailwindBuildCmd = &cobra.Command{
@@ -34,8 +34,8 @@ var tailwindBuildCmd = &cobra.Command{
 This command compiles your CSS with minification enabled.
 
 Examples:
-  fuego tailwind build
-  fuego tailwind build --input styles/input.css --output static/css/output.css`,
+  nexo tailwind build
+  nexo tailwind build --input styles/input.css --output static/css/output.css`,
 	Run: runTailwindBuild,
 }
 
@@ -47,8 +47,8 @@ var tailwindWatchCmd = &cobra.Command{
 This command runs Tailwind in watch mode for development.
 
 Examples:
-  fuego tailwind watch
-  fuego tailwind watch --input styles/input.css --output static/css/output.css`,
+  nexo tailwind watch
+  nexo tailwind watch --input styles/input.css --output static/css/output.css`,
 	Run: runTailwindWatch,
 }
 
@@ -60,7 +60,7 @@ var tailwindInstallCmd = &cobra.Command{
 The binary is cached at ~/.cache/nexo/bin/ and shared across projects.
 
 Examples:
-  fuego tailwind install`,
+  nexo tailwind install`,
 	Run: runTailwindInstall,
 }
 
@@ -70,8 +70,8 @@ var tailwindInfoCmd = &cobra.Command{
 	Long: `Show information about the Tailwind CSS installation.
 
 Examples:
-  fuego tailwind info
-  fuego tailwind info --json`,
+  nexo tailwind info
+  nexo tailwind info --json`,
 	Run: runTailwindInfo,
 }
 
@@ -313,7 +313,7 @@ func runTailwindInfo(cmd *cobra.Command, args []string) {
 			fmt.Printf("  Version: %s\n", version)
 		} else {
 			fmt.Printf("  %s Not installed\n", yellow("○"))
-			fmt.Printf("  Run: fuego tailwind install\n")
+			fmt.Printf("  Run: nexo tailwind install\n")
 		}
 
 		fmt.Printf("\n  Binary:   %s\n", tw.BinaryPath())
@@ -325,7 +325,7 @@ func runTailwindInfo(cmd *cobra.Command, args []string) {
 			fmt.Printf("  %s styles/input.css found\n", green("✓"))
 			if needsBuild {
 				fmt.Printf("  %s Output CSS needs to be built\n", yellow("○"))
-				fmt.Printf("  Run: fuego tailwind build\n")
+				fmt.Printf("  Run: nexo tailwind build\n")
 			} else {
 				fmt.Printf("  %s Output CSS exists\n", green("✓"))
 			}

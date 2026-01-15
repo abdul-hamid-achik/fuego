@@ -20,11 +20,11 @@ var upgradeCmd = &cobra.Command{
 By default, prereleases are skipped. Use --prerelease to include them.
 
 Examples:
-  fuego upgrade                    Upgrade to latest stable version
-  fuego upgrade --check            Check for updates without installing
-  fuego upgrade --version v0.5.0   Install a specific version
-  fuego upgrade --prerelease       Include prerelease versions
-  fuego upgrade --rollback         Restore previous version from backup`,
+  nexo upgrade                    Upgrade to latest stable version
+  nexo upgrade --check            Check for updates without installing
+  nexo upgrade --version v0.5.0   Install a specific version
+  nexo upgrade --prerelease       Include prerelease versions
+  nexo upgrade --rollback         Restore previous version from backup`,
 	Run: runUpgrade,
 }
 
@@ -138,7 +138,7 @@ func runUpgrade(cmd *cobra.Command, args []string) {
 			})
 		} else {
 			fmt.Printf("  %s Update available!\n", green("OK"))
-			fmt.Printf("  Run '%s' to update.\n\n", yellow("fuego upgrade"))
+			fmt.Printf("  Run '%s' to update.\n\n", yellow("nexo upgrade"))
 
 			// Show abbreviated release notes
 			if release.Body != "" {
@@ -215,7 +215,7 @@ func runUpgrade(cmd *cobra.Command, args []string) {
 			green("OK"), release.TagName)
 
 		fmt.Printf("  Backup saved to: %s\n", updater.BackupPath())
-		fmt.Printf("  To rollback: %s\n\n", yellow("fuego upgrade --rollback"))
+		fmt.Printf("  To rollback: %s\n\n", yellow("nexo upgrade --rollback"))
 
 		// Show release notes (abbreviated)
 		if release.Body != "" {
@@ -262,7 +262,7 @@ func runRollback(currentVersion string) {
 	} else {
 		fmt.Printf("  %s Rollback successful!\n\n", green("OK"))
 		fmt.Printf("  Run '%s' to verify the restored version.\n\n",
-			cyan("fuego --version"))
+			cyan("nexo --version"))
 	}
 }
 
@@ -347,5 +347,5 @@ func CheckForUpdateInBackground() {
 		yellow("Update:"),
 		version.GetVersion(),
 		cyan(release.TagName))
-	fmt.Printf("  Run '%s' to upgrade.\n\n", yellow("fuego upgrade"))
+	fmt.Printf("  Run '%s' to upgrade.\n\n", yellow("nexo upgrade"))
 }

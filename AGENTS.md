@@ -106,7 +106,7 @@ Create `app/api/users/route.go`:
 ```go
 package users
 
-import "github.com/abdul-hamid-achik/nexo/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 func Get(c *nexo.Context) error {
     return c.JSON(200, map[string]any{

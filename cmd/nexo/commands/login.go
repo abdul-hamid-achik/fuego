@@ -27,9 +27,9 @@ var loginCmd = &cobra.Command{
 	Long: `Authenticate with Nexo Cloud using browser-based OAuth or an API token.
 
 Examples:
-  fuego login              # Opens browser for GitHub OAuth
-  fuego login --token XXX  # Use existing API token
-  fuego login --device     # Use device flow (for headless environments)`,
+  nexo login              # Opens browser for GitHub OAuth
+  nexo login --token XXX  # Use existing API token
+  nexo login --device     # Use device flow (for headless environments)`,
 	Run: runLogin,
 }
 
@@ -48,7 +48,7 @@ func runLogin(cmd *cobra.Command, args []string) {
 		if creds != nil && creds.User != nil {
 			if !jsonOutput {
 				fmt.Printf("  %s Already logged in as %s\n", yellow("!"), cyan("@"+creds.User.Username))
-				fmt.Println("  Run 'fuego logout' to log out first.")
+				fmt.Println("  Run 'nexo logout' to log out first.")
 			} else {
 				printSuccess(LoginOutput{
 					Success:  true,

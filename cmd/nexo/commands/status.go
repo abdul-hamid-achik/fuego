@@ -19,7 +19,7 @@ var statusCmd = &cobra.Command{
 Displays app info, recent deployments, and resource metrics.
 
 Examples:
-  fuego status my-app`,
+  nexo status my-app`,
 	Args: cobra.ExactArgs(1),
 	Run:  runStatus,
 }

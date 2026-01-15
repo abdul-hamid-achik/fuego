@@ -193,7 +193,7 @@ func TestNewProjectOutput_JSON(t *testing.T) {
 		Project:   "myapp",
 		Directory: "/path/to/myapp",
 		Created:   []string{"main.go", "go.mod", "app/api/health/route.go"},
-		NextSteps: []string{"cd myapp", "fuego dev"},
+		NextSteps: []string{"cd myapp", "nexo dev"},
 	}
 
 	data, err := json.Marshal(output)

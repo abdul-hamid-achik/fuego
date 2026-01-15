@@ -24,10 +24,10 @@ This command:
   2. Builds an optimized Go binary with ldflags
 
 Examples:
-  fuego build
-  fuego build --output ./bin/myapp
-  fuego build --os linux --arch amd64
-  fuego build --json`,
+  nexo build
+  nexo build --output ./bin/myapp
+  nexo build --os linux --arch amd64
+  nexo build --json`,
 	Run: runBuild,
 }
 

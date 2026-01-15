@@ -22,9 +22,9 @@ This command scans the app/ directory and displays:
 - Pages (page.templ files) with their URL patterns and associated layouts
 
 Examples:
-  fuego routes
-  fuego routes --json
-  fuego routes --app-dir custom/app`,
+  nexo routes
+  nexo routes --json
+  nexo routes --app-dir custom/app`,
 	Run: runRoutes,
 }
 

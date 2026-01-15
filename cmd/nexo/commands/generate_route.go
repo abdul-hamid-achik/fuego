@@ -21,10 +21,10 @@ The path supports dynamic segments:
   (group)      - Route group (doesn't affect URL)
 
 Examples:
-  fuego generate route users              # GET /api/users
-  fuego generate route users/[id]         # Dynamic route /api/users/:id
-  fuego generate route posts/[...slug]    # Catch-all /api/posts/*
-  fuego generate route users/[id] --methods GET,PUT,DELETE`,
+  nexo generate route users              # GET /api/users
+  nexo generate route users/[id]         # Dynamic route /api/users/:id
+  nexo generate route posts/[...slug]    # Catch-all /api/posts/*
+  nexo generate route users/[id] --methods GET,PUT,DELETE`,
 	Args: cobra.ExactArgs(1),
 	Run:  runGenerateRoute,
 }

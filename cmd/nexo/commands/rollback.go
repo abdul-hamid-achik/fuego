@@ -19,8 +19,8 @@ var rollbackCmd = &cobra.Command{
 If no deployment ID is provided, rolls back to the previous deployment.
 
 Examples:
-  fuego rollback my-app           # Rollback to previous deployment
-  fuego rollback my-app abc123    # Rollback to specific deployment`,
+  nexo rollback my-app           # Rollback to previous deployment
+  nexo rollback my-app abc123    # Rollback to specific deployment`,
 	Args: cobra.RangeArgs(1, 2),
 	Run:  runCloudRollback,
 }
@@ -118,6 +118,6 @@ func runCloudRollback(cmd *cobra.Command, args []string) {
 		fmt.Printf("  Deployment ID: %s\n", dim(deployment.ID))
 		fmt.Printf("  Version: %s\n", deployment.Version)
 		fmt.Printf("  Status: %s\n", deployment.Status)
-		fmt.Println("\n  Run 'fuego logs " + appName + " -f' to monitor the rollback")
+		fmt.Println("\n  Run 'nexo logs " + appName + " -f' to monitor the rollback")
 	}
 }

@@ -17,9 +17,9 @@ Pages use the templ templating language and inherit from layouts.
 Use --with-layout to also generate a layout.templ for that section.
 
 Examples:
-  fuego generate page dashboard
-  fuego generate page admin/settings
-  fuego generate page blog/posts --with-layout`,
+  nexo generate page dashboard
+  nexo generate page admin/settings
+  nexo generate page blog/posts --with-layout`,
 	Args: cobra.ExactArgs(1),
 	Run:  runGeneratePage,
 }

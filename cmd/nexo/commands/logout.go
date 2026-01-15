@@ -15,7 +15,7 @@ var logoutCmd = &cobra.Command{
 	Long: `Clear stored Nexo Cloud credentials.
 
 Examples:
-  fuego logout`,
+  nexo logout`,
 	Run: runLogout,
 }
 

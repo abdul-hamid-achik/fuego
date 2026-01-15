@@ -414,7 +414,7 @@ func (s *Scanner) createPlaceholderHandler(filePath, funcName string) HandlerFun
 			"error":   "handler not loaded",
 			"file":    filePath,
 			"handler": funcName,
-			"message": "This is a placeholder. Use 'fuego dev' or 'fuego build' to load actual handlers.",
+			"message": "This is a placeholder. Use 'nexo dev' or 'nexo build' to load actual handlers.",
 		})
 	}
 }

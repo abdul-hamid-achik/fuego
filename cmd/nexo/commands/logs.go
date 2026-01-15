@@ -26,11 +26,11 @@ var logsCmd = &cobra.Command{
 	Long: `View and stream logs from a Nexo Cloud application.
 
 Examples:
-  fuego logs my-app              # View recent logs
-  fuego logs my-app -f           # Follow/stream logs
-  fuego logs my-app --tail 100   # Last 100 lines
-  fuego logs my-app --since 1h   # Logs from the last hour
-  fuego logs my-app --level error # Only error logs`,
+  nexo logs my-app              # View recent logs
+  nexo logs my-app -f           # Follow/stream logs
+  nexo logs my-app --tail 100   # Last 100 lines
+  nexo logs my-app --since 1h   # Logs from the last hour
+  nexo logs my-app --level error # Only error logs`,
 	Args: cobra.ExactArgs(1),
 	Run:  runLogs,
 }

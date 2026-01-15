@@ -241,7 +241,7 @@ func Get(c *nexo.Context) error {
 
 ## Built-in Middleware
 
-All middleware available at `fuego.*`. See https://nexo.build/docs/api/middleware for config options.
+All middleware available at `nexo.*`. See https://nexo.build/docs/api/middleware for config options.
 
 | Middleware | Usage | Description |
 |------------|-------|-------------|
@@ -464,5 +464,5 @@ nexo routes --json
 ## Import
 
 ```go
-import "github.com/abdul-hamid-achik/nexo/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 ```

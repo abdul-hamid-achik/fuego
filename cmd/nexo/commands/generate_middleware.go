@@ -21,9 +21,9 @@ Available templates:
   cors    - CORS headers
 
 Examples:
-  fuego generate middleware auth --path api/protected
-  fuego generate middleware logging --path api --template logging
-  fuego generate middleware cors --template cors`,
+  nexo generate middleware auth --path api/protected
+  nexo generate middleware logging --path api --template logging
+  nexo generate middleware cors --template cors`,
 	Args: cobra.ExactArgs(1),
 	Run:  runGenerateMiddleware,
 }

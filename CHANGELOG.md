@@ -290,7 +290,7 @@ All CLI commands tested end-to-end:
 
 ### Changed
 
-- Improved `.gitignore` pattern from `nexo` to `/fuego` to only ignore fuego binary in root directory
+- Improved `.gitignore` pattern from `nexo` to `/nexo` to only ignore nexo binary in root directory
 - Prevents future issues where files containing "nexo" in their path might be accidentally ignored
 
 ## [0.9.2] - 2025-12-30
@@ -323,7 +323,7 @@ All CLI commands tested end-to-end:
   - `nexo upgrade --version v0.5.0` - Install specific version
   - `nexo upgrade --prerelease` - Include prerelease versions
   - `nexo upgrade --rollback` - Restore previous version from backup
-  - Automatic backup before upgrade to `~/.cache/nexo/fuego.backup`
+  - Automatic backup before upgrade to `~/.cache/nexo/nexo.backup`
   - SHA256 checksum verification for downloaded binaries
   - Background update check when running `nexo dev` (once per 24 hours)
 
@@ -599,7 +599,7 @@ app.DisableLogger()
   - `nexo dev` automatically generates routes before starting the server
   - Routes are regenerated on file changes (route.go, middleware.go, proxy.go)
   - Generated file imports route packages and calls actual handlers
-- **Auto-detection of local fuego module** - `nexo dev` automatically adds `replace` directive when fuego module isn't published
+- **Auto-detection of local nexo module** - `nexo dev` automatically adds `replace` directive when nexo module isn't published
   - Searches common development directories for nexo source
   - Uses `runtime.Caller` to detect source location when running from source
 - `ScanAndGenerateRoutes()` function for programmatic route generation

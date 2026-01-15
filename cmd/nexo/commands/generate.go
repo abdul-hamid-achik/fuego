@@ -9,12 +9,12 @@ var generateCmd = &cobra.Command{
 	Long: `Generate routes, middleware, proxy, pages, and loaders for your Nexo project.
 
 Examples:
-  fuego generate route users --methods GET,POST
-  fuego generate route users/_id --methods GET,PUT,DELETE
-  fuego generate middleware auth --path api/protected
-  fuego generate proxy --template auth-check
-  fuego generate page dashboard
-  fuego generate loader dashboard --data-type DashboardData`,
+  nexo generate route users --methods GET,POST
+  nexo generate route users/_id --methods GET,PUT,DELETE
+  nexo generate middleware auth --path api/protected
+  nexo generate proxy --template auth-check
+  nexo generate page dashboard
+  nexo generate loader dashboard --data-type DashboardData`,
 }
 
 func init() {

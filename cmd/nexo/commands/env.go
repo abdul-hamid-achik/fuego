@@ -21,11 +21,11 @@ var envCmd = &cobra.Command{
 	Long: `View and manage environment variables for a Nexo Cloud application.
 
 Examples:
-  fuego env my-app                          # List variables (redacted)
-  fuego env my-app --show                   # List with values
-  fuego env my-app set KEY=value            # Set variable
-  fuego env my-app set KEY1=val1 KEY2=val2  # Set multiple
-  fuego env my-app unset KEY                # Remove variable`,
+  nexo env my-app                          # List variables (redacted)
+  nexo env my-app --show                   # List with values
+  nexo env my-app set KEY=value            # Set variable
+  nexo env my-app set KEY1=val1 KEY2=val2  # Set multiple
+  nexo env my-app unset KEY                # Remove variable`,
 	Args: cobra.MinimumNArgs(1),
 	Run:  runEnvList,
 }
@@ -36,8 +36,8 @@ var envSetCmd = &cobra.Command{
 	Long: `Set one or more environment variables.
 
 Examples:
-  fuego env my-app set DATABASE_URL=postgres://...
-  fuego env my-app set API_KEY=secret123 DEBUG=true`,
+  nexo env my-app set DATABASE_URL=postgres://...
+  nexo env my-app set API_KEY=secret123 DEBUG=true`,
 	Args: cobra.MinimumNArgs(1),
 	Run:  runEnvSet,
 }
@@ -48,8 +48,8 @@ var envUnsetCmd = &cobra.Command{
 	Long: `Remove one or more environment variables.
 
 Examples:
-  fuego env my-app unset DEBUG
-  fuego env my-app unset KEY1 KEY2`,
+  nexo env my-app unset DEBUG
+  nexo env my-app unset KEY1 KEY2`,
 	Args: cobra.MinimumNArgs(1),
 	Run:  runEnvUnset,
 }
@@ -125,7 +125,7 @@ func runEnvList(cmd *cobra.Command, args []string) {
 
 	if len(env) == 0 {
 		fmt.Printf("  %s No environment variables set\n", dim("(empty)"))
-		fmt.Println("  Run 'fuego env " + appName + " set KEY=value' to add one")
+		fmt.Println("  Run 'nexo env " + appName + " set KEY=value' to add one")
 		return
 	}
 

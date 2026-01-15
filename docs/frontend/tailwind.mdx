@@ -263,7 +263,7 @@ FROM golang:1.23-alpine AS builder
 WORKDIR /app
 
 # Install Nexo for Tailwind
-RUN go install github.com/abdul-hamid-achik/nexo/cmd/fuego@latest
+RUN go install github.com/abdul-hamid-achik/nexo/cmd/nexo@latest
 
 COPY . .
 

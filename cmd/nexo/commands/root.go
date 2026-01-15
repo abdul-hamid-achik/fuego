@@ -16,12 +16,12 @@ var rootCmd = &cobra.Command{
 Inspired by Next.js App Router, it brings convention over configuration to Go.
 
 Quick Start:
-  fuego new myapp      Create a new Nexo project
-  fuego dev            Start development server with hot reload
-  fuego build          Build for production
-  fuego routes         List all registered routes
-  fuego openapi        Generate OpenAPI specifications
-  fuego upgrade        Upgrade to the latest version
+  nexo new myapp      Create a new Nexo project
+  nexo dev            Start development server with hot reload
+  nexo build          Build for production
+  nexo routes         List all registered routes
+  nexo openapi        Generate OpenAPI specifications
+  nexo upgrade        Upgrade to the latest version
 
 Documentation: https://github.com/abdul-hamid-achik/nexo`,
 	Version: version.GetVersion(),

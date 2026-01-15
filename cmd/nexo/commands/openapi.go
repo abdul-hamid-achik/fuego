@@ -19,10 +19,10 @@ The openapi command provides tools to generate OpenAPI specifications
 and serve them with interactive Swagger UI documentation.
 
 Examples:
-  fuego openapi generate
-  fuego openapi generate --format yaml
-  fuego openapi serve
-  fuego openapi serve --port 9000`,
+  nexo openapi generate
+  nexo openapi generate --format yaml
+  nexo openapi serve
+  nexo openapi serve --port 9000`,
 }
 
 var openapiGenerateCmd = &cobra.Command{
@@ -35,10 +35,10 @@ specification with all discovered routes, including documentation
 extracted from code comments.
 
 Examples:
-  fuego openapi generate
-  fuego openapi generate --output api.yaml --format yaml
-  fuego openapi generate --title "My API" --version 2.0.0
-  fuego openapi generate --openapi30`,
+  nexo openapi generate
+  nexo openapi generate --output api.yaml --format yaml
+  nexo openapi generate --title "My API" --version 2.0.0
+  nexo openapi generate --openapi30`,
 	Run: runOpenAPIGenerate,
 }
 
@@ -51,9 +51,9 @@ This command generates (or uses an existing) OpenAPI specification
 and serves it with Swagger UI at /docs and the raw spec at /openapi.json.
 
 Examples:
-  fuego openapi serve
-  fuego openapi serve --port 9000
-  fuego openapi serve --spec openapi.json`,
+  nexo openapi serve
+  nexo openapi serve --port 9000
+  nexo openapi serve --spec openapi.json`,
 	Run: runOpenAPIServe,
 }
 

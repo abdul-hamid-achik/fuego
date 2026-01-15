@@ -17,10 +17,10 @@ var domainsCmd = &cobra.Command{
 	Long: `View and manage custom domains for a Nexo Cloud application.
 
 Examples:
-  fuego domains my-app                    # List domains
-  fuego domains my-app add example.com    # Add domain
-  fuego domains my-app remove example.com # Remove domain
-  fuego domains my-app verify example.com # Verify DNS`,
+  nexo domains my-app                    # List domains
+  nexo domains my-app add example.com    # Add domain
+  nexo domains my-app remove example.com # Remove domain
+  nexo domains my-app verify example.com # Verify DNS`,
 	Args: cobra.MinimumNArgs(1),
 	Run:  runDomainsList,
 }
@@ -33,7 +33,7 @@ var domainsAddCmd = &cobra.Command{
 After adding, you'll need to configure DNS with the provided CNAME record.
 
 Examples:
-  fuego domains my-app add api.example.com`,
+  nexo domains my-app add api.example.com`,
 	Args: cobra.ExactArgs(1),
 	Run:  runDomainsAdd,
 }
@@ -44,7 +44,7 @@ var domainsRemoveCmd = &cobra.Command{
 	Long: `Remove a custom domain from an application.
 
 Examples:
-  fuego domains my-app remove api.example.com`,
+  nexo domains my-app remove api.example.com`,
 	Args: cobra.ExactArgs(1),
 	Run:  runDomainsRemove,
 }
@@ -58,7 +58,7 @@ This will check that your DNS is correctly configured and
 trigger SSL certificate provisioning if verification succeeds.
 
 Examples:
-  fuego domains my-app verify api.example.com`,
+  nexo domains my-app verify api.example.com`,
 	Args: cobra.ExactArgs(1),
 	Run:  runDomainsVerify,
 }
@@ -126,7 +126,7 @@ func runDomainsList(cmd *cobra.Command, args []string) {
 
 	if len(domains) == 0 {
 		fmt.Printf("  %s No custom domains configured\n", dim("(empty)"))
-		fmt.Println("  Run 'fuego domains " + appName + " add <domain>' to add one")
+		fmt.Println("  Run 'nexo domains " + appName + " add <domain>' to add one")
 		return
 	}
 
@@ -229,7 +229,7 @@ func runDomainsAdd(cmd *cobra.Command, args []string) {
 		fmt.Printf("  Name:  %s\n", cyan(domain))
 		fmt.Printf("  Value: %s\n\n", cyan(d.DNSRecord))
 		fmt.Printf("  After configuring DNS, run:\n")
-		fmt.Printf("    fuego domains %s verify %s\n\n", appName, domain)
+		fmt.Printf("    nexo domains %s verify %s\n\n", appName, domain)
 	}
 }
 

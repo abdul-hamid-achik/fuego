@@ -37,12 +37,12 @@ This command will:
 6. Stream deployment logs
 
 Examples:
-  fuego deploy                    # Deploy current directory
-  fuego deploy --no-build         # Skip build, use existing image
-  fuego deploy --env KEY=value    # Set env var for this deployment
-  fuego deploy --app my-app       # Deploy to specific app
-  fuego deploy --env-file .env    # Load env vars from file
-  fuego deploy --no-env-file      # Skip auto-loading .env file`,
+  nexo deploy                    # Deploy current directory
+  nexo deploy --no-build         # Skip build, use existing image
+  nexo deploy --env KEY=value    # Set env var for this deployment
+  nexo deploy --app my-app       # Deploy to specific app
+  nexo deploy --env-file .env    # Load env vars from file
+  nexo deploy --no-env-file      # Skip auto-loading .env file`,
 	Run: runDeploy,
 }
 

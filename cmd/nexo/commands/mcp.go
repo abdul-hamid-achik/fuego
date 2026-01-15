@@ -11,7 +11,7 @@ The MCP server exposes Nexo operations as tools that LLM agents can use
 to create projects, generate routes, list routes, and more.
 
 Example:
-  fuego mcp serve --workdir /path/to/project`,
+  nexo mcp serve --workdir /path/to/project`,
 }
 
 func init() {

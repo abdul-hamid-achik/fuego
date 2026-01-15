@@ -19,9 +19,9 @@ var newCmd = &cobra.Command{
 	Long: `Create a new Nexo project with the recommended directory structure.
 
 Examples:
-  fuego new myapp
-  fuego new myapp --api-only
-  fuego new myapp --skip-prompts`,
+  nexo new myapp
+  nexo new myapp --api-only
+  nexo new myapp --skip-prompts`,
 	Args: cobra.ExactArgs(1),
 	Run:  runNew,
 }
@@ -133,7 +133,7 @@ func runNew(cmd *cobra.Command, args []string) {
 	// Create files from templates
 	files := map[string]string{
 		filepath.Join(name, "go.mod"):                           goModTmpl,
-		filepath.Join(name, "nexo.yaml"):                       fuegoYamlTmpl,
+		filepath.Join(name, "nexo.yaml"):                       nexoYamlTmpl,
 		filepath.Join(name, ".gitignore"):                       gitignoreTmpl,
 		filepath.Join(name, "app", "api", "health", "route.go"): healthRouteTmpl,
 	}
@@ -201,7 +201,7 @@ func runNew(cmd *cobra.Command, args []string) {
 		fmt.Printf("  %s Initialized git repository\n", green("✓"))
 	}
 
-	// Fetch fuego module
+	// Fetch nexo module
 	if !jsonOutput {
 		yellow := color.New(color.FgYellow).SprintFunc()
 		fmt.Printf("  %s Fetching dependencies...\n", yellow("→"))
@@ -211,7 +211,7 @@ func runNew(cmd *cobra.Command, args []string) {
 	if err := getCmd.Run(); err != nil {
 		if !jsonOutput {
 			yellow := color.New(color.FgYellow).SprintFunc()
-			fmt.Printf("  %s Failed to fetch fuego module: %v\n", yellow("Warning:"), err)
+			fmt.Printf("  %s Failed to fetch nexo module: %v\n", yellow("Warning:"), err)
 			fmt.Printf("  You can manually run: go get github.com/abdul-hamid-achik/nexo/pkg/nexo@latest\n")
 		}
 	} else {
@@ -235,7 +235,7 @@ func runNew(cmd *cobra.Command, args []string) {
 			Created:   createdFiles,
 			NextSteps: []string{
 				fmt.Sprintf("cd %s", name),
-				"fuego dev",
+				"nexo dev",
 			},
 		})
 	} else {
@@ -244,7 +244,7 @@ func runNew(cmd *cobra.Command, args []string) {
 		fmt.Printf("\n  %s Project created successfully!\n\n", green("✓"))
 		fmt.Printf("  Next steps:\n")
 		fmt.Printf("    %s cd %s\n", cyan("$"), name)
-		fmt.Printf("    %s fuego dev\n\n", cyan("$"))
+		fmt.Printf("    %s nexo dev\n\n", cyan("$"))
 		if useTempl {
 			fmt.Printf("  Your app will be available at %s\n\n", cyan("http://localhost:3000"))
 		}
@@ -356,7 +356,7 @@ module {{.ModuleName}}
 go 1.21
 `) + "\n"
 
-var fuegoYamlTmpl = strings.TrimSpace(`
+var nexoYamlTmpl = strings.TrimSpace(`
 # Nexo Configuration
 port: 3000
 host: "0.0.0.0"

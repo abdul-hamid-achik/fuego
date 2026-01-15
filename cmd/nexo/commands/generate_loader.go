@@ -20,9 +20,9 @@ The loader pattern separates data fetching from page rendering:
 The framework automatically wires them together.
 
 Examples:
-  fuego generate loader dashboard
-  fuego generate loader users/_id
-  fuego generate loader admin/settings --data-type AdminSettingsData`,
+  nexo generate loader dashboard
+  nexo generate loader users/_id
+  nexo generate loader admin/settings --data-type AdminSettingsData`,
 	Args: cobra.ExactArgs(1),
 	Run:  runGenerateLoader,
 }

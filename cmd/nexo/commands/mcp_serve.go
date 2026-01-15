@@ -33,7 +33,7 @@ Usage with Claude Desktop (add to claude_desktop_config.json):
 Usage with Claude Code or OpenCode:
 
   Configure your MCP settings to run:
-    fuego mcp serve --workdir /path/to/project
+    nexo mcp serve --workdir /path/to/project
 
 Available tools:
   - nexo_new: Create a new Nexo project

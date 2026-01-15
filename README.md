@@ -54,7 +54,7 @@ brew install abdul-hamid-achik/tap/nexo-cli
 ### Using Go
 
 ```bash
-go install github.com/abdul-hamid-achik/nexo/cmd/fuego@latest
+go install github.com/abdul-hamid-achik/nexo/cmd/nexo@latest
 ```
 
 ## Quick Start
@@ -124,7 +124,7 @@ If you've used Next.js, Nuxt, SvelteKit, or similar frameworks, these patterns w
 // app/api/users/route.go
 package users
 
-import "github.com/abdul-hamid-achik/nexo/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // GET /api/users
 func Get(c *nexo.Context) error {
@@ -151,7 +151,7 @@ func Post(c *nexo.Context) error {
 // app/api/users/_id/route.go
 package id
 
-import "github.com/abdul-hamid-achik/nexo/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 // GET /api/users/:id
 func Get(c *nexo.Context) error {
@@ -173,7 +173,7 @@ package app
 
 import (
     "strings"
-    "github.com/abdul-hamid-achik/nexo/pkg/fuego"
+    "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
 func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
@@ -208,7 +208,7 @@ func Proxy(c *nexo.Context) (*nexo.ProxyResult, error) {
 // app/api/middleware.go
 package api
 
-import "github.com/abdul-hamid-achik/nexo/pkg/fuego"
+import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
 func Middleware() nexo.MiddlewareFunc {
     return func(next nexo.HandlerFunc) nexo.HandlerFunc {

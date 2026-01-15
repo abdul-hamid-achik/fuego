@@ -27,9 +27,9 @@ The proxy runs before route matching and can:
   - Add request headers
 
 Examples:
-  fuego generate proxy --template auth-check
-  fuego generate proxy --template rate-limit
-  fuego generate proxy --template maintenance`,
+  nexo generate proxy --template auth-check
+  nexo generate proxy --template rate-limit
+  nexo generate proxy --template maintenance`,
 	Run: runGenerateProxy,
 }
 

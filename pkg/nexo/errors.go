@@ -1,4 +1,4 @@
-// Package fuego provides a file-system based Go framework for APIs and websites.
+// Package nexo provides a file-system based Go framework for APIs and websites.
 package nexo
 
 import (

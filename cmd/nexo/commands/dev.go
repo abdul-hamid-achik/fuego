@@ -29,8 +29,8 @@ var devCmd = &cobra.Command{
 The server will automatically rebuild and restart when Go or templ files change.
 
 Example:
-  fuego dev
-  fuego dev --port 8080`,
+  nexo dev
+  nexo dev --port 8080`,
 	Run: runDev,
 }
 
@@ -46,8 +46,8 @@ func init() {
 	devCmd.Flags().BoolVarP(&devVerbose, "verbose", "v", false, "Show detailed file watching and rebuild info")
 }
 
-// ensureNexoModule checks if the fuego module can be resolved and adds a replace
-// directive if needed. This handles the case where fuego isn't published yet.
+// ensureNexoModule checks if the nexo module can be resolved and adds a replace
+// directive if needed. This handles the case where nexo isn't published yet.
 func ensureNexoModule() error {
 	yellow := color.New(color.FgYellow).SprintFunc()
 	green := color.New(color.FgGreen).SprintFunc()
@@ -57,7 +57,7 @@ func ensureNexoModule() error {
 		return nil // No go.mod, nothing to do
 	}
 
-	// Read go.mod to check if it requires fuego
+	// Read go.mod to check if it requires nexo
 	content, err := os.ReadFile("go.mod")
 	if err != nil {
 		return err
@@ -65,37 +65,37 @@ func ensureNexoModule() error {
 
 	goModContent := string(content)
 
-	// Check if it requires fuego and doesn't already have a replace directive
+	// Check if it requires nexo and doesn't already have a replace directive
 	requiresNexo := strings.Contains(goModContent, "github.com/abdul-hamid-achik/nexo")
 	hasReplace := strings.Contains(goModContent, "replace github.com/abdul-hamid-achik/nexo")
 
 	if !requiresNexo || hasReplace {
-		return nil // Either doesn't need fuego or already has replace
+		return nil // Either doesn't need nexo or already has replace
 	}
 
-	// Try go mod tidy to see if fuego can be resolved
+	// Try go mod tidy to see if nexo can be resolved
 	tidyCmd := exec.Command("go", "mod", "tidy")
 	output, err := tidyCmd.CombinedOutput()
 	if err == nil {
-		return nil // go mod tidy succeeded, fuego is available
+		return nil // go mod tidy succeeded, nexo is available
 	}
 
-	// Check if the error is about missing fuego module
+	// Check if the error is about missing nexo module
 	outputStr := string(output)
 	if !strings.Contains(outputStr, "github.com/abdul-hamid-achik/nexo") {
 		return nil // Error is about something else
 	}
 
-	// Try to find fuego source directory
-	fuegoPath := findNexoSource()
-	if fuegoPath == "" {
+	// Try to find nexo source directory
+	nexoPath := findNexoSource()
+	if nexoPath == "" {
 		fmt.Printf("  %s Cannot resolve github.com/abdul-hamid-achik/nexo module\n", yellow("Warning:"))
-		fmt.Printf("  The fuego package is not yet published. Add a replace directive to go.mod:\n\n")
-		fmt.Printf("    replace github.com/abdul-hamid-achik/nexo => /path/to/fuego\n\n")
-		return fmt.Errorf("fuego module not found")
+		fmt.Printf("  The nexo package is not yet published. Add a replace directive to go.mod:\n\n")
+		fmt.Printf("    replace github.com/abdul-hamid-achik/nexo => /path/to/nexo\n\n")
+		return fmt.Errorf("nexo module not found")
 	}
 
-	fmt.Printf("  %s Adding replace directive for local fuego development...\n", yellow("→"))
+	fmt.Printf("  %s Adding replace directive for local nexo development...\n", yellow("→"))
 
 	// Add replace directive to go.mod
 	f, err := os.OpenFile("go.mod", os.O_APPEND|os.O_WRONLY, 0644)
@@ -104,7 +104,7 @@ func ensureNexoModule() error {
 	}
 	defer func() { _ = f.Close() }()
 
-	replaceLine := fmt.Sprintf("\nreplace github.com/abdul-hamid-achik/nexo => %s\n", fuegoPath)
+	replaceLine := fmt.Sprintf("\nreplace github.com/abdul-hamid-achik/nexo => %s\n", nexoPath)
 	if _, err := f.WriteString(replaceLine); err != nil {
 		return err
 	}
@@ -117,11 +117,11 @@ func ensureNexoModule() error {
 		return fmt.Errorf("go mod tidy failed after adding replace: %w", err)
 	}
 
-	fmt.Printf("  %s Linked to local fuego at %s\n", green("✓"), fuegoPath)
+	fmt.Printf("  %s Linked to local nexo at %s\n", green("✓"), nexoPath)
 	return nil
 }
 
-// findNexoSource attempts to locate the fuego source directory
+// findNexoSource attempts to locate the nexo source directory
 func findNexoSource() string {
 	// Method 1: Check if nexo.executable is in PATH and trace back to source
 	if execPath, err := exec.LookPath("nexo"); err == nil {
@@ -129,7 +129,7 @@ func findNexoSource() string {
 		// or installed via go install
 		execDir := filepath.Dir(execPath)
 
-		// Check if this is a local bin directory (e.g., /path/to/fuego/bin/fuego)
+		// Check if this is a local bin directory (e.g., /path/to/nexo/bin/nexo)
 		parentDir := filepath.Dir(execDir)
 		if isValidNexoSource(parentDir) {
 			return parentDir
@@ -166,15 +166,15 @@ func findNexoSource() string {
 	}
 
 	// Method 4: Use runtime caller to find this executable's source
-	// This works when fuego is run with `go run` from source
+	// This works when nexo is run with `go run` from source
 	_, filename, _, ok := runtime.Caller(0)
 	if ok {
 		// filename is something like /path/to/nexo/cmd/nexo/commands/dev.go
-		// We need to go up to /path/to/fuego
+		// We need to go up to /path/to/nexo
 		dir := filepath.Dir(filename) // commands
-		dir = filepath.Dir(dir)       // fuego
+		dir = filepath.Dir(dir)       // nexo
 		dir = filepath.Dir(dir)       // cmd
-		dir = filepath.Dir(dir)       // fuego (root)
+		dir = filepath.Dir(dir)       // nexo (root)
 		if isValidNexoSource(dir) {
 			return dir
 		}
@@ -183,7 +183,7 @@ func findNexoSource() string {
 	return ""
 }
 
-// isValidNexoSource checks if a directory is a valid fuego source directory
+// isValidNexoSource checks if a directory is a valid nexo source directory
 func isValidNexoSource(dir string) bool {
 	// Check for go.mod with the correct module name
 	goModPath := filepath.Join(dir, "go.mod")
@@ -221,7 +221,7 @@ func runDev(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// Ensure fuego module is available (add replace directive if needed)
+	// Ensure nexo module is available (add replace directive if needed)
 	if err := ensureNexoModule(); err != nil {
 		fmt.Printf("  %s %v\n", red("Error:"), err)
 		os.Exit(1)

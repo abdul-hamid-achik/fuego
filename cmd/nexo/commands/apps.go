@@ -25,10 +25,10 @@ var appsCmd = &cobra.Command{
 	Long: `List, create, and manage applications on Nexo Cloud.
 
 Examples:
-  fuego apps                            # List all apps
-  fuego apps create my-app              # Create a new app
-  fuego apps create my-app --region gdl # Create app in specific region
-  fuego apps delete my-app              # Delete an app`,
+  nexo apps                            # List all apps
+  nexo apps create my-app              # Create a new app
+  nexo apps create my-app --region gdl # Create app in specific region
+  nexo apps delete my-app              # Delete an app`,
 	Run: runAppsList,
 }
 
@@ -38,8 +38,8 @@ var appsCreateCmd = &cobra.Command{
 	Long: `Create a new application on Nexo Cloud.
 
 Examples:
-  fuego apps create my-app
-  fuego apps create my-app --region gdl --size starter`,
+  nexo apps create my-app
+  nexo apps create my-app --region gdl --size starter`,
 	Args: cobra.ExactArgs(1),
 	Run:  runAppsCreate,
 }
@@ -50,8 +50,8 @@ var appsDeleteCmd = &cobra.Command{
 	Long: `Delete an application from Nexo Cloud.
 
 Examples:
-  fuego apps delete my-app
-  fuego apps delete my-app --force  # Skip confirmation`,
+  nexo apps delete my-app
+  nexo apps delete my-app --force  # Skip confirmation`,
 	Args: cobra.ExactArgs(1),
 	Run:  runAppsDelete,
 }
@@ -130,7 +130,7 @@ func runAppsList(cmd *cobra.Command, args []string) {
 
 	if len(apps) == 0 {
 		fmt.Printf("  %s No applications found.\n", dim("(empty)"))
-		fmt.Println("  Run 'fuego apps create <name>' to create one.")
+		fmt.Println("  Run 'nexo apps create <name>' to create one.")
 		return
 	}
 
@@ -245,8 +245,8 @@ func runAppsCreate(cmd *cobra.Command, args []string) {
 			fmt.Printf("  URL: %s\n", cyan(app.URL))
 		}
 		fmt.Println("\n  Next steps:")
-		fmt.Println("  1. Run 'fuego deploy' to deploy your application")
-		fmt.Println("  2. Run 'fuego logs " + app.Name + "' to view logs")
+		fmt.Println("  1. Run 'nexo deploy' to deploy your application")
+		fmt.Println("  2. Run 'nexo logs " + app.Name + "' to view logs")
 	}
 }
 
