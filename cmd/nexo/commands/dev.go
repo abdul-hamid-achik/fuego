@@ -241,7 +241,7 @@ func generateRoutes(appDir string, verbose bool) error {
 
 		_, err = gen.Generate()
 		if err != nil {
-			return fmt.Errorf("Next.js-style route generation failed: %w", err)
+			return fmt.Errorf("route generation failed: %w", err)
 		}
 	}
 
