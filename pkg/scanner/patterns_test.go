@@ -19,19 +19,19 @@ func TestParseSegment(t *testing.T) {
 		{"route group", "(admin)", SegmentGroup, "admin"},
 		{"route group underscore", "(auth_group)", SegmentGroup, "auth_group"},
 
-		// Legacy underscore patterns
-		{"legacy dynamic", "_id", SegmentDynamic, "id"},
-		{"legacy catch-all", "__slug", SegmentCatchAll, "slug"},
-		{"legacy optional catch-all", "___slug", SegmentOptionalCatchAll, "slug"},
-		{"legacy group prefix", "_group_admin", SegmentGroup, "admin"},
-		{"legacy group trailing", "_auth_", SegmentGroup, "auth"},
-
 		// Static segments
 		{"static simple", "users", SegmentStatic, "users"},
 		{"static with hyphen", "user-profile", SegmentStatic, "user-profile"},
 		{"static api", "api", SegmentStatic, "api"},
 
-		// Private folders (should be static, not dynamic)
+		// Legacy underscore patterns are now static (no longer supported)
+		{"legacy underscore static", "_id", SegmentStatic, "_id"},
+		{"legacy double underscore static", "__slug", SegmentStatic, "__slug"},
+		{"legacy triple underscore static", "___slug", SegmentStatic, "___slug"},
+		{"legacy group prefix static", "_group_admin", SegmentStatic, "_group_admin"},
+		{"legacy trailing underscore static", "_auth_", SegmentStatic, "_auth_"},
+
+		// Private folders (should be static)
 		{"private components", "_components", SegmentStatic, "_components"},
 		{"private lib", "_lib", SegmentStatic, "_lib"},
 		{"private utils", "_utils", SegmentStatic, "_utils"},
@@ -403,28 +403,3 @@ func TestIsNextJSStyle(t *testing.T) {
 	}
 }
 
-func TestIsLegacyStyle(t *testing.T) {
-	tests := []struct {
-		name string
-		want bool
-	}{
-		{"_id", true},
-		{"__slug", true},
-		{"___opt", true},
-		{"_group_admin", true},
-		{"_auth_", true},
-		{"[id]", false},
-		{"(admin)", false},
-		{"users", false},
-		{"_components", false}, // Private folder, not legacy
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := IsLegacyStyle(tt.name)
-			if got != tt.want {
-				t.Errorf("IsLegacyStyle(%q) = %v, want %v", tt.name, got, tt.want)
-			}
-		})
-	}
-}

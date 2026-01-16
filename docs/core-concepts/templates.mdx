@@ -23,7 +23,7 @@ Nexo uses [templ](https://templ.guide) for type-safe HTML templates. Templ provi
       <File name="layout.templ" />
     </Folder>
     <Folder name="users">
-      <Folder name="_id">
+      <Folder name="[id]">
         <File name="page.templ" />
       </Folder>
     </Folder>
@@ -137,14 +137,14 @@ Nested layouts override parent layouts.
 
 ## Dynamic Pages
 
-Dynamic pages use underscore-prefixed directory names to capture URL parameters.
+Dynamic pages use bracket-style directory names to capture URL parameters.
 
 ### URL Parameters
 
-Create `app/posts/_slug/page.templ`:
+Create `app/posts/[slug]/page.templ`:
 
 ```go
-package _slug
+package slug
 
 templ Page(slug string) {
     <article>
@@ -160,13 +160,13 @@ This maps to `/posts/:slug`. The `slug` parameter is automatically extracted fro
 
 ### Parameter Matching
 
-Nexo matches URL parameters to `Page()` parameters **by name**. Your parameter names should match the directory names (without the underscore prefix):
+Nexo matches URL parameters to `Page()` parameters **by name**. Your parameter names should match the directory names (without the brackets):
 
 | Directory | Page Signature | Match |
 |-----------|---------------|-------|
-| `_slug` | `Page(slug string)` | ✓ |
-| `_id` | `Page(id string)` | ✓ |
-| `_id` | `Page(userId string)` | ⚠️ Warning |
+| `[slug]` | `Page(slug string)` | ✓ |
+| `[id]` | `Page(id string)` | ✓ |
+| `[id]` | `Page(userId string)` | ⚠️ Warning |
 
 <Warning>
 If parameter names don't match, Nexo shows a warning during route generation. The page still renders, but mismatched parameters receive zero values.
@@ -177,8 +177,8 @@ If parameter names don't match, Nexo shows a warning during route generation. Th
 For nested dynamic routes:
 
 ```go
-// app/orgs/_orgId/users/_userId/page.templ
-package _userId
+// app/orgs/[orgId]/users/[userId]/page.templ
+package userId
 
 templ Page(orgId, userId string) {
     <div>
@@ -192,11 +192,11 @@ This maps to `/orgs/:orgId/users/:userId`.
 
 ### Catch-All Routes
 
-Use `__param` (double underscore) for catch-all routes:
+Use `[...param]` (spread syntax) for catch-all routes:
 
 ```go
-// app/docs/__slug/page.templ
-package __slug
+// app/docs/[...slug]/page.templ
+package slug
 
 templ Page(slug string) {
     <div>
@@ -212,8 +212,8 @@ This matches `/docs/anything/here/deeply/nested` with `slug = "anything/here/dee
 You can accept additional parameters beyond URL params. Non-URL parameters receive zero values unless you fetch data in a custom handler:
 
 ```go
-// app/users/_id/page.templ
-package _id
+// app/users/[id]/page.templ
+package id
 
 type User struct {
     ID    string
@@ -238,7 +238,7 @@ For pages that need to load data before rendering, consider using HTMX to load c
 </Info>
 
 <Tip>
-The underscore convention ensures all directories are valid Go package names. No symlinks or special import handling required!
+Nexo uses the Next.js App Router convention for file-based routing. Square brackets denote dynamic segments.
 </Tip>
 
 ## Components

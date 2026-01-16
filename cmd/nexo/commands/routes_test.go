@@ -269,13 +269,13 @@ func TestRoutesScanning_DynamicRoutes(t *testing.T) {
 	tmpDir := t.TempDir()
 	appDir := filepath.Join(tmpDir, "app")
 
-	// Create dynamic route file with _id pattern
-	routeDir := filepath.Join(appDir, "api/users/_id")
+	// Create dynamic route file with [id] pattern
+	routeDir := filepath.Join(appDir, "api/users/[id]")
 	if err := os.MkdirAll(routeDir, 0755); err != nil {
 		t.Fatalf("Failed to create route dir: %v", err)
 	}
 
-	routeContent := `package _id
+	routeContent := `package id
 
 import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
@@ -308,13 +308,13 @@ func TestRoutesScanning_CatchAllRoutes(t *testing.T) {
 	tmpDir := t.TempDir()
 	appDir := filepath.Join(tmpDir, "app")
 
-	// Create catch-all route file with __slug pattern
-	routeDir := filepath.Join(appDir, "api/docs/__slug")
+	// Create catch-all route file with [...slug] pattern
+	routeDir := filepath.Join(appDir, "api/docs/[...slug]")
 	if err := os.MkdirAll(routeDir, 0755); err != nil {
 		t.Fatalf("Failed to create route dir: %v", err)
 	}
 
-	routeContent := `package __slug
+	routeContent := `package slug
 
 import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 

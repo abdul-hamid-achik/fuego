@@ -22,17 +22,6 @@ var (
 	// (group) - route group (doesn't affect URL)
 	// Matches: (admin), (auth), (dashboard)
 	routeGroupRe = regexp.MustCompile(`^\(([a-zA-Z_][a-zA-Z0-9_]*)\)$`)
-
-	// Legacy underscore patterns (deprecated but still supported)
-	// _id - dynamic segment
-	legacyDynamicRe = regexp.MustCompile(`^_([a-zA-Z][a-zA-Z0-9]*)$`)
-	// __slug - catch-all
-	legacyCatchAllRe = regexp.MustCompile(`^__([a-zA-Z][a-zA-Z0-9]*)$`)
-	// ___slug - optional catch-all
-	legacyOptionalCatchAllRe = regexp.MustCompile(`^___([a-zA-Z][a-zA-Z0-9]*)$`)
-	// _group_name or _name_ - route group
-	legacyGroupRe         = regexp.MustCompile(`^_group_([a-zA-Z][a-zA-Z0-9_]*)$`)
-	legacyTrailingGroupRe = regexp.MustCompile(`^_([a-zA-Z][a-zA-Z0-9]*)_$`)
 )
 
 // knownPrivateFolders contains folder names that should be skipped
@@ -49,12 +38,9 @@ var knownPrivateFolders = map[string]bool{
 }
 
 // ParseSegment parses a directory name into a Segment.
-// Supports both Next.js-style ([id], [...slug], (group)) and
-// legacy underscore convention (_id, __slug, _group_name).
+// Supports Next.js-style naming: [id], [...slug], [[...slug]], (group).
 func ParseSegment(name string) Segment {
 	seg := Segment{Raw: name}
-
-	// Try Next.js-style patterns first (preferred)
 
 	// Optional catch-all: [[...slug]]
 	if matches := optionalCatchAllRe.FindStringSubmatch(name); len(matches) > 1 {
@@ -79,45 +65,6 @@ func ParseSegment(name string) Segment {
 
 	// Route group: (admin)
 	if matches := routeGroupRe.FindStringSubmatch(name); len(matches) > 1 {
-		seg.Name = matches[1]
-		seg.Type = SegmentGroup
-		return seg
-	}
-
-	// Try legacy underscore patterns (deprecated)
-
-	// Legacy optional catch-all: ___slug
-	if matches := legacyOptionalCatchAllRe.FindStringSubmatch(name); len(matches) > 1 {
-		seg.Name = matches[1]
-		seg.Type = SegmentOptionalCatchAll
-		return seg
-	}
-
-	// Legacy catch-all: __slug
-	if matches := legacyCatchAllRe.FindStringSubmatch(name); len(matches) > 1 {
-		seg.Name = matches[1]
-		seg.Type = SegmentCatchAll
-		return seg
-	}
-
-	// Legacy dynamic: _id (but not private folders)
-	if matches := legacyDynamicRe.FindStringSubmatch(name); len(matches) > 1 {
-		if !knownPrivateFolders[name] {
-			seg.Name = matches[1]
-			seg.Type = SegmentDynamic
-			return seg
-		}
-	}
-
-	// Legacy route group: _group_name
-	if matches := legacyGroupRe.FindStringSubmatch(name); len(matches) > 1 {
-		seg.Name = matches[1]
-		seg.Type = SegmentGroup
-		return seg
-	}
-
-	// Legacy route group: _name_
-	if matches := legacyTrailingGroupRe.FindStringSubmatch(name); len(matches) > 1 {
 		seg.Name = matches[1]
 		seg.Type = SegmentGroup
 		return seg
@@ -202,14 +149,14 @@ func MakeHandlerName(pattern, method string) string {
 		result.WriteString(toPascalCase(part))
 	}
 
-	// Add method
-	result.WriteString(toPascalCase(strings.ToLower(method)))
-
-	name := result.String()
-	if name == "" {
+	// Check for root path before adding method
+	if result.Len() == 0 {
 		return "Root" + toPascalCase(strings.ToLower(method))
 	}
-	return name
+
+	// Add method
+	result.WriteString(toPascalCase(strings.ToLower(method)))
+	return result.String()
 }
 
 // MakePackageName creates a valid Go package name from segments.
@@ -353,14 +300,3 @@ func IsNextJSStyle(name string) bool {
 		routeGroupRe.MatchString(name)
 }
 
-// IsLegacyStyle checks if a segment uses legacy underscore naming.
-func IsLegacyStyle(name string) bool {
-	if knownPrivateFolders[name] {
-		return false
-	}
-	return legacyDynamicRe.MatchString(name) ||
-		legacyCatchAllRe.MatchString(name) ||
-		legacyOptionalCatchAllRe.MatchString(name) ||
-		legacyGroupRe.MatchString(name) ||
-		legacyTrailingGroupRe.MatchString(name)
-}

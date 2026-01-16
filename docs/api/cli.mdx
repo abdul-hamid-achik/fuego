@@ -304,9 +304,9 @@ nexo routes --app-dir custom/app
   GET     /api/health                   app/api/health/route.go
   GET     /api/users                    app/api/users/route.go
   POST    /api/users                    app/api/users/route.go
-  GET     /api/users/{id}               app/api/users/_id/route.go
-  PUT     /api/users/{id}               app/api/users/_id/route.go
-  DELETE  /api/users/{id}               app/api/users/_id/route.go
+  GET     /api/users/{id}               app/api/users/[id]/route.go
+  PUT     /api/users/{id}               app/api/users/[id]/route.go
+  DELETE  /api/users/{id}               app/api/users/[id]/route.go
 
   Total: 7 routes
 ```
@@ -360,10 +360,10 @@ nexo generate route <path> [flags]
 | Pattern | Example | URL |
 |---------|---------|-----|
 | Static | `users` | `/api/users` |
-| Dynamic `_param` | `users/_id` | `/api/users/:id` |
-| Catch-all `__param` | `docs/__slug` | `/api/docs/*` |
-| Optional `___param` | `shop/___cat` | `/api/shop` and `/api/shop/*` |
-| Group `_group_name` | `_group_admin/settings` | `/api/settings` |
+| Dynamic `[param]` | `users/[id]` | `/api/users/:id` |
+| Catch-all `[...param]` | `docs/[...slug]` | `/api/docs/*` |
+| Optional `[[...param]]` | `shop/[[...cat]]` | `/api/shop` and `/api/shop/*` |
+| Group `(name)` | `(admin)/settings` | `/api/settings` |
 
 ### Examples
 
@@ -375,20 +375,20 @@ nexo generate route users
 nexo generate route users --methods GET,POST
 
 # Dynamic route
-nexo generate route users/_id --methods GET,PUT,DELETE
+nexo generate route users/[id] --methods GET,PUT,DELETE
 
 # Catch-all route
-nexo generate route docs/__slug --methods GET
+nexo generate route docs/[...slug] --methods GET
 
 # Route in a group (doesn't affect URL)
-nexo generate route _group_admin/settings --methods GET,PUT
+nexo generate route (admin)/settings --methods GET,PUT
 ```
 
 ### Generated Code
 
 ```go
-// app/api/users/_id/route.go
-package _id
+// app/api/users/[id]/route.go
+package id
 
 import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 

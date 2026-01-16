@@ -317,21 +317,21 @@ Demonstrates all dynamic routing patterns: parameters, catch-all, optional catch
       <Folder name="api" defaultOpen>
         <Folder name="users" defaultOpen>
           <File name="route.go" />
-          <Folder name="_id">
+          <Folder name="[id]">
             <File name="route.go" />
           </Folder>
         </Folder>
         <Folder name="posts" defaultOpen>
-          <Folder name="__slug">
+          <Folder name="[...slug]">
             <File name="route.go" />
           </Folder>
         </Folder>
         <Folder name="docs" defaultOpen>
-          <Folder name="___path">
+          <Folder name="[[...path]]">
             <File name="route.go" />
           </Folder>
         </Folder>
-        <Folder name="_group_admin" defaultOpen>
+        <Folder name="(admin)" defaultOpen>
           <Folder name="settings">
             <File name="route.go" />
           </Folder>
@@ -345,11 +345,11 @@ Demonstrates all dynamic routing patterns: parameters, catch-all, optional catch
   </Folder>
 </FileTree>
 
-### Dynamic Parameter `_id`
+### Dynamic Parameter `[id]`
 
 ```go
-// app/api/users/_id/route.go
-package _id
+// app/api/users/[id]/route.go
+package id
 
 import (
     "myapp/internal/store"
@@ -404,15 +404,15 @@ func Delete(c *nexo.Context) error {
 }
 ```
 
-### Catch-All Route `__slug`
+### Catch-All Route `[...slug]`
 
 ```go
-// app/api/posts/__slug/route.go
-package __slug
+// app/api/posts/[...slug]/route.go
+package slug
 
 import (
     "strings"
-    
+
     "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 )
 
@@ -423,7 +423,7 @@ import (
 func Get(c *nexo.Context) error {
     slug := c.Param("slug")
     segments := c.ParamAll("slug") // Split by "/"
-    
+
     return c.JSON(200, map[string]any{
         "slug":     slug,
         "segments": segments,
@@ -432,11 +432,11 @@ func Get(c *nexo.Context) error {
 }
 ```
 
-### Optional Catch-All `___path`
+### Optional Catch-All `[[...path]]`
 
 ```go
-// app/api/docs/___path/route.go
-package ___path
+// app/api/docs/[[...path]]/route.go
+package path
 
 import (
     "github.com/abdul-hamid-achik/nexo/pkg/nexo"
@@ -451,14 +451,14 @@ var docs = map[string]string{
     "api/authentication":  "Authentication guide",
 }
 
-// GET /api/docs/___path - Optional catch-all for documentation
+// GET /api/docs/[[...path]] - Optional catch-all for documentation
 // Matches:
 //   /api/docs                    → path = ""
 //   /api/docs/getting-started    → path = "getting-started"
 //   /api/docs/api/users          → path = "api/users"
 func Get(c *nexo.Context) error {
     path := c.Param("path")
-    
+
     content, ok := docs[path]
     if !ok {
         return c.JSON(404, map[string]string{
@@ -466,7 +466,7 @@ func Get(c *nexo.Context) error {
             "path":  path,
         })
     }
-    
+
     return c.JSON(200, map[string]any{
         "path":    path,
         "content": content,
@@ -485,15 +485,15 @@ func getDocSections() []string {
 }
 ```
 
-### Route Groups `_group_name`
+### Route Groups `(group)`
 
 ```go
-// app/api/_group_admin/settings/route.go
+// app/api/(admin)/settings/route.go
 package settings
 
 import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
-// GET /api/settings - The _group_admin group doesn't affect the URL
+// GET /api/settings - The (admin) group doesn't affect the URL
 func Get(c *nexo.Context) error {
     return c.JSON(200, map[string]any{
         "theme":          "dark",
@@ -509,7 +509,7 @@ func Put(c *nexo.Context) error {
     if err := c.Bind(&settings); err != nil {
         return c.JSON(400, map[string]string{"error": "invalid settings"})
     }
-    
+
     return c.JSON(200, map[string]any{
         "message":  "settings updated",
         "settings": settings,
@@ -518,7 +518,7 @@ func Put(c *nexo.Context) error {
 ```
 
 ```go
-// app/api/_group_admin/dashboard/route.go
+// app/api/(admin)/dashboard/route.go
 package dashboard
 
 import "github.com/abdul-hamid-achik/nexo/pkg/nexo"

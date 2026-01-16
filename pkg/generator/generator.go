@@ -17,7 +17,7 @@ import (
 
 // RouteConfig holds configuration for route generation.
 type RouteConfig struct {
-	Path    string   // Route path (e.g., "users/_id")
+	Path    string   // Route path (e.g., "users/[id]")
 	Methods []string // HTTP methods (e.g., ["GET", "PUT", "DELETE"])
 	AppDir  string   // App directory (default: "app")
 }
@@ -49,19 +49,16 @@ type Result struct {
 	Pattern string   `json:"pattern,omitempty"`
 }
 
-// Regular expressions for parsing route paths
-// Using underscore convention for valid Go package names:
-//   - _param      -> dynamic segment (single underscore)
-//   - __param     -> catch-all segment (double underscore)
-//   - ___param    -> optional catch-all segment (triple underscore)
-//   - _group_name -> route group (doesn't affect URL)
-//   - _name_      -> route group (trailing underscore, alternative syntax)
+// Regular expressions for parsing route paths using Next.js-style naming:
+//   - [param]      -> dynamic segment
+//   - [...param]   -> catch-all segment
+//   - [[...param]] -> optional catch-all segment
+//   - (group)      -> route group (doesn't affect URL)
 var (
-	dynamicSegmentRe          = regexp.MustCompile(`^_([a-zA-Z][a-zA-Z0-9]*)$`)
-	catchAllSegmentRe         = regexp.MustCompile(`^__([a-zA-Z][a-zA-Z0-9]*)$`)
-	optionalCatchAllRe        = regexp.MustCompile(`^___([a-zA-Z][a-zA-Z0-9]*)$`)
-	routeGroupRe              = regexp.MustCompile(`^_group_([a-zA-Z][a-zA-Z0-9_]*)$`)
-	trailingUnderscoreGroupRe = regexp.MustCompile(`^_([a-zA-Z][a-zA-Z0-9]*)_$`)
+	dynamicSegmentRe   = regexp.MustCompile(`^\[([a-zA-Z_][a-zA-Z0-9_]*)\]$`)
+	catchAllSegmentRe  = regexp.MustCompile(`^\[\.\.\.([a-zA-Z_][a-zA-Z0-9_]*)\]$`)
+	optionalCatchAllRe = regexp.MustCompile(`^\[\[\.\.\.([a-zA-Z_][a-zA-Z0-9_]*)\]\]$`)
+	routeGroupRe       = regexp.MustCompile(`^\(([a-zA-Z_][a-zA-Z0-9_]*)\)$`)
 )
 
 // knownPrivateFolders contains folder prefixes that are private (not routable)
@@ -77,7 +74,7 @@ var knownPrivateFolders = []string{
 
 // isGeneratorPrivateFolder checks if a directory should be skipped during generation
 // Returns true for known private folders (_components, _lib, etc.)
-// but NOT for dynamic route directories (_id, __slug, ___cat, _group_admin).
+// but NOT for dynamic route directories ([id], [...slug], [[...cat]], (admin)).
 func isGeneratorPrivateFolder(name, _ string) bool {
 	// Check if it's a known private folder (exact match)
 	for _, private := range knownPrivateFolders {
@@ -86,8 +83,8 @@ func isGeneratorPrivateFolder(name, _ string) bool {
 		}
 	}
 
-	// Dynamic routes (_id), catch-all (__slug), optional catch-all (___cat),
-	// and route groups (_group_name) are NOT private - they are routable
+	// Dynamic routes ([id]), catch-all ([...slug]), optional catch-all ([[...cat]]),
+	// and route groups ((group)) are NOT private - they are routable
 
 	return false
 }
@@ -334,7 +331,7 @@ func GeneratePage(cfg PageConfig) (*Result, error) {
 
 // LoaderConfig holds configuration for generating a loader.
 type LoaderConfig struct {
-	Path     string // Path relative to app directory (e.g., "dashboard", "users/_id")
+	Path     string // Path relative to app directory (e.g., "dashboard", "users/[id]")
 	DataType string // Name of the data type (e.g., "DashboardData")
 	AppDir   string // App directory (default: "app")
 }
@@ -413,23 +410,20 @@ func packageNameFromPath(path string) string {
 	segments := strings.Split(path, "/")
 	lastSeg := segments[len(segments)-1]
 
-	// Handle route groups (_group_name -> name)
+	// Handle route groups (group) -> name
 	if matches := routeGroupRe.FindStringSubmatch(lastSeg); len(matches) > 1 {
 		return cleanPackageName(matches[1])
 	}
 
-	// Handle route groups with trailing underscore (_name_ -> name)
-	if matches := trailingUnderscoreGroupRe.FindStringSubmatch(lastSeg); len(matches) > 1 {
-		return cleanPackageName(matches[1])
-	}
-
-	// Clean dynamic segments
+	// Clean dynamic segments [id] -> id
 	if matches := dynamicSegmentRe.FindStringSubmatch(lastSeg); len(matches) > 1 {
 		return cleanPackageName(matches[1])
 	}
+	// [...slug] -> slug
 	if matches := catchAllSegmentRe.FindStringSubmatch(lastSeg); len(matches) > 1 {
 		return cleanPackageName(matches[1])
 	}
+	// [[...slug]] -> slug
 	if matches := optionalCatchAllRe.FindStringSubmatch(lastSeg); len(matches) > 1 {
 		return cleanPackageName(matches[1])
 	}
@@ -505,42 +499,27 @@ func pathToPattern(path string) string {
 	var result []string
 
 	for _, seg := range segments {
-		// Skip route groups (_group_name)
+		// Skip route groups (group)
 		if routeGroupRe.MatchString(seg) {
 			continue
 		}
 
-		// Skip route groups with trailing underscore (_name_)
-		if trailingUnderscoreGroupRe.MatchString(seg) {
-			continue
-		}
-
-		// Handle optional catch-all (___param)
+		// Handle optional catch-all [[...param]]
 		if matches := optionalCatchAllRe.FindStringSubmatch(seg); len(matches) > 1 {
 			result = append(result, "*")
 			continue
 		}
 
-		// Handle catch-all (__param)
+		// Handle catch-all [...param]
 		if matches := catchAllSegmentRe.FindStringSubmatch(seg); len(matches) > 1 {
 			result = append(result, "*")
 			continue
 		}
 
-		// Handle dynamic segment (_param) - but not known private folders
+		// Handle dynamic segment [param]
 		if matches := dynamicSegmentRe.FindStringSubmatch(seg); len(matches) > 1 {
-			// Check it's not a known private folder
-			isPrivate := false
-			for _, private := range knownPrivateFolders {
-				if seg == private {
-					isPrivate = true
-					break
-				}
-			}
-			if !isPrivate {
-				result = append(result, "{"+matches[1]+"}")
-				continue
-			}
+			result = append(result, "{"+matches[1]+"}")
+			continue
 		}
 
 		result = append(result, seg)
@@ -698,7 +677,7 @@ type PageRegistration struct {
 
 	// Dynamic page support
 	Params         []PageParam // Parameters extracted from templ Page() signature
-	URLParams      []string    // Parameter names extracted from URL path (e.g., _slug -> "slug")
+	URLParams      []string    // Parameter names extracted from URL path (e.g., [slug] -> "slug")
 	HasParams      bool        // True if Page() accepts parameters
 	ParamSignature string      // Original signature from templ file (for comments)
 
@@ -907,7 +886,7 @@ func ScanAndGenerateRoutes(appDir, outputPath string) (*Result, error) {
 		return GenerateRoutesFile(cfg)
 	}
 
-	// With the underscore convention (_id, __slug, _group_name), all directories are valid Go packages
+	// With Next.js-style naming ([id], [...slug], (group)), directories need bracket/paren characters removed for Go packages
 	// No symlinks or import sanitization needed
 
 	fset := token.NewFileSet()
@@ -1223,7 +1202,7 @@ func scanPageFile(filePath, appDir, moduleName string) (*PageRegistration, error
 		return nil, err
 	}
 
-	// Extract URL parameters from the path (e.g., _slug -> "slug")
+	// Extract URL parameters from the path (e.g., [slug] -> "slug")
 	urlParams := extractURLParams(dir, appDir)
 
 	// Get import path (direct path since directories are valid Go package names)
@@ -1304,9 +1283,9 @@ func parseTemplParams(paramsStr string) []PageParam {
 	return params
 }
 
-// extractURLParams extracts parameter names from underscore-prefixed directories in the path
-// e.g., "app/posts/_slug" -> ["slug"]
-// e.g., "app/users/_id/posts/_postId" -> ["id", "postId"]
+// extractURLParams extracts parameter names from bracket-style directories in the path
+// e.g., "app/posts/[slug]" -> ["slug"]
+// e.g., "app/users/[id]/posts/[postId]" -> ["id", "postId"]
 func extractURLParams(dir, appDir string) []string {
 	rel, err := filepath.Rel(appDir, dir)
 	if err != nil {
@@ -1317,36 +1296,26 @@ func extractURLParams(dir, appDir string) []string {
 	segments := strings.Split(rel, string(filepath.Separator))
 
 	for _, seg := range segments {
-		// Skip route groups (_group_name)
+		// Skip route groups (group)
 		if routeGroupRe.MatchString(seg) {
 			continue
 		}
 
-		// Extract param from ___param (optional catch-all)
+		// Extract param from [[...param]] (optional catch-all)
 		if matches := optionalCatchAllRe.FindStringSubmatch(seg); len(matches) > 1 {
 			params = append(params, matches[1])
 			continue
 		}
 
-		// Extract param from __param (catch-all)
+		// Extract param from [...param] (catch-all)
 		if matches := catchAllSegmentRe.FindStringSubmatch(seg); len(matches) > 1 {
 			params = append(params, matches[1])
 			continue
 		}
 
-		// Extract param from _param (dynamic) - but not known private folders
+		// Extract param from [param] (dynamic)
 		if matches := dynamicSegmentRe.FindStringSubmatch(seg); len(matches) > 1 {
-			// Check it's not a known private folder
-			isPrivate := false
-			for _, private := range knownPrivateFolders {
-				if seg == private {
-					isPrivate = true
-					break
-				}
-			}
-			if !isPrivate {
-				params = append(params, matches[1])
-			}
+			params = append(params, matches[1])
 		}
 	}
 
@@ -1406,7 +1375,7 @@ func validatePageParams(page *PageRegistration) []GenerationWarning {
 	return warnings
 }
 
-// Note: With the underscore convention (_id, __slug, _group_name),
+// Note: With Next.js-style naming ([id], [...slug], (group)),
 // directories are already valid Go package names. No sanitization needed.
 
 // scanLayoutFile scans a layout.templ file and returns registration info
@@ -1454,13 +1423,8 @@ func pagePathToPattern(dir, appDir string) string {
 	var routeSegments []string
 
 	for _, seg := range segments {
-		// Skip route groups (_group_name) - they don't affect the URL
+		// Skip route groups (group) - they don't affect the URL
 		if routeGroupRe.MatchString(seg) {
-			continue
-		}
-
-		// Skip route groups with trailing underscore (_name_) - they don't affect the URL
-		if trailingUnderscoreGroupRe.MatchString(seg) {
 			continue
 		}
 
@@ -1479,18 +1443,8 @@ func pagePathToPattern(dir, appDir string) string {
 			continue
 		}
 		if matches := dynamicSegmentRe.FindStringSubmatch(seg); len(matches) > 1 {
-			// Check it's not a known private folder
-			isPrivate := false
-			for _, private := range knownPrivateFolders {
-				if seg == private {
-					isPrivate = true
-					break
-				}
-			}
-			if !isPrivate {
-				routeSegments = append(routeSegments, "{"+matches[1]+"}")
-				continue
-			}
+			routeSegments = append(routeSegments, "{"+matches[1]+"}")
+			continue
 		}
 
 		routeSegments = append(routeSegments, seg)
@@ -1514,13 +1468,8 @@ func layoutPathToPrefix(dir, appDir string) string {
 	var routeSegments []string
 
 	for _, seg := range segments {
-		// Skip route groups (_group_name) - they don't affect the URL
+		// Skip route groups (group) - they don't affect the URL
 		if routeGroupRe.MatchString(seg) {
-			continue
-		}
-
-		// Skip route groups with trailing underscore (_name_) - they don't affect the URL
-		if trailingUnderscoreGroupRe.MatchString(seg) {
 			continue
 		}
 
@@ -1543,7 +1492,7 @@ func layoutPathToPrefix(dir, appDir string) string {
 func packageNameFromDir(dir string) string {
 	base := filepath.Base(dir)
 
-	// Handle route groups (_group_name -> name)
+	// Handle route groups (group) -> name
 	if matches := routeGroupRe.FindStringSubmatch(base); len(matches) > 1 {
 		base = matches[1]
 	}
@@ -1562,15 +1511,11 @@ func deriveTitle(dir, appDir string) string {
 	segments := strings.Split(rel, string(filepath.Separator))
 	for i := len(segments) - 1; i >= 0; i-- {
 		seg := segments[i]
-		// Skip route groups (_group_name)
+		// Skip route groups (group)
 		if routeGroupRe.MatchString(seg) {
 			continue
 		}
-		// Skip route groups with trailing underscore (_name_)
-		if trailingUnderscoreGroupRe.MatchString(seg) {
-			continue
-		}
-		// Skip dynamic segments (_param), catch-all (__param), optional (___param)
+		// Skip dynamic segments [param], catch-all [...param], optional [[...param]]
 		if dynamicSegmentRe.MatchString(seg) || catchAllSegmentRe.MatchString(seg) || optionalCatchAllRe.MatchString(seg) {
 			continue
 		}
@@ -1756,42 +1701,27 @@ func dirToPattern(dir, appDir string) string {
 	var routeSegments []string
 
 	for _, seg := range segments {
-		// Skip route groups (_group_name) - they don't affect the URL
+		// Skip route groups (group) - they don't affect the URL
 		if routeGroupRe.MatchString(seg) {
 			continue
 		}
 
-		// Skip route groups with trailing underscore (_name_) - they don't affect the URL
-		if trailingUnderscoreGroupRe.MatchString(seg) {
-			continue
-		}
-
-		// Handle optional catch-all (___param)
+		// Handle optional catch-all [[...param]]
 		if matches := optionalCatchAllRe.FindStringSubmatch(seg); len(matches) > 1 {
 			routeSegments = append(routeSegments, "*")
 			continue
 		}
 
-		// Handle catch-all (__param)
+		// Handle catch-all [...param]
 		if matches := catchAllSegmentRe.FindStringSubmatch(seg); len(matches) > 1 {
 			routeSegments = append(routeSegments, "*")
 			continue
 		}
 
-		// Handle dynamic segment (_param) - but not known private folders
+		// Handle dynamic segment [param]
 		if matches := dynamicSegmentRe.FindStringSubmatch(seg); len(matches) > 1 {
-			// Check it's not a known private folder
-			isPrivate := false
-			for _, private := range knownPrivateFolders {
-				if seg == private {
-					isPrivate = true
-					break
-				}
-			}
-			if !isPrivate {
-				routeSegments = append(routeSegments, "{"+matches[1]+"}")
-				continue
-			}
+			routeSegments = append(routeSegments, "{"+matches[1]+"}")
+			continue
 		}
 
 		routeSegments = append(routeSegments, seg)
@@ -1955,7 +1885,7 @@ func isValidProxySignature(fn *ast.FuncDecl) bool {
 }
 
 // getImportPath returns the import path for a directory.
-// With the underscore convention (_id, __slug, _group_name), all directories are valid Go package names.
+// With Next.js-style naming ([id], [...slug], (group)), directories need bracket/paren characters removed for Go packages.
 func getImportPath(moduleName, relDir string) string {
 	return moduleName + "/" + filepath.ToSlash(relDir)
 }

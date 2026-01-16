@@ -138,10 +138,10 @@ This middleware automatically applies to all routes under `/api/`.
 
 ## Add Dynamic Routes
 
-Create `app/api/users/_id/route.go`:
+Create `app/api/users/[id]/route.go`:
 
 ```go
-package _id
+package id
 
 import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
@@ -195,9 +195,9 @@ Output:
   GET     /api/health                   app/api/health/route.go
   GET     /api/users                    app/api/users/route.go
   POST    /api/users                    app/api/users/route.go
-  GET     /api/users/{id}               app/api/users/_id/route.go
-  PUT     /api/users/{id}               app/api/users/_id/route.go
-  DELETE  /api/users/{id}               app/api/users/_id/route.go
+  GET     /api/users/{id}               app/api/users/[id]/route.go
+  PUT     /api/users/{id}               app/api/users/[id]/route.go
+  DELETE  /api/users/{id}               app/api/users/[id]/route.go
 
   Middleware:
   /api/*                                app/api/middleware.go
@@ -231,7 +231,7 @@ Here's the full structure after adding routes:
         </Folder>
         <Folder name="users">
           <File name="route.go" />
-          <Folder name="_id">
+          <Folder name="[id]">
             <File name="route.go" />
           </Folder>
         </Folder>

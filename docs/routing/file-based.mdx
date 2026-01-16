@@ -80,14 +80,14 @@ All handlers must have the signature `func(c *nexo.Context) error`. Invalid sign
 
 ## Dynamic Routes
 
-Use `_param` folders (underscore prefix) for dynamic segments:
+Use `[param]` folders (bracket syntax) for dynamic segments:
 
 <FileTree>
   <Folder name="app" defaultOpen>
     <Folder name="api" defaultOpen>
       <Folder name="users">
         <File name="route.go" />
-        <Folder name="_id">
+        <Folder name="[id]">
           <File name="route.go" />
         </Folder>
       </Folder>
@@ -100,7 +100,7 @@ This creates:
 - `/api/users/:id` - dynamic route
 
 ```go
-package _id
+package id
 
 import "github.com/abdul-hamid-achik/nexo/pkg/nexo"
 
@@ -112,7 +112,7 @@ func Get(c *nexo.Context) error {
 ```
 
 <Info>
-The underscore convention ensures all directories are valid Go package names. No symlinks or special import handling required.
+Nexo uses the Next.js App Router convention for file-based routing. Square brackets denote dynamic segments.
 </Info>
 
 ### Multiple Parameters
@@ -121,9 +121,9 @@ The underscore convention ensures all directories are valid Go package names. No
   <Folder name="app" defaultOpen>
     <Folder name="api" defaultOpen>
       <Folder name="orgs">
-        <Folder name="_orgId">
+        <Folder name="[orgId]">
           <Folder name="teams">
-            <Folder name="_teamId">
+            <Folder name="[teamId]">
               <File name="route.go" />
             </Folder>
           </Folder>
@@ -148,13 +148,13 @@ func Get(c *nexo.Context) error {
 
 ## Catch-All Routes
 
-Use `__param` (double underscore) for catch-all routes:
+Use `[...param]` (spread syntax) for catch-all routes:
 
 <FileTree>
   <Folder name="app" defaultOpen>
     <Folder name="api" defaultOpen>
       <Folder name="docs">
-        <Folder name="__slug">
+        <Folder name="[...slug]">
           <File name="route.go" />
         </Folder>
       </Folder>
@@ -182,13 +182,13 @@ func Get(c *nexo.Context) error {
 
 ## Optional Catch-All
 
-Use `___param` (triple underscore) for optional catch-all (matches with or without segments):
+Use `[[...param]]` (double bracket spread) for optional catch-all (matches with or without segments):
 
 <FileTree>
   <Folder name="app" defaultOpen>
     <Folder name="api" defaultOpen>
       <Folder name="shop">
-        <Folder name="___categories">
+        <Folder name="[[...categories]]">
           <File name="route.go" />
         </Folder>
       </Folder>
@@ -203,12 +203,12 @@ Matches:
 
 ## Route Groups
 
-Use `_group_name` folders to organize without affecting URLs:
+Use `(name)` folders to organize without affecting URLs:
 
 <FileTree>
   <Folder name="app" defaultOpen>
     <Folder name="api" defaultOpen>
-      <Folder name="_group_marketing">
+      <Folder name="(marketing)">
         <Folder name="about">
           <File name="route.go" />
         </Folder>
@@ -216,7 +216,7 @@ Use `_group_name` folders to organize without affecting URLs:
           <File name="route.go" />
         </Folder>
       </Folder>
-      <Folder name="_group_shop">
+      <Folder name="(shop)">
         <Folder name="products">
           <File name="route.go" />
         </Folder>
@@ -238,50 +238,14 @@ Creates:
 Route groups are great for organizing code and applying shared middleware without affecting URLs.
 </Tip>
 
-### Alternative Syntax: `_name_`
+**Nested groups:**
 
-You can also use the **trailing underscore syntax** `_name_` as a shorter alternative to `_group_name`:
-
-<FileTree>
-  <Folder name="app" defaultOpen>
-    <Folder name="_auth_" defaultOpen>
-      <Folder name="login">
-        <File name="page.templ" />
-      </Folder>
-      <Folder name="callback">
-        <File name="route.go" />
-      </Folder>
-      <Folder name="logout">
-        <File name="route.go" />
-      </Folder>
-    </Folder>
-  </Folder>
-</FileTree>
-
-Creates:
-- `/login` (not `/auth/login`)
-- `/callback`
-- `/logout`
-
-**Both syntaxes are equivalent:**
-
-| Syntax | Example | URL Result |
-|--------|---------|------------|
-| `_group_name` | `_group_auth/login/route.go` | `/login` |
-| `_name_` | `_auth_/login/route.go` | `/login` |
-
-<Tip>
-The `_name_` syntax is shorter and works well for common groupings like `_auth_`, `_dashboard_`, or `_admin_`.
-</Tip>
-
-**Mixing syntaxes:**
-
-You can combine both syntaxes in nested structures:
+You can nest route groups for complex organizational structures:
 
 <FileTree>
   <Folder name="app" defaultOpen>
-    <Folder name="_auth_" defaultOpen>
-      <Folder name="_group_admin" defaultOpen>
+    <Folder name="(auth)" defaultOpen>
+      <Folder name="(admin)" defaultOpen>
         <Folder name="users">
           <File name="route.go" />
         </Folder>
@@ -290,14 +254,12 @@ You can combine both syntaxes in nested structures:
   </Folder>
 </FileTree>
 
-Creates: `/users` (both `_auth_` and `_group_admin` are stripped from the URL)
+Creates: `/users` (both `(auth)` and `(admin)` groups are stripped from the URL)
 
 <Warning>
 **Common mistake:** Folder names like `auth_routes` or `admin_pages` are NOT route groups. They will appear literally in the URL as `/auth_routes/...` or `/admin_pages/...`.
 
-Route groups must match one of these patterns:
-- `_group_name` (prefix with `_group_`)
-- `_name_` (wrap with underscores: starts with `_`, ends with `_`)
+Route groups must use parentheses: `(group_name)`
 </Warning>
 
 ## Private Folders
@@ -308,7 +270,7 @@ Certain folders with specific underscore-prefixed names are private (not routabl
   <Folder name="app" defaultOpen>
     <Folder name="api" defaultOpen>
       <Folder name="users">
-        <Folder name="_id">
+        <Folder name="[id]">
           <File name="route.go" />
         </Folder>
         <File name="route.go" />
@@ -338,7 +300,7 @@ Certain folders with specific underscore-prefixed names are private (not routabl
 - `_shared/` - Shared code
 
 <Warning>
-Only these specific folder names are private. Single underscore directories like `_id` are dynamic route parameters, NOT private folders.
+Private folders use a specific set of reserved names. Bracket-style directories like `[id]` are dynamic route parameters, NOT private folders.
 </Warning>
 
 <Tip>
@@ -382,7 +344,7 @@ Output:
   GET     /api/health                   app/api/health/route.go
   GET     /api/users                    app/api/users/route.go
   POST    /api/users                    app/api/users/route.go
-  GET     /api/users/{id}               app/api/users/_id/route.go
+  GET     /api/users/{id}               app/api/users/[id]/route.go
 
   Total: 5 routes
 ```
@@ -416,16 +378,16 @@ Invalid signatures are skipped with a warning. Make sure your handlers match the
       </Folder>
       <Folder name="users">
         <File name="route.go" />
-        <Folder name="_id">
+        <Folder name="[id]">
           <File name="route.go" />
         </Folder>
       </Folder>
       <Folder name="posts">
-        <Folder name="__slug">
+        <Folder name="[...slug]">
           <File name="route.go" />
         </Folder>
       </Folder>
-      <Folder name="_group_admin">
+      <Folder name="(admin)">
         <Folder name="settings">
           <File name="route.go" />
         </Folder>
@@ -442,9 +404,9 @@ Routes created:
 | GET | `/` | `app/page.templ` |
 | GET | `/api/health` | `app/api/health/route.go` |
 | GET,POST | `/api/users` | `app/api/users/route.go` |
-| GET,PUT,DELETE | `/api/users/:id` | `app/api/users/_id/route.go` |
-| GET | `/api/posts/*` | `app/api/posts/__slug/route.go` |
-| GET,PUT | `/api/settings` | `app/api/_group_admin/settings/route.go` |
+| GET,PUT,DELETE | `/api/users/:id` | `app/api/users/[id]/route.go` |
+| GET | `/api/posts/*` | `app/api/posts/[...slug]/route.go` |
+| GET,PUT | `/api/settings` | `app/api/(admin)/settings/route.go` |
 
 ## File Precedence Rules
 
@@ -521,7 +483,7 @@ app.Get("/dashboard", func(c *nexo.Context) error {
 Generate a loader with:
 ```bash
 nexo generate loader dashboard
-nexo generate loader users/_id --data-type UserDetailData  # For /users/:id route
+nexo generate loader users/[id] --data-type UserDetailData  # For /users/:id route
 ```
 
 ### Alternative: HTMX Pattern

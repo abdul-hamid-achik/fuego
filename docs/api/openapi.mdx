@@ -246,16 +246,16 @@ Tags are automatically derived from your directory structure:
 | `app/api/users/route.go` | `["users"]` |
 | `app/api/admin/settings/route.go` | `["admin"]` |
 | `app/api/v2/products/route.go` | `["products"]` |
-| `app/api/posts/_id/route.go` | `["posts"]` |
+| `app/api/posts/[id]/route.go` | `["posts"]` |
 
-Dynamic segments like `_id` and route groups like `_group_admin` are ignored when deriving tags.
+Dynamic segments like `[id]` and route groups like `(admin)` are ignored when deriving tags.
 
 ### From URL Parameters
 
 Path parameters are automatically detected from dynamic segments:
 
 ```go
-// File: app/api/users/_id/route.go
+// File: app/api/users/[id]/route.go
 
 // Get retrieves a user by ID
 func Get(c *nexo.Context) error {
@@ -330,7 +330,7 @@ app/
 ├── api/
 │   ├── users/
 │   │   ├── route.go          # GET, POST /api/users
-│   │   └── _id/
+│   │   └── [id]/
 │   │       └── route.go      # GET, PUT, DELETE /api/users/{id}
 │   └── health/
 │       └── route.go          # GET /api/health
@@ -350,7 +350,7 @@ func Post(c *nexo.Context) error { ... }
 ```
 
 ```go
-// app/api/users/_id/route.go
+// app/api/users/[id]/route.go
 package id
 
 // Get retrieves a user by ID
@@ -577,7 +577,7 @@ nexo openapi generate  # Reads from nexo.yaml
     **Solution:**
     - Tags are derived from the first directory after `/api/`
     - Use meaningful directory names
-    - Dynamic segments `_id` and groups `_group_name` are ignored
+    - Dynamic segments `[id]` and groups `(group)` are ignored
   </Accordion>
 
   <Accordion title="Swagger UI not loading">

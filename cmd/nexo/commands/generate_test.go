@@ -54,7 +54,7 @@ func TestGenerateRoute_DynamicPath(t *testing.T) {
 	appDir := filepath.Join(tmpDir, "app")
 
 	result, err := generator.GenerateRoute(generator.RouteConfig{
-		Path:    "users/_id",
+		Path:    "users/[id]",
 		Methods: []string{"GET", "PUT", "DELETE"},
 		AppDir:  appDir,
 	})
@@ -69,7 +69,7 @@ func TestGenerateRoute_DynamicPath(t *testing.T) {
 	}
 
 	// Check file has param access
-	routeFile := filepath.Join(appDir, "api/users/_id/route.go")
+	routeFile := filepath.Join(appDir, "api/users/[id]/route.go")
 	content, _ := os.ReadFile(routeFile)
 	if !strings.Contains(string(content), `c.Param("id")`) {
 		t.Error("Expected c.Param(\"id\") in file")
@@ -81,7 +81,7 @@ func TestGenerateRoute_CatchAllPath(t *testing.T) {
 	appDir := filepath.Join(tmpDir, "app")
 
 	result, err := generator.GenerateRoute(generator.RouteConfig{
-		Path:    "docs/__slug",
+		Path:    "docs/[...slug]",
 		Methods: []string{"GET"},
 		AppDir:  appDir,
 	})

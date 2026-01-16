@@ -32,30 +32,30 @@ func TestGenerateRoute(t *testing.T) {
 		},
 		{
 			name:        "dynamic route",
-			path:        "users/_id",
+			path:        "users/[id]",
 			methods:     []string{"GET", "PUT", "DELETE"},
-			wantFile:    "api/users/_id/route.go",
+			wantFile:    "api/users/[id]/route.go",
 			wantPattern: "/api/users/{id}",
 		},
 		{
 			name:        "catch-all route",
-			path:        "docs/__slug",
+			path:        "docs/[...slug]",
 			methods:     []string{"GET"},
-			wantFile:    "api/docs/__slug/route.go",
+			wantFile:    "api/docs/[...slug]/route.go",
 			wantPattern: "/api/docs/*",
 		},
 		{
 			name:        "optional catch-all",
-			path:        "shop/___categories",
+			path:        "shop/[[...categories]]",
 			methods:     []string{"GET"},
-			wantFile:    "api/shop/___categories/route.go",
+			wantFile:    "api/shop/[[...categories]]/route.go",
 			wantPattern: "/api/shop/*",
 		},
 		{
 			name:        "nested route",
-			path:        "v1/users/_id/posts",
+			path:        "v1/users/[id]/posts",
 			methods:     []string{"GET"},
-			wantFile:    "api/v1/users/_id/posts/route.go",
+			wantFile:    "api/v1/users/[id]/posts/route.go",
 			wantPattern: "/api/v1/users/{id}/posts",
 		},
 	}
@@ -316,12 +316,10 @@ func TestPackageNameFromPath(t *testing.T) {
 	}{
 		{"", "app"},
 		{"users", "users"},
-		{"_id", "id"},
-		{"__slug", "slug"},
-		{"___categories", "categories"},
-		{"_group_dashboard", "dashboard"},
-		{"_auth_", "auth"},
-		{"_dashboard_", "dashboard"},
+		{"[id]", "id"},
+		{"[...slug]", "slug"},
+		{"[[...categories]]", "categories"},
+		{"(dashboard)", "dashboard"},
 		{"user-profile", "userprofile"},
 		{"123items", "pkg123items"},
 	}
@@ -342,14 +340,14 @@ func TestPathToPattern(t *testing.T) {
 		want string
 	}{
 		{"users", "users"},
-		{"users/_id", "users/{id}"},
-		{"docs/__slug", "docs/*"},
-		{"shop/___cat", "shop/*"},
-		{"_group_admin/settings", "settings"},
-		{"_auth_/login", "login"},
-		{"_dashboard_/apps", "apps"},
-		{"_dashboard_/apps/_name", "apps/{name}"},
-		{"api/v1/users/_id/posts", "api/v1/users/{id}/posts"},
+		{"users/[id]", "users/{id}"},
+		{"docs/[...slug]", "docs/*"},
+		{"shop/[[...cat]]", "shop/*"},
+		{"(admin)/settings", "settings"},
+		{"(auth)/login", "login"},
+		{"(dashboard)/apps", "apps"},
+		{"(dashboard)/apps/[name]", "apps/{name}"},
+		{"api/v1/users/[id]/posts", "api/v1/users/{id}/posts"},
 	}
 
 	for _, tt := range tests {
@@ -375,28 +373,28 @@ func TestExtractParams(t *testing.T) {
 			wantCount: 0,
 		},
 		{
-			path:      "users/_id",
+			path:      "users/[id]",
 			wantCount: 1,
 			wantNames: []string{"id"},
 			catchAlls: []bool{false},
 			optionals: []bool{false},
 		},
 		{
-			path:      "docs/__slug",
+			path:      "docs/[...slug]",
 			wantCount: 1,
 			wantNames: []string{"slug"},
 			catchAlls: []bool{true},
 			optionals: []bool{false},
 		},
 		{
-			path:      "shop/___categories",
+			path:      "shop/[[...categories]]",
 			wantCount: 1,
 			wantNames: []string{"categories"},
 			catchAlls: []bool{true},
 			optionals: []bool{true},
 		},
 		{
-			path:      "users/_userId/posts/_postId",
+			path:      "users/[userId]/posts/[postId]",
 			wantCount: 2,
 			wantNames: []string{"userId", "postId"},
 			catchAlls: []bool{false, false},
@@ -626,14 +624,14 @@ func TestDirToPattern(t *testing.T) {
 		want   string
 	}{
 		{"app/api/users", "app", "/api/users"},
-		{"app/api/users/_id", "app", "/api/users/{id}"},
-		{"app/api/docs/__slug", "app", "/api/docs/*"},
-		{"app/api/_group_admin/settings", "app", "/api/settings"},
-		{"app/_auth_/login", "app", "/login"},
-		{"app/_auth_/callback", "app", "/callback"},
-		{"app/_dashboard_", "app", "/"},
-		{"app/_dashboard_/apps", "app", "/apps"},
-		{"app/_dashboard_/apps/_name", "app", "/apps/{name}"},
+		{"app/api/users/[id]", "app", "/api/users/{id}"},
+		{"app/api/docs/[...slug]", "app", "/api/docs/*"},
+		{"app/api/(admin)/settings", "app", "/api/settings"},
+		{"app/(auth)/login", "app", "/login"},
+		{"app/(auth)/callback", "app", "/callback"},
+		{"app/(dashboard)", "app", "/"},
+		{"app/(dashboard)/apps", "app", "/apps"},
+		{"app/(dashboard)/apps/[name]", "app", "/apps/{name}"},
 		{"app", "app", "/"},
 	}
 
@@ -655,14 +653,14 @@ func TestPagePathToPattern(t *testing.T) {
 	}{
 		{"app", "app", "/"},
 		{"app/about", "app", "/about"},
-		{"app/users/_id", "app", "/users/{id}"},
-		{"app/docs/__slug", "app", "/docs/*"},
-		{"app/_group_marketing/about", "app", "/about"},
-		{"app/_auth_/login", "app", "/login"},
-		{"app/_auth_/callback", "app", "/callback"},
-		{"app/_dashboard_", "app", "/"},
-		{"app/_dashboard_/apps", "app", "/apps"},
-		{"app/_dashboard_/apps/_name", "app", "/apps/{name}"},
+		{"app/users/[id]", "app", "/users/{id}"},
+		{"app/docs/[...slug]", "app", "/docs/*"},
+		{"app/(marketing)/about", "app", "/about"},
+		{"app/(auth)/login", "app", "/login"},
+		{"app/(auth)/callback", "app", "/callback"},
+		{"app/(dashboard)", "app", "/"},
+		{"app/(dashboard)/apps", "app", "/apps"},
+		{"app/(dashboard)/apps/[name]", "app", "/apps/{name}"},
 	}
 
 	for _, tt := range tests {
@@ -768,35 +766,35 @@ func TestExtractURLParams(t *testing.T) {
 		},
 		{
 			name:      "single param",
-			dir:       "app/posts/_slug",
+			dir:       "app/posts/[slug]",
 			appDir:    "app",
 			wantCount: 1,
 			wantNames: []string{"slug"},
 		},
 		{
 			name:      "nested params",
-			dir:       "app/users/_userId/posts/_postId",
+			dir:       "app/users/[userId]/posts/[postId]",
 			appDir:    "app",
 			wantCount: 2,
 			wantNames: []string{"userId", "postId"},
 		},
 		{
 			name:      "catch-all param",
-			dir:       "app/docs/__slug",
+			dir:       "app/docs/[...slug]",
 			appDir:    "app",
 			wantCount: 1,
 			wantNames: []string{"slug"},
 		},
 		{
 			name:      "optional catch-all param",
-			dir:       "app/shop/___categories",
+			dir:       "app/shop/[[...categories]]",
 			appDir:    "app",
 			wantCount: 1,
 			wantNames: []string{"categories"},
 		},
 		{
 			name:      "with route group",
-			dir:       "app/_group_admin/users/_id",
+			dir:       "app/(admin)/users/[id]",
 			appDir:    "app",
 			wantCount: 1,
 			wantNames: []string{"id"},
@@ -829,7 +827,7 @@ func TestValidatePageParams(t *testing.T) {
 		{
 			name: "matching params",
 			page: &PageRegistration{
-				FilePath:  "app/posts/_slug/page.templ",
+				FilePath:  "app/posts/[slug]/page.templ",
 				URLParams: []string{"slug"},
 				Params:    []PageParam{{Name: "slug", Type: "string"}},
 			},
@@ -838,7 +836,7 @@ func TestValidatePageParams(t *testing.T) {
 		{
 			name: "url param not in Page()",
 			page: &PageRegistration{
-				FilePath:  "app/posts/_slug/page.templ",
+				FilePath:  "app/posts/[slug]/page.templ",
 				URLParams: []string{"slug"},
 				Params:    []PageParam{},
 			},
@@ -856,7 +854,7 @@ func TestValidatePageParams(t *testing.T) {
 		{
 			name: "multiple mismatches",
 			page: &PageRegistration{
-				FilePath:  "app/posts/_slug/page.templ",
+				FilePath:  "app/posts/[slug]/page.templ",
 				URLParams: []string{"slug"},
 				Params:    []PageParam{{Name: "id", Type: "string"}, {Name: "user", Type: "User"}},
 			},
@@ -865,7 +863,7 @@ func TestValidatePageParams(t *testing.T) {
 		{
 			name: "partial match",
 			page: &PageRegistration{
-				FilePath:  "app/posts/_slug/page.templ",
+				FilePath:  "app/posts/[slug]/page.templ",
 				URLParams: []string{"slug"},
 				Params:    []PageParam{{Name: "slug", Type: "string"}, {Name: "user", Type: "User"}},
 			},
@@ -896,11 +894,11 @@ func TestGenerateRoutesFile_WithDynamicPages(t *testing.T) {
 			OutputPath: outputPath,
 			Pages: []PageRegistration{
 				{
-					ImportPath:     "testapp/app/posts/_slug",
+					ImportPath:     "testapp/app/posts/[slug]",
 					Package:        "slug",
 					Pattern:        "/posts/{slug}",
 					Title:          "Post",
-					FilePath:       "app/posts/_slug/page.templ",
+					FilePath:       "app/posts/[slug]/page.templ",
 					Params:         []PageParam{{Name: "slug", Type: "string", FromPath: true}},
 					URLParams:      []string{"slug"},
 					HasParams:      true,
@@ -995,11 +993,11 @@ func TestGenerateRoutesFile_WithDynamicPages(t *testing.T) {
 			OutputPath: outputPath,
 			Pages: []PageRegistration{
 				{
-					ImportPath: "testapp/app/orgs/_orgId/users/_userId",
+					ImportPath: "testapp/app/orgs/[orgId]/users/[userId]",
 					Package:    "userId",
 					Pattern:    "/orgs/{orgId}/users/{userId}",
 					Title:      "User",
-					FilePath:   "app/orgs/_orgId/users/_userId/page.templ",
+					FilePath:   "app/orgs/[orgId]/users/[userId]/page.templ",
 					Params: []PageParam{
 						{Name: "orgId", Type: "string", FromPath: true},
 						{Name: "userId", Type: "string", FromPath: true},
@@ -1065,20 +1063,20 @@ func TestZeroValue(t *testing.T) {
 }
 
 func TestScanAndGenerateRoutesWithDeeplyNestedDynamicDirs(t *testing.T) {
-	// End-to-end test using the new underscore convention
+	// End-to-end test using Next.js-style naming convention
 	tmpDir := t.TempDir()
 	// Resolve symlinks to handle macOS /var -> /private/var
 	tmpDir, _ = filepath.EvalSymlinks(tmpDir)
 	appDir := filepath.Join(tmpDir, "app")
 
-	// Create the structure using underscore convention
+	// Create the structure using bracket convention
 	dirs := map[string]string{
-		"api/apps/_name":                        "name",
-		"api/apps/_name/deployments/_id":        "id",
-		"api/apps/_name/domains/_domain":        "domain",
-		"api/apps/_name/domains/_domain/verify": "verify",
-		"api/apps/_name/env":                    "env",
-		"api/apps/_name/metrics":                "metrics",
+		"api/apps/[name]":                          "name",
+		"api/apps/[name]/deployments/[id]":         "id",
+		"api/apps/[name]/domains/[domain]":         "domain",
+		"api/apps/[name]/domains/[domain]/verify":  "verify",
+		"api/apps/[name]/env":                      "env",
+		"api/apps/[name]/metrics":                  "metrics",
 	}
 
 	routeTemplate := `package %s
@@ -1114,7 +1112,7 @@ func Post(c *nexo.Context) error {
 	return c.JSON(201, nil)
 }
 `
-	verifyDir := filepath.Join(appDir, "api/apps/_name/domains/_domain/verify")
+	verifyDir := filepath.Join(appDir, "api/apps/[name]/domains/[domain]/verify")
 	if err := os.WriteFile(filepath.Join(verifyDir, "route.go"), []byte(verifyContent), 0644); err != nil {
 		t.Fatalf("Failed to write verify route.go: %v", err)
 	}
@@ -1211,9 +1209,9 @@ func TestGenerateLoader(t *testing.T) {
 		},
 		{
 			name:         "dynamic loader",
-			path:         "users/_id",
+			path:         "users/[id]",
 			dataType:     "UserDetailData",
-			wantFile:     "users/_id/loader.go",
+			wantFile:     "users/[id]/loader.go",
 			wantDataType: "UserDetailData",
 		},
 	}
@@ -1283,22 +1281,22 @@ func TestIsGeneratorPrivateFolder(t *testing.T) {
 		{"_private is private", "_private", true},
 		{"_shared is private", "_shared", true},
 
-		// Dynamic route folders should NOT be private
-		{"_id is NOT private (dynamic)", "_id", false},
-		{"_slug is NOT private (dynamic)", "_slug", false},
-		{"_userId is NOT private (dynamic)", "_userId", false},
+		// Next.js-style dynamic route folders should NOT be private
+		{"[id] is NOT private (dynamic)", "[id]", false},
+		{"[slug] is NOT private (dynamic)", "[slug]", false},
+		{"[userId] is NOT private (dynamic)", "[userId]", false},
 
 		// Catch-all should NOT be private
-		{"__slug is NOT private (catch-all)", "__slug", false},
-		{"__path is NOT private (catch-all)", "__path", false},
+		{"[...slug] is NOT private (catch-all)", "[...slug]", false},
+		{"[...path] is NOT private (catch-all)", "[...path]", false},
 
 		// Optional catch-all should NOT be private
-		{"___cat is NOT private (optional catch-all)", "___cat", false},
+		{"[[...cat]] is NOT private (optional catch-all)", "[[...cat]]", false},
 
 		// Route groups should NOT be private
-		{"_group_admin is NOT private (route group)", "_group_admin", false},
-		{"_auth_ is NOT private (route group)", "_auth_", false},
-		{"_dashboard_ is NOT private (route group)", "_dashboard_", false},
+		{"(admin) is NOT private (route group)", "(admin)", false},
+		{"(auth) is NOT private (route group)", "(auth)", false},
+		{"(dashboard) is NOT private (route group)", "(dashboard)", false},
 
 		// Regular folders should NOT be private
 		{"users is NOT private", "users", false},
@@ -1325,13 +1323,11 @@ func TestCleanPackageName(t *testing.T) {
 		{"user-profile", "userprofile"},
 		{"user_profile", "user_profile"},
 		{"123users", "pkg123users"},
-		// These are valid Go package names, so cleanPackageName keeps them as-is
-		// The package name extraction happens in packageNameFromPath
-		{"_id", "_id"},
-		{"__slug", "__slug"},
-		{"___cat", "___cat"},
-		{"_group_admin", "_group_admin"},
-		{"_auth_", "_auth_"},
+		// Brackets and parens are removed by cleanPackageName
+		{"[id]", "id"},
+		{"[...slug]", "slug"},
+		{"[[...cat]]", "cat"},
+		{"(admin)", "admin"},
 		{"api-v1", "apiv1"},
 		{"API", "api"},
 		{"", "route"}, // empty defaults to "route" not "pkg"
@@ -1411,8 +1407,8 @@ func TestGetImportPath(t *testing.T) {
 	}{
 		{"myapp", "app/api/users", "myapp/app/api/users"},
 		{"github.com/user/project", "app/api", "github.com/user/project/app/api"},
-		{"myapp", "app/api/users/_id", "myapp/app/api/users/_id"},
-		{"myapp", "app/_group_admin/settings", "myapp/app/_group_admin/settings"},
+		{"myapp", "app/api/users/[id]", "myapp/app/api/users/[id]"},
+		{"myapp", "app/(admin)/settings", "myapp/app/(admin)/settings"},
 	}
 
 	for _, tt := range tests {

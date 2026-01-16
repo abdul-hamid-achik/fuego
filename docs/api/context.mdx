@@ -29,7 +29,7 @@ The `nexo.Context` is passed to every handler and provides access to request dat
 Access dynamic route parameters:
 
 ```go
-// Route: /api/users/_id/route.go → /api/users/:id
+// Route: /api/users/[id]/route.go → /api/users/:id
 func Get(c *nexo.Context) error {
     id := c.Param("id")           // "123" (string)
     idInt := c.ParamInt("id")     // 123 (int, 0 if invalid)
